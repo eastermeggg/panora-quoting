@@ -28,6 +28,7 @@ interface InsurerCardProps {
     quoteInfo?: Array<{ label: string; value: string }>;
     alertMessage?: string;
     alertDescription?: string;
+    nextAction?: string;
     errorMessage?: string;
     errorDescription?: string;
     errorInfo?: string;
@@ -157,28 +158,46 @@ export function InsurerCard({
                 </div>
               )}
 
-              {/* Actions timeline - collapsible */}
-              <CollapsibleSection title="Dernières actions de l'agent">
+              {/* Actions timeline - collapsible with Voir tout in header */}
+              <CollapsibleSection
+                title="Dernières actions de l'agent"
+                headerRight={
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewActions?.();
+                    }}
+                    className="text-xs text-panora-green hover:underline font-medium"
+                  >
+                    Voir tout
+                  </button>
+                }
+              >
                 <ActionTimeline
                   actions={insurer.actions}
                   onViewAll={onViewActions}
                 />
               </CollapsibleSection>
 
-              {/* Quote info - collapsible */}
+              {/* Quote info - always visible */}
               {insurer.quoteInfo && (
-                <CollapsibleSection title="Informations devis">
-                  <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+                <div className="border-t border-panora-border pt-4">
+                  <h4 className="text-sm font-medium text-panora-text mb-3">
+                    Informations devis
+                  </h4>
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                     {insurer.quoteInfo.map((item) => (
                       <div key={item.label}>
                         <span className="text-xs text-panora-text-muted">
                           {item.label}
                         </span>
-                        <p className="text-sm text-panora-text">{item.value}</p>
+                        <p className="text-sm text-panora-text font-medium">
+                          {item.value}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </CollapsibleSection>
+                </div>
               )}
 
               {/* Paramètres devis */}
@@ -234,6 +253,19 @@ export function InsurerCard({
                   />
                 </div>
               </div>
+
+              {/* Prochaine action après validation */}
+              {insurer.nextAction && (
+                <div className="text-sm text-panora-text-muted">
+                  <span className="flex items-center gap-2">
+                    <Play className="w-3 h-3 text-panora-text-muted" />
+                    <span>Prochaine action après validation</span>
+                  </span>
+                  <p className="ml-5 text-panora-text-secondary">
+                    {insurer.nextAction}
+                  </p>
+                </div>
+              )}
 
               {/* Paramètres devis */}
               <CollapsibleSection title="Paramètres devis">
@@ -342,9 +374,11 @@ export function InsurerCard({
 
 function CollapsibleSection({
   title,
+  headerRight,
   children,
 }: {
   title: string;
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -353,7 +387,7 @@ function CollapsibleSection({
     <div className="border-t border-panora-border pt-3">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
+        className="flex items-center gap-2 w-full text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
       >
         {open ? (
           <ChevronDown className="w-4 h-4" />
@@ -361,6 +395,7 @@ function CollapsibleSection({
           <ChevronRight className="w-4 h-4" />
         )}
         <span className="font-medium">{title}</span>
+        {headerRight && <div className="ml-auto">{headerRight}</div>}
       </button>
       {open && <div className="mt-3">{children}</div>}
     </div>

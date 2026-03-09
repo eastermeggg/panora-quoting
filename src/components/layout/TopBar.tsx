@@ -37,7 +37,7 @@ export function TopBar({ variant, cotationId, title, onClose }: TopBarProps) {
       <FileText className="w-4 h-4 text-panora-green" />
 
       <span className="text-sm font-medium text-panora-text">
-        {variant === "preparation" ? "Nouvelle cotation" : ""}{" "}
+        {variant === "preparation" ? "Nouvelle cotation" : "Nom cotation"}{" "}
         {cotationId || "COT-XXX"}
       </span>
 

@@ -50,9 +50,9 @@ export const insurers = [
     status: "completed" as const,
     reference: "4RGWBWMKEB",
     documents: [
-      "Conditions_generales_Marble_Gr_core_assur_long_name.pdf",
-      "Tarifs_Axa_RC_Pro_2026.pdf",
-      "Attestation_RC_Pro_Marble_Tech.pdf",
+      "Conditions_generales_Metiers_de_nom_super_long.pdf",
+      "Conditions_generales_Metiers_de_nom_super_long.pdf",
+      "Conditions_generales_Metiers_de_nom_super_long.pdf",
     ],
     pricing: [
       { formula: "Essentielle", monthly: "87,71 €", annual: "810,52 €/an" },
@@ -87,6 +87,7 @@ export const insurers = [
     reference: "ALZ-2026-8841",
     alertMessage: "Sélection des options requise sur l'extranet",
     alertDescription: "Allianz propose 4 niveaux de franchise. L'agent ne peut pas choisir à votre place. Sélectionnez le niveau de franchise sur l'extranet pour débloquer le tarif.",
+    nextAction: "Récupération des documents de devis.",
     actions: [
       { date: "28/05/25 - 18h32", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
       { date: "28/05/25 - 18h31", title: "Action agent", description: "Référence: GEN-FR-90124", status: "success" as const },
@@ -117,14 +118,11 @@ export const insurers = [
     reference: "CHB-2026-1190",
     errorMessage: "L'agent a rencontré une erreur",
     errorDescription: "L'extranet MAIF a retourné une erreur lors de la saisie du véhicule : « Immatriculation non reconnue dans le référentiel SIV ».",
-    errorInfo: "Dernière tentative : aujourd'hui à 14:04 - 2/3 tentatives",
+    errorInfo: "Dernière tentative : aujourd'hui à 14:04 · 2/3 tentatives",
     actions: [
-      { date: "28/05/25 - 18h30", title: "Début", description: "Lancement de la cotation sur Chubb", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Erreur de connexion", description: "Serveur inaccessible", status: "error" as const },
-      { date: "28/05/25 - 18h35", title: "Nouvelle tentative", description: "Tentative 2/3", status: "success" as const },
-      { date: "28/05/25 - 18h36", title: "Erreur de connexion", description: "Serveur inaccessible", status: "error" as const },
-      { date: "28/05/25 - 18h40", title: "Nouvelle tentative", description: "Tentative 3/3", status: "success" as const },
-      { date: "28/05/25 - 18h41", title: "Erreur de connexion", description: "Serveur inaccessible - Abandon", status: "error" as const },
+      { date: "28/05/25 - 18h30", title: "Action agent successfull", description: "Référence: GEN-FR-90124", status: "success" as const },
+      { date: "28/05/25 - 18h31", title: "Action agent successfull", description: "Référence: GEN-FR-90124", status: "success" as const },
+      { date: "28/05/25 - 18h35", title: "Action en erreur de l'agent juste ici", description: "", status: "error" as const },
     ],
   },
 ];
