@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Check, Plus } from "lucide-react";
+import { Search, Check, CheckSquare, Square, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { availableInsurers } from "@/data/mock";
 
@@ -38,26 +38,6 @@ export function InsurerSelector({
 
   return (
     <div ref={ref} className="relative">
-      {/* Selected chips */}
-      {selectedIds.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {selectedIds.map((id) => {
-            const insurer = availableInsurers.find((i) => i.id === id);
-            if (!insurer) return null;
-            return (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-panora-green-light rounded-md text-sm text-panora-green"
-              >
-                {insurer.logo && <span className="text-xs">{insurer.logo}</span>}
-                <span className="font-medium">{insurer.name}</span>
-                <Check className="w-3.5 h-3.5" />
-              </span>
-            );
-          })}
-        </div>
-      )}
-
       {/* Search input */}
       <div
         className="relative"
@@ -77,21 +57,40 @@ export function InsurerSelector({
         />
       </div>
 
+      {/* Info text */}
+      <p className="text-xs text-panora-text-muted mt-2 mb-3 px-1">
+        Assureurs filtrés sur le produit {product} et les flows mappés
+        avec un code extranet actif.
+      </p>
+
+      {/* Selected insurers as rows */}
+      {selectedIds.length > 0 && (
+        <div className="space-y-1.5">
+          {selectedIds.map((id) => {
+            const insurer = availableInsurers.find((i) => i.id === id);
+            if (!insurer) return null;
+            return (
+              <button
+                key={id}
+                onClick={() => onToggle(id)}
+                className="flex items-center gap-3 w-full px-3 py-2.5 bg-panora-green-light rounded-lg text-left hover:bg-panora-green-light/70 transition-colors"
+              >
+                <span className="text-base">{insurer.logo}</span>
+                <span className="text-sm font-medium text-panora-text flex-1">
+                  {insurer.name}
+                </span>
+                <div className="w-5 h-5 bg-panora-green rounded flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-white" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-panora-border rounded-lg shadow-lg z-20 overflow-hidden">
-          {/* Info header */}
-          <div className="px-3 py-2 bg-panora-tag/50 border-b border-panora-border">
-            <p className="text-xs text-panora-text-muted">
-              <span className="font-medium">{withCode.length} disponibles</span>{" "}
-              · {withoutCode.length} sans code
-            </p>
-            <p className="text-xs text-panora-text-muted mt-0.5">
-              Assureurs filtrés sur le produit {product} et les flows mappés
-              avec un code extranet actif.
-            </p>
-          </div>
-
+        <div className="absolute left-0 right-0 top-[42px] mt-1 bg-white border border-panora-border rounded-lg shadow-lg z-20 overflow-hidden">
           {/* Selectable items */}
           <div className="max-h-[240px] overflow-y-auto">
             {filtered.map((insurer) => {
@@ -110,8 +109,12 @@ export function InsurerSelector({
                   <span className="text-sm font-medium text-panora-text flex-1">
                     {insurer.name}
                   </span>
-                  {isSelected && (
-                    <Check className="w-4 h-4 text-panora-green" />
+                  {isSelected ? (
+                    <div className="w-5 h-5 bg-panora-green rounded flex items-center justify-center">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 border-2 border-panora-border rounded" />
                   )}
                 </button>
               );

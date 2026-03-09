@@ -60,72 +60,87 @@ function DataSection({ section }: { section: SectionData }) {
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-panora-drop/50 transition-colors"
       >
-        {expanded ? (
-          <ChevronDown className="w-4 h-4 text-panora-text-muted shrink-0" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-panora-text-muted shrink-0" />
+        {section.status === "complete" && (
+          <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
+        )}
+        {section.status === "incomplete" && (
+          <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0" />
+        )}
+        {section.status === "invalid" && (
+          <AlertTriangle className="w-5 h-5 text-panora-error shrink-0" />
         )}
 
         <span className="text-sm font-medium text-panora-text flex-1">
           {section.label}
         </span>
 
-        {section.status === "complete" && (
-          <CheckCircle2 className="w-4 h-4 text-panora-green" />
-        )}
         {section.status === "incomplete" && (
-          <span className="flex items-center gap-1 text-xs text-panora-warning">
-            <AlertTriangle className="w-3.5 h-3.5" />
+          <span className="text-xs text-panora-warning mr-2">
             {section.missingCount} champ{section.missingCount! > 1 ? "s" : ""} à
             compléter
           </span>
         )}
         {section.status === "invalid" && (
-          <span className="flex items-center gap-1 text-xs text-panora-error">
-            <AlertTriangle className="w-3.5 h-3.5" />
+          <span className="text-xs text-panora-error mr-2">
             {section.invalidCount} champ{section.invalidCount! > 1 ? "s" : ""}{" "}
             invalide{section.invalidCount! > 1 ? "s" : ""}
           </span>
         )}
+
+        {expanded ? (
+          <ChevronDown className="w-4 h-4 text-panora-text-muted shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-panora-text-muted shrink-0" />
+        )}
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 border-t border-panora-border">
-          <div className="space-y-3 pt-3">
+        <div className="border-t border-panora-border">
+          <div className="divide-y divide-panora-border">
             {section.fields.map((field) => (
-              <div key={field.label}>
-                <label className="text-xs text-panora-text-muted block mb-1">
+              <div
+                key={field.label}
+                className="flex items-center px-4 py-2.5 gap-4"
+              >
+                <span
+                  className={cn(
+                    "text-sm w-36 shrink-0",
+                    field.status === "missing" || field.status === "invalid"
+                      ? "text-panora-error font-medium"
+                      : "text-panora-text-muted"
+                  )}
+                >
                   {field.label}
-                </label>
-                {field.status === "missing" ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="À compléter..."
-                      className="flex-1 border border-panora-warning/50 rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-panora-warning/20 bg-panora-warning-bg/30"
-                    />
-                    <span className="text-xs bg-panora-tag text-panora-warning px-2 py-0.5 rounded font-medium">
-                      À compléter..
+                </span>
+                <div className="flex-1 flex items-center gap-2 justify-end">
+                  {field.status === "missing" ? (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="À compléter..."
+                        className="flex-1 border border-panora-warning/50 rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-panora-warning/20 bg-panora-warning-bg/30 text-right"
+                      />
+                      <span className="text-xs bg-panora-tag text-panora-warning px-2 py-0.5 rounded font-medium whitespace-nowrap">
+                        À compléter..
+                      </span>
+                    </>
+                  ) : field.status === "invalid" ? (
+                    <>
+                      <input
+                        type="text"
+                        defaultValue={field.value}
+                        className="flex-1 border border-panora-error rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-panora-error/20 text-right"
+                      />
+                      <span className="text-xs text-panora-error whitespace-nowrap">
+                        {field.error}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-panora-text text-right">
+                      {field.value}
                     </span>
-                  </div>
-                ) : field.status === "invalid" ? (
-                  <div>
-                    <input
-                      type="text"
-                      defaultValue={field.value}
-                      className="w-full border border-panora-error rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-panora-error/20"
-                    />
-                    <p className="text-xs text-panora-error mt-1">
-                      {field.error}
-                    </p>
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    defaultValue={field.value}
-                    className="w-full border border-panora-border rounded-md px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20"
-                  />
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>

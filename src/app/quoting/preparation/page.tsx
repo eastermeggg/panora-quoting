@@ -9,7 +9,9 @@ import {
   CheckCircle2,
   ListChecks,
   Building2,
+  Car,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmailBanner } from "@/components/ui/EmailBanner";
@@ -81,7 +83,7 @@ export default function PreparationPage() {
               {noInsurers && (
                 <div className="flex items-center gap-2 text-sm text-panora-warning">
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Sélectionner assureurs à solliciter</span>
+                  <span>Sélectionner assureurs à solliciter (exemple)</span>
                 </div>
               )}
               {invalidFields > 0 && (
@@ -100,12 +102,12 @@ export default function PreparationPage() {
           </div>
 
           {/* Two-column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left column - Form */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Project section */}
-              <div className="bg-panora-card border border-panora-border rounded-lg p-5">
-                <h3 className="text-sm font-semibold text-panora-text mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-panora-text mb-4">
                   Projet de cotation
                 </h3>
                 <div className="space-y-4">
@@ -124,11 +126,12 @@ export default function PreparationPage() {
                     <label className="text-xs text-panora-text-muted block mb-1.5">
                       Client
                     </label>
-                    <div className="flex items-center gap-2 border border-panora-border rounded-lg px-3 py-2.5">
+                    <div className="flex items-center gap-2 border border-panora-border rounded-lg px-3 py-2.5 cursor-pointer hover:border-panora-text-muted transition-colors">
                       <Building2 className="w-4 h-4 text-panora-text-muted" />
-                      <span className="text-sm text-panora-text">
-                        Marble Tech SAS – SIREN 00007U26464
+                      <span className="text-sm text-panora-text flex-1">
+                        Marble Tech SAS - SIREN 00007U26464
                       </span>
+                      <ChevronDown className="w-4 h-4 text-panora-text-muted" />
                     </div>
                   </div>
                   <div>
@@ -136,8 +139,9 @@ export default function PreparationPage() {
                       Produit
                     </label>
                     <div className="flex items-center gap-2 border border-panora-border rounded-lg px-3 py-2.5">
+                      <Car className="w-4 h-4 text-panora-text-muted" />
                       <span className="text-sm text-panora-text flex-1">
-                        RC Professionnelle
+                        Flotte Automobile
                       </span>
                       <button className="text-panora-text-muted hover:text-panora-text">
                         <X className="w-4 h-4" />
@@ -148,70 +152,69 @@ export default function PreparationPage() {
               </div>
 
               {/* Insurers section */}
-              <div className="bg-panora-card border border-panora-border rounded-lg p-5">
-                <h3 className="text-sm font-semibold text-panora-text mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-panora-text mb-4">
                   Assureurs à solliciter
                 </h3>
                 <InsurerSelector
                   selectedIds={selectedInsurers}
                   onToggle={handleToggleInsurer}
-                  product="RC Professionnelle"
+                  product="Flotte Automobile"
                 />
               </div>
 
               {/* Documents & Instructions */}
-              <div className="bg-panora-card border border-panora-border rounded-lg p-5">
-                <h3 className="text-sm font-semibold text-panora-text mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-panora-text mb-4">
                   Documents & instructions
                 </h3>
 
-                {/* Documents */}
-                <div className="mb-5">
-                  <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
-                    Les pièces jointes de l&apos;email sont extraites
-                    automatiquement pour remplir les champs à droite. Vous pouvez
-                    ajouter d&apos;autres documents.
-                  </p>
-                  <div className="space-y-2 mb-4">
-                    {quotingEmail.attachments.map((att) => (
-                      <div
-                        key={att.name}
-                        className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg"
-                      >
-                        <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
-                        <span className="text-sm text-panora-text truncate flex-1">
-                          {att.name}
-                        </span>
-                        <span className="text-xs text-panora-text-muted shrink-0">
-                          {att.fieldsExtracted} champs extraits
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Drop zone */}
-                  <div className="border-2 border-dashed border-panora-border rounded-lg p-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer">
-                    <Upload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
-                    <p className="text-sm text-panora-text-secondary">
-                      Glissez-déposez vos fichiers ici
-                    </p>
-                    <p className="text-xs text-panora-text-muted mt-1">
-                      ou{" "}
-                      <span className="text-panora-green font-medium cursor-pointer hover:underline">
-                        parcourir
+                {/* Documents sub-header */}
+                <h4 className="text-sm font-medium text-panora-text mb-2">
+                  Documents
+                </h4>
+                <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
+                  Les pièces jointes de l&apos;email sont extraites
+                  automatiquement pour remplir les champs à droite. Vous pouvez
+                  ajouter d&apos;autres documents.
+                </p>
+                <div className="space-y-2 mb-4">
+                  {quotingEmail.attachments.map((att) => (
+                    <div
+                      key={att.name}
+                      className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg"
+                    >
+                      <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
+                      <span className="text-sm text-panora-text truncate flex-1">
+                        {att.name}
                       </span>
-                    </p>
-                    <p className="text-xs text-panora-text-muted mt-2">
-                      PDF, images, documents — 10 Mo max par fichier
-                    </p>
-                  </div>
+                      <span className="text-xs text-panora-text-muted shrink-0">
+                        {att.fieldsExtracted} champs extraits
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Drop zone */}
+                <div className="border-2 border-dashed border-panora-border rounded-lg p-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-6">
+                  <Upload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
+                  <p className="text-sm text-panora-text-secondary">
+                    Glissez-déposez vos fichiers ici
+                  </p>
+                  <p className="text-xs text-panora-text-muted mt-1">
+                    ou{" "}
+                    <span className="text-panora-green font-medium cursor-pointer hover:underline">
+                      parcourir
+                    </span>{" "}
+                    - Contraintes fichiers, PDF, Images, Word...
+                  </p>
                 </div>
 
                 {/* Instructions */}
                 <div>
-                  <label className="text-xs text-panora-text-muted block mb-1.5">
+                  <h4 className="text-sm font-medium text-panora-text mb-1">
                     Instructions à l&apos;agent de cotation
-                  </label>
+                  </h4>
                   <p className="text-xs text-panora-text-muted mb-2 leading-relaxed">
                     Informations supplémentaires non couvertes par les champs à
                     droite. Contexte, préférences, consignes spécifiques.
@@ -219,16 +222,16 @@ export default function PreparationPage() {
                   <textarea
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
-                    placeholder="Ex: Le client veut absolument moins cher que le contrat actuel / Ex : Privilégier les formules sans franchise dégât des eaux.. / Ex : ...."
-                    rows={4}
-                    className="w-full border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-none placeholder:text-panora-text-muted/60"
+                    placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise dégât des eaux..\nEx : ....`}
+                    rows={5}
+                    className="w-full border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-y placeholder:text-panora-text-muted/60"
                   />
                 </div>
               </div>
             </div>
 
             {/* Right column - Extracted data */}
-            <div className="bg-panora-card border border-panora-border rounded-lg p-5">
+            <div>
               <ExtractedDataPanel />
             </div>
           </div>

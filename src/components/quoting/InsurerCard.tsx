@@ -24,8 +24,8 @@ interface InsurerCardProps {
     status: InsurerStatus;
     reference: string;
     documents?: string[];
-    pricing?: Array<{ formula: string; version: string; annual: string }>;
-    quoteInfo?: Record<string, string>;
+    pricing?: Array<{ formula: string; monthly: string; annual: string }>;
+    quoteInfo?: Array<{ label: string; value: string }>;
     alertMessage?: string;
     alertDescription?: string;
     errorMessage?: string;
@@ -38,12 +38,14 @@ interface InsurerCardProps {
       status: "success" | "error";
     }>;
   };
+  index?: number;
   defaultExpanded?: boolean;
   onViewActions?: () => void;
 }
 
 export function InsurerCard({
   insurer,
+  index,
   defaultExpanded = false,
   onViewActions,
 }: InsurerCardProps) {
@@ -115,7 +117,7 @@ export function InsurerCard({
               {insurer.pricing && insurer.pricing.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-panora-text mb-3">
-                    Tarifs / offre tarifaire
+                    Tarifs / offres obtenues
                   </h4>
                   <div className="border border-panora-border rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
@@ -124,8 +126,8 @@ export function InsurerCard({
                           <th className="text-left px-4 py-2 text-xs font-medium text-panora-text-muted">
                             Formule
                           </th>
-                          <th className="text-left px-4 py-2 text-xs font-medium text-panora-text-muted">
-                            Version tarifaire
+                          <th className="text-right px-4 py-2 text-xs font-medium text-panora-text-muted">
+                            Montant mensuel
                           </th>
                           <th className="text-right px-4 py-2 text-xs font-medium text-panora-text-muted">
                             Montant annuel
@@ -141,8 +143,8 @@ export function InsurerCard({
                             <td className="px-4 py-2.5 text-panora-text font-medium">
                               {row.formula}
                             </td>
-                            <td className="px-4 py-2.5 text-panora-text-secondary">
-                              {row.version}
+                            <td className="px-4 py-2.5 text-right text-panora-text-secondary">
+                              {row.monthly}
                             </td>
                             <td className="px-4 py-2.5 text-right text-panora-text font-medium">
                               {row.annual}
@@ -155,30 +157,36 @@ export function InsurerCard({
                 </div>
               )}
 
-              {/* Quote info */}
+              {/* Actions timeline - collapsible */}
+              <CollapsibleSection title="Dernières actions de l'agent">
+                <ActionTimeline
+                  actions={insurer.actions}
+                  onViewAll={onViewActions}
+                />
+              </CollapsibleSection>
+
+              {/* Quote info - collapsible */}
               {insurer.quoteInfo && (
-                <div>
-                  <h4 className="text-sm font-medium text-panora-text mb-3">
-                    Informations devis
-                  </h4>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 bg-panora-drop rounded-lg p-4">
-                    {Object.entries(insurer.quoteInfo).map(([key, value]) => (
-                      <div key={key}>
+                <CollapsibleSection title="Informations devis">
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+                    {insurer.quoteInfo.map((item) => (
+                      <div key={item.label}>
                         <span className="text-xs text-panora-text-muted">
-                          {key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
+                          {item.label}
                         </span>
-                        <p className="text-sm text-panora-text">{value}</p>
+                        <p className="text-sm text-panora-text">{item.value}</p>
                       </div>
                     ))}
                   </div>
-                </div>
+                </CollapsibleSection>
               )}
 
-              {/* Actions timeline */}
-              <ActionTimeline
-                actions={insurer.actions}
-                onViewAll={onViewActions}
-              />
+              {/* Paramètres devis */}
+              <CollapsibleSection title="Paramètres devis">
+                <div className="p-3 bg-panora-drop rounded-lg text-sm text-panora-text-muted">
+                  Détails des paramètres du devis...
+                </div>
+              </CollapsibleSection>
             </div>
           )}
 
@@ -212,43 +220,61 @@ export function InsurerCard({
                 </div>
               </div>
 
-              {/* Video placeholder */}
-              <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center cursor-pointer group">
-                <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                  <Play className="w-6 h-6 text-white fill-white ml-1" />
+              {/* Two-column: Video + Timeline */}
+              <div className="grid grid-cols-2 gap-5">
+                <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center cursor-pointer group">
+                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                    <Play className="w-6 h-6 text-white fill-white ml-1" />
+                  </div>
+                </div>
+                <div>
+                  <ActionTimeline
+                    actions={insurer.actions}
+                    onViewAll={onViewActions}
+                  />
                 </div>
               </div>
 
-              {/* Actions timeline */}
-              <ActionTimeline
-                actions={insurer.actions}
-                onViewAll={onViewActions}
-              />
+              {/* Paramètres devis */}
+              <CollapsibleSection title="Paramètres devis">
+                <div className="p-3 bg-panora-drop rounded-lg text-sm text-panora-text-muted">
+                  Détails des paramètres du devis...
+                </div>
+              </CollapsibleSection>
             </div>
           )}
 
           {/* In progress state */}
           {insurer.status === "in_progress" && (
             <div className="space-y-5 pt-4">
-              {/* Video placeholder */}
-              <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="relative w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {/* Two-column: Video + Timeline */}
+              <div className="grid grid-cols-2 gap-5">
+                <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="relative w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-panora-green animate-pulse" />
+                    <span className="text-xs text-white/80">
+                      Agent en cours d&apos;exécution...
+                    </span>
+                  </div>
                 </div>
-                <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-panora-green animate-pulse" />
-                  <span className="text-xs text-white/80">
-                    Agent en cours d&apos;exécution...
-                  </span>
+                <div>
+                  <ActionTimeline
+                    actions={insurer.actions}
+                    onViewAll={onViewActions}
+                  />
                 </div>
               </div>
 
-              {/* Actions timeline */}
-              <ActionTimeline
-                actions={insurer.actions}
-                onViewAll={onViewActions}
-              />
+              {/* Paramètres devis */}
+              <CollapsibleSection title="Paramètres devis">
+                <div className="p-3 bg-panora-drop rounded-lg text-sm text-panora-text-muted">
+                  Détails des paramètres du devis...
+                </div>
+              </CollapsibleSection>
             </div>
           )}
 
@@ -285,25 +311,42 @@ export function InsurerCard({
                 </div>
               </div>
 
-              {/* Actions timeline */}
-              <ActionTimeline
-                actions={insurer.actions}
-                onViewAll={onViewActions}
-              />
+              {/* Two-column: Video + Timeline */}
+              <div className="grid grid-cols-2 gap-5">
+                <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center cursor-pointer group">
+                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                    <Play className="w-6 h-6 text-white fill-white ml-1" />
+                  </div>
+                </div>
+                <div>
+                  <ActionTimeline
+                    actions={insurer.actions}
+                    onViewAll={onViewActions}
+                  />
+                </div>
+              </div>
+
+              {/* Paramètres devis */}
+              <CollapsibleSection title="Paramètres devis">
+                <div className="p-3 bg-panora-drop rounded-lg text-sm text-panora-text-muted">
+                  Détails des paramètres du devis...
+                </div>
+              </CollapsibleSection>
             </div>
           )}
-
-          {/* Collapsible sections */}
-          <div className="mt-4">
-            <CollapsibleSection title="Paramètres devis" />
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-function CollapsibleSection({ title }: { title: string }) {
+function CollapsibleSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -319,11 +362,7 @@ function CollapsibleSection({ title }: { title: string }) {
         )}
         <span className="font-medium">{title}</span>
       </button>
-      {open && (
-        <div className="mt-3 p-3 bg-panora-drop rounded-lg text-sm text-panora-text-muted">
-          Détails des paramètres du devis...
-        </div>
-      )}
+      {open && <div className="mt-3">{children}</div>}
     </div>
   );
 }
