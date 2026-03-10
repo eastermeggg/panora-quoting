@@ -17,7 +17,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { EmailBanner } from "@/components/ui/EmailBanner";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
-import { quotingEmail, cotationId } from "@/data/mock";
+import { quotingEmail, cotationId, currentUser } from "@/data/mock";
 
 export default function PreparationPage() {
   const router = useRouter();
@@ -43,13 +43,13 @@ export default function PreparationPage() {
   const noInsurers = selectedInsurers.length === 0;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen">
       <TopBar variant="preparation" cotationId={cotationId} />
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Left column - White panel, edge-to-edge */}
-        <div className="w-full lg:w-1/2 bg-white overflow-y-auto">
-          <div className="px-8 py-6">
+        {/* Left column - White panel, edge-to-edge, with sticky CTA */}
+        <div className="w-full lg:w-1/2 bg-white flex flex-col">
+          <div className="flex-1 overflow-y-auto px-8 py-6">
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-xl font-semibold text-panora-text mb-1">
@@ -59,6 +59,9 @@ export default function PreparationPage() {
                 Rassemblez ici tout ce dont les agents ont besoin pour saisir les
                 devis sur les extranets. Documents, notes, emails… l&apos;extraction
                 commence automatiquement.
+              </p>
+              <p className="text-xs text-panora-text-muted mt-2">
+                Cotation initiée par {currentUser.name} ({currentUser.email})
               </p>
             </div>
 
@@ -227,6 +230,16 @@ export default function PreparationPage() {
               </div>
             </div>
           </div>
+
+          {/* CTA button - sticky bottom of left column */}
+          <div className="shrink-0 bg-white border-t border-panora-border p-4 flex justify-end">
+            <button
+              onClick={handleLaunch}
+              className="px-6 py-2.5 bg-panora-warning text-white text-sm font-semibold rounded-lg hover:bg-panora-warning/90 transition-colors shadow-sm"
+            >
+              Lancer la cotation
+            </button>
+          </div>
         </div>
 
         {/* Right column - Beige background with cards */}
@@ -235,16 +248,6 @@ export default function PreparationPage() {
             <ExtractedDataPanel />
           </div>
         </div>
-      </div>
-
-      {/* CTA button */}
-      <div className="sticky bottom-0 bg-white border-t border-panora-border p-4 flex justify-end">
-        <button
-          onClick={handleLaunch}
-          className="px-6 py-2.5 bg-panora-warning text-white text-sm font-semibold rounded-lg hover:bg-panora-warning/90 transition-colors shadow-sm"
-        >
-          Lancer la cotation
-        </button>
       </div>
     </div>
   );
