@@ -47,24 +47,24 @@ export default function PreparationPage() {
       <TopBar variant="preparation" cotationId={cotationId} />
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Left column - White panel, edge-to-edge, with sticky CTA */}
-        <div className="w-full lg:w-1/2 bg-white flex flex-col">
-          <div className="flex-1 overflow-y-auto px-8 py-6">
-            {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-xl font-semibold text-panora-text mb-1">
-                Préparer et lancer la cotation
-              </h1>
-              <p className="text-sm text-panora-text-secondary leading-relaxed">
-                Rassemblez ici tout ce dont les agents ont besoin pour saisir les
-                devis sur les extranets. Documents, notes, emails… l&apos;extraction
-                commence automatiquement.
-              </p>
-              <p className="text-xs text-panora-text-muted mt-2">
-                Cotation initiée par {currentUser.name} ({currentUser.email})
-              </p>
-            </div>
+        {/* Left column - White panel, single scroll container with sticky header/footer */}
+        <div className="w-full lg:w-1/2 bg-white overflow-y-auto">
+          {/* Sticky header */}
+          <div className="sticky top-0 z-10 bg-white px-8 pt-6 pb-4 border-b border-panora-border">
+            <h1 className="text-xl font-semibold text-panora-text mb-1">
+              Préparer et lancer la cotation
+            </h1>
+            <p className="text-sm text-panora-text-secondary leading-relaxed">
+              Rassemblez ici tout ce dont les agents ont besoin pour saisir les
+              devis sur les extranets. Documents, notes, emails… l&apos;extraction
+              commence automatiquement.
+            </p>
+            <p className="text-xs text-panora-text-muted mt-2">
+              Cotation initiée par {currentUser.name} ({currentUser.email})
+            </p>
+          </div>
 
+          <div className="px-8 py-6">
             {/* Email banner */}
             <div className="mb-4">
               <EmailBanner subject={quotingEmail.subject} />
@@ -231,8 +231,8 @@ export default function PreparationPage() {
             </div>
           </div>
 
-          {/* CTA button - sticky bottom of left column */}
-          <div className="shrink-0 bg-white border-t border-panora-border p-4 flex justify-end">
+          {/* CTA button - sticky bottom */}
+          <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex justify-end">
             <button
               onClick={handleLaunch}
               className="px-6 py-2.5 bg-panora-warning text-white text-sm font-semibold rounded-lg hover:bg-panora-warning/90 transition-colors shadow-sm"
@@ -242,8 +242,8 @@ export default function PreparationPage() {
           </div>
         </div>
 
-        {/* Right column - Beige background with cards */}
-        <div className="w-full lg:w-1/2 overflow-y-auto">
+        {/* Right column - Beige background with white cards */}
+        <div className="w-full lg:w-1/2 bg-panora-bg overflow-y-auto">
           <div className="px-8 py-6">
             <ExtractedDataPanel />
           </div>

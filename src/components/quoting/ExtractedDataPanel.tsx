@@ -55,7 +55,7 @@ function DataSection({ section }: { section: SectionData }) {
   );
 
   return (
-    <div className="border border-panora-border rounded-lg overflow-hidden">
+    <div className="border border-panora-border rounded-lg overflow-hidden bg-white">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-panora-drop/50 transition-colors"
