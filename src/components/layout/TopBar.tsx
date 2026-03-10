@@ -23,7 +23,7 @@ export function TopBar({ variant, cotationId, title, onClose }: TopBarProps) {
   }
 
   return (
-    <div className="h-14 border-b border-panora-border bg-panora-card flex items-center px-4 gap-3">
+    <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-4 gap-3">
       <Link
         href="/quoting"
         className="flex items-center gap-1 text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
