@@ -10,7 +10,6 @@ import {
   ChevronDown,
   MoreHorizontal,
 } from "lucide-react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
 
@@ -40,13 +39,12 @@ export function Sidebar() {
   return (
     <aside className="flex flex-col w-[260px] min-h-screen bg-panora-sidebar border-r border-panora-border">
       {/* Logo */}
-      <div className="p-5 pb-3">
-        <Image
+      <div className="px-5 pt-5 pb-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/logos/panora-wordmark.svg"
           alt="Panora"
-          width={130}
-          height={28}
-          priority
+          className="h-6 w-auto"
         />
       </div>
 

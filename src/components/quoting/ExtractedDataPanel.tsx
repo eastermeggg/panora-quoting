@@ -6,7 +6,8 @@ import {
   ChevronDown,
   CheckCircle2,
   AlertTriangle,
-  Check,
+  AlertCircle,
+  Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -35,7 +36,6 @@ export function ExtractedDataPanel({
           const updatedFields = section.fields.map((field) => {
             if (field.key !== fieldKey) return field;
 
-            // Determine new status
             let newStatus: FieldStatus = "ok";
             if (!newValue.trim()) {
               newStatus = "missing";
@@ -70,7 +70,6 @@ export function ExtractedDataPanel({
             };
           });
 
-          // Recalculate section status
           const missingCount = updatedFields.filter(
             (f) => f.status === "missing"
           ).length;
@@ -98,27 +97,6 @@ export function ExtractedDataPanel({
     [onSectionsChange]
   );
 
-  const handleFieldConfirm = useCallback(
-    (sectionKey: string, fieldKey: string) => {
-      setSections((prev) => {
-        const updated = prev.map((section) => {
-          if (section.key !== sectionKey) return section;
-
-          const updatedFields = section.fields.map((field) => {
-            if (field.key !== fieldKey) return field;
-            if (field.status !== "ok") return field;
-            // Mark as confirmed (we use a visual cue but same status)
-            return { ...field };
-          });
-
-          return { ...section, fields: updatedFields };
-        });
-        return updated;
-      });
-    },
-    []
-  );
-
   return (
     <div>
       <h2 className="text-base font-semibold text-panora-text mb-1">
@@ -137,9 +115,6 @@ export function ExtractedDataPanel({
             onFieldChange={(fieldKey, value) =>
               handleFieldChange(section.key, fieldKey, value)
             }
-            onFieldConfirm={(fieldKey) =>
-              handleFieldConfirm(section.key, fieldKey)
-            }
           />
         ))}
       </div>
@@ -150,11 +125,9 @@ export function ExtractedDataPanel({
 function DataSection({
   section,
   onFieldChange,
-  onFieldConfirm,
 }: {
   section: ExtractedSection;
   onFieldChange: (fieldKey: string, value: string) => void;
-  onFieldConfirm: (fieldKey: string) => void;
 }) {
   const [expanded, setExpanded] = useState(section.status !== "complete");
 
@@ -209,7 +182,6 @@ function DataSection({
                 key={field.key}
                 field={field}
                 onChange={(value) => onFieldChange(field.key, value)}
-                onConfirm={() => onFieldConfirm(field.key)}
               />
             ))}
           </div>
@@ -219,14 +191,22 @@ function DataSection({
   );
 }
 
+function StatusIcon({ status }: { status?: FieldStatus }) {
+  if (status === "missing") {
+    return <Circle className="w-3.5 h-3.5 text-panora-warning/60 shrink-0" />;
+  }
+  if (status === "invalid") {
+    return <AlertCircle className="w-3.5 h-3.5 text-panora-error/60 shrink-0" />;
+  }
+  return <CheckCircle2 className="w-3.5 h-3.5 text-panora-green/40 shrink-0" />;
+}
+
 function FieldRow({
   field,
   onChange,
-  onConfirm,
 }: {
   field: ExtractedField;
   onChange: (value: string) => void;
-  onConfirm: () => void;
 }) {
   const [editing, setEditing] = useState(
     field.status === "missing" || field.status === "invalid"
@@ -241,9 +221,7 @@ function FieldRow({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
-    }
+    if (e.key === "Enter") handleSave();
     if (e.key === "Escape") {
       setLocalValue(field.value);
       if (field.status === "ok") setEditing(false);
@@ -254,113 +232,60 @@ function FieldRow({
   const isInvalid = field.status === "invalid";
   const isError = isMissing || isInvalid;
 
+  const inputType =
+    field.type === "email"
+      ? "email"
+      : field.type === "number"
+      ? "number"
+      : field.type === "phone"
+      ? "tel"
+      : "text";
+
   return (
-    <div className="flex items-center px-4 py-2.5 gap-3">
-      <span
-        className={cn(
-          "text-sm w-40 shrink-0",
-          isError ? "text-panora-error font-medium" : "text-panora-text-muted"
-        )}
-      >
+    <div className="flex items-center px-4 py-2.5 gap-2">
+      {/* Status icon left of label */}
+      <StatusIcon status={field.status} />
+
+      {/* Label */}
+      <span className="text-sm text-panora-text-muted shrink-0 w-40">
         {field.label}
       </span>
 
+      {/* Value / Input — right-aligned */}
       <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-        {/* Select fields */}
-        {field.type === "select" ? (
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <select
-              value={localValue}
-              onChange={(e) => {
-                setLocalValue(e.target.value);
-                onChange(e.target.value);
-              }}
-              className={cn(
-                "text-sm rounded-md px-3 py-1.5 outline-none text-right appearance-none bg-no-repeat bg-[length:16px] bg-[right_8px_center] pr-8 cursor-pointer max-w-[220px]",
-                isMissing
-                  ? "border border-panora-warning/50 bg-panora-warning-bg/30 focus:ring-2 focus:ring-panora-warning/20"
-                  : isInvalid
-                  ? "border border-panora-error bg-white focus:ring-2 focus:ring-panora-error/20"
-                  : "border border-transparent hover:border-panora-border bg-transparent focus:border-panora-green focus:ring-2 focus:ring-panora-green/20"
-              )}
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239B9590' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e")`,
-              }}
-            >
-              {isMissing && (
-                <option value="">{field.placeholder || "Sélectionner..."}</option>
-              )}
-              {field.options?.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            {isMissing && !localValue && (
-              <span className="text-xs bg-panora-tag text-panora-warning px-2 py-0.5 rounded font-medium whitespace-nowrap">
-                À compléter
-              </span>
-            )}
-          </div>
-        ) : editing || isError ? (
-          /* Editable text/email/date/number/etc fields */
+        {editing || isError ? (
           <div className="flex items-center gap-2 flex-1 justify-end">
             <input
-              type={
-                field.type === "email"
-                  ? "email"
-                  : field.type === "number"
-                  ? "number"
-                  : field.type === "phone"
-                  ? "tel"
-                  : "text"
-              }
+              type={inputType}
               value={localValue}
               onChange={(e) => setLocalValue(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
               placeholder={
-                field.placeholder ||
-                (isMissing ? "À compléter..." : undefined)
+                field.placeholder || (isMissing ? "À compléter..." : undefined)
               }
               className={cn(
                 "flex-1 rounded-md px-3 py-1.5 text-sm outline-none text-right max-w-[220px]",
                 isMissing
                   ? "border border-panora-warning/50 bg-panora-warning-bg/30 focus:ring-2 focus:ring-panora-warning/20"
                   : isInvalid
-                  ? "border border-panora-error bg-white focus:ring-2 focus:ring-panora-error/20"
+                  ? "border border-panora-error/50 bg-white focus:ring-2 focus:ring-panora-error/20"
                   : "border border-panora-green/50 bg-white focus:ring-2 focus:ring-panora-green/20"
               )}
             />
-            {isMissing && !localValue && (
-              <span className="text-xs bg-panora-tag text-panora-warning px-2 py-0.5 rounded font-medium whitespace-nowrap">
-                À compléter
-              </span>
-            )}
             {isInvalid && (
-              <span className="text-xs text-panora-error whitespace-nowrap">
+              <span className="text-[11px] text-panora-error whitespace-nowrap">
                 {field.error}
               </span>
             )}
-            {!isError && localValue && (
-              <button
-                onClick={handleSave}
-                className="p-1 rounded hover:bg-panora-green-light transition-colors"
-                title="Confirmer"
-              >
-                <Check className="w-3.5 h-3.5 text-panora-green" />
-              </button>
-            )}
           </div>
         ) : (
-          /* Read-only display with click-to-edit */
           <button
             onClick={() => setEditing(true)}
-            className="text-sm text-panora-text text-right hover:text-panora-green transition-colors cursor-text group flex items-center gap-1"
+            className="text-sm text-panora-text text-right hover:text-panora-green transition-colors cursor-text"
             title="Cliquer pour modifier"
           >
-            <span>{field.value}</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-panora-green/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {field.value}
           </button>
         )}
       </div>

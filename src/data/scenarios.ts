@@ -1,6 +1,6 @@
 // Scenario data: insurer × product × required fields mapping
 
-export type FieldType = "text" | "select" | "date" | "number" | "email" | "phone" | "currency" | "percentage";
+export type FieldType = "text" | "date" | "number" | "email" | "phone" | "currency" | "percentage" | "boolean";
 
 export type FieldStatus = "ok" | "missing" | "invalid";
 
@@ -11,7 +11,6 @@ export type ExtractedField = {
   type: FieldType;
   status?: FieldStatus;
   error?: string;
-  options?: string[]; // for select type
   placeholder?: string;
 };
 
@@ -160,9 +159,9 @@ const flotteAutoExtractedSections: ExtractedSection[] = [
       { key: "nb_vul", label: "Utilitaires légers (VUL)", value: "12", type: "number", status: "ok" },
       { key: "nb_pl", label: "Poids lourds (PL)", value: "4", type: "number", status: "ok" },
       { key: "nb_electriques", label: "Véhicules électriques", value: "2", type: "number", status: "ok" },
-      { key: "usage", label: "Usage principal", value: "Professionnel", type: "select", status: "ok", options: ["Professionnel", "Mixte", "Tournées commerciales", "Transport de marchandises"] },
+      { key: "usage", label: "Usage principal", value: "Professionnel", type: "text", status: "ok" },
       { key: "km_moyen", label: "Km moyen annuel", value: "25 000 km", type: "text", status: "ok" },
-      { key: "stationnement", label: "Mode stationnement", value: "", type: "select", status: "missing", options: ["Garage fermé", "Parking extérieur", "Mixte (garage + extérieur)", "Voie publique"], placeholder: "Sélectionner..." },
+      { key: "stationnement", label: "Mode stationnement", value: "", type: "text", status: "missing", placeholder: "À compléter..." },
       { key: "zone_circulation", label: "Zone de circulation", value: "Île-de-France + Nord", type: "text", status: "ok" },
       { key: "ptac_max", label: "PTAC max (PL)", value: "", type: "text", status: "missing", placeholder: "Ex: 19 tonnes" },
     ],
@@ -200,7 +199,7 @@ const flotteAutoExtractedSections: ExtractedSection[] = [
     label: "Contrat actuel",
     status: "complete",
     fields: [
-      { key: "assureur_actuel", label: "Assureur actuel", value: "Axa", type: "select", status: "ok", options: ["Axa", "Allianz", "Generali", "Chubb", "MAIF", "MMA", "Groupama"] },
+      { key: "assureur_actuel", label: "Assureur actuel", value: "Axa", type: "text", status: "ok" },
       { key: "numero_contrat", label: "N° de contrat", value: "AXA-FLT-2024-8821", type: "text", status: "ok" },
       { key: "echeance", label: "Échéance", value: "15/06/2026", type: "date", status: "ok" },
       { key: "prime_annuelle", label: "Prime annuelle", value: "48 500 €", type: "currency", status: "ok" },
@@ -213,12 +212,12 @@ const flotteAutoExtractedSections: ExtractedSection[] = [
     status: "incomplete",
     missingCount: 1,
     fields: [
-      { key: "rc", label: "RC obligatoire", value: "Oui", type: "select", status: "ok", options: ["Oui", "Non"] },
+      { key: "rc", label: "RC obligatoire", value: "Oui", type: "text", status: "ok" },
       { key: "dommages_tous_accidents", label: "Dommages tous accidents", value: "Oui (VP et VUL)", type: "text", status: "ok" },
-      { key: "vol_incendie", label: "Vol / Incendie", value: "Oui", type: "select", status: "ok", options: ["Oui", "Non", "VP uniquement"] },
-      { key: "bris_glace", label: "Bris de glace", value: "Oui", type: "select", status: "ok", options: ["Oui", "Non"] },
-      { key: "assistance", label: "Assistance", value: "0 km souhaitée", type: "select", status: "ok", options: ["0 km", "25 km", "50 km", "Non souhaitée"] },
-      { key: "protection_juridique", label: "Protection juridique", value: "", type: "select", status: "missing", options: ["Oui", "Non", "À étudier"], placeholder: "Sélectionner..." },
+      { key: "vol_incendie", label: "Vol / Incendie", value: "Oui", type: "text", status: "ok" },
+      { key: "bris_glace", label: "Bris de glace", value: "Oui", type: "text", status: "ok" },
+      { key: "assistance", label: "Assistance", value: "0 km souhaitée", type: "text", status: "ok" },
+      { key: "protection_juridique", label: "Protection juridique", value: "", type: "text", status: "missing", placeholder: "À compléter..." },
       { key: "vehicule_remplacement", label: "Véhicule de remplacement", value: "Oui, durée 15 jours", type: "text", status: "ok" },
     ],
   },
@@ -303,7 +302,7 @@ const rcProExtractedSections: ExtractedSection[] = [
     fields: [
       { key: "raison_sociale", label: "Raison sociale", value: "Marble Tech SAS", type: "text", status: "ok" },
       { key: "siren", label: "SIREN", value: "00007U26464", type: "text", status: "ok" },
-      { key: "forme_juridique", label: "Forme juridique", value: "SAS", type: "select", status: "ok", options: ["SAS", "SARL", "SA", "SCI", "EURL", "Auto-entrepreneur"] },
+      { key: "forme_juridique", label: "Forme juridique", value: "SAS", type: "text", status: "ok" },
       { key: "activite", label: "Activité principale", value: "Développement logiciels SaaS B2B", type: "text", status: "ok" },
       { key: "code_naf", label: "Code NAF", value: "6201Z", type: "text", status: "ok" },
       { key: "ca", label: "Chiffre d'affaires", value: "3 200 000 €", type: "currency", status: "ok" },
@@ -321,12 +320,12 @@ const rcProExtractedSections: ExtractedSection[] = [
     fields: [
       { key: "nom", label: "Nom", value: "Meghan", type: "text", status: "ok" },
       { key: "prenom", label: "Prénom", value: "Thomas", type: "text", status: "ok" },
-      { key: "fonction", label: "Fonction", value: "Président / CEO", type: "select", status: "ok", options: ["Président / CEO", "Directeur Général", "Gérant", "Directeur Technique", "Autre"] },
+      { key: "fonction", label: "Fonction", value: "Président / CEO", type: "text", status: "ok" },
       { key: "date_naissance", label: "Date de naissance", value: "15/06/1982", type: "date", status: "ok" },
-      { key: "nationalite", label: "Nationalité", value: "Française", type: "select", status: "ok", options: ["Française", "Belge", "Suisse", "Luxembourgeoise", "Autre UE", "Hors UE"] },
+      { key: "nationalite", label: "Nationalité", value: "Française", type: "text", status: "ok" },
       { key: "email", label: "E-mail", value: "", type: "email", status: "missing", placeholder: "email@entreprise.com" },
       { key: "telephone", label: "Téléphone", value: "06 87 58 41 17", type: "phone", status: "ok" },
-      { key: "antecedents", label: "Antécédents judiciaires", value: "", type: "select", status: "missing", options: ["Aucun", "Oui — à préciser"], placeholder: "Sélectionner..." },
+      { key: "antecedents", label: "Antécédents judiciaires", value: "", type: "text", status: "missing", placeholder: "À compléter..." },
     ],
   },
   {
@@ -337,12 +336,12 @@ const rcProExtractedSections: ExtractedSection[] = [
     fields: [
       { key: "nom", label: "Nom", value: "Langlet", type: "text", status: "ok" },
       { key: "prenom", label: "Prénom", value: "Fabian", type: "text", status: "ok" },
-      { key: "fonction", label: "Fonction", value: "Directeur Technique", type: "select", status: "ok", options: ["Président / CEO", "Directeur Général", "Gérant", "Directeur Technique", "Autre"] },
+      { key: "fonction", label: "Fonction", value: "Directeur Technique", type: "text", status: "ok" },
       { key: "date_naissance", label: "Date de naissance", value: "22/09/1985", type: "date", status: "ok" },
-      { key: "nationalite", label: "Nationalité", value: "Française", type: "select", status: "ok", options: ["Française", "Belge", "Suisse", "Luxembourgeoise", "Autre UE", "Hors UE"] },
+      { key: "nationalite", label: "Nationalité", value: "Française", type: "text", status: "ok" },
       { key: "email", label: "E-mail", value: "gcdjasjshk", type: "email", status: "invalid", error: "Format email invalide" },
       { key: "telephone", label: "Téléphone", value: "06 12 34 56 78", type: "phone", status: "ok" },
-      { key: "antecedents", label: "Antécédents judiciaires", value: "Aucun", type: "select", status: "ok", options: ["Aucun", "Oui — à préciser"] },
+      { key: "antecedents", label: "Antécédents judiciaires", value: "Aucun", type: "text", status: "ok" },
     ],
   },
   {
@@ -354,10 +353,10 @@ const rcProExtractedSections: ExtractedSection[] = [
       { key: "description_activite", label: "Description détaillée", value: "Édition et hébergement de logiciels SaaS pour PME", type: "text", status: "ok" },
       { key: "nb_clients", label: "Nombre de clients actifs", value: "320", type: "number", status: "ok" },
       { key: "sous_traitance", label: "Sous-traitance", value: "Oui — Inde, 5 développeurs", type: "text", status: "ok" },
-      { key: "donnees_personnelles", label: "Traitement données perso.", value: "Oui", type: "select", status: "ok", options: ["Oui", "Non"] },
-      { key: "certifications", label: "Certifications", value: "", type: "select", status: "missing", options: ["ISO 27001", "SOC 2", "HDS", "Aucune", "Autre"], placeholder: "Sélectionner..." },
+      { key: "donnees_personnelles", label: "Traitement données perso.", value: "Oui", type: "text", status: "ok" },
+      { key: "certifications", label: "Certifications", value: "", type: "text", status: "missing", placeholder: "À compléter..." },
       { key: "hebergement", label: "Hébergement données", value: "AWS — eu-west-3 (Paris)", type: "text", status: "ok" },
-      { key: "sinistre_rc_passe", label: "Sinistre RC Pro passé", value: "", type: "select", status: "missing", options: ["Aucun", "1 sinistre", "2+ sinistres"], placeholder: "Sélectionner..." },
+      { key: "sinistre_rc_passe", label: "Sinistre RC Pro passé", value: "", type: "text", status: "missing", placeholder: "À compléter..." },
       { key: "montant_garanti", label: "Montant garanti souhaité", value: "1 000 000 €", type: "currency", status: "ok" },
     ],
   },
@@ -366,7 +365,7 @@ const rcProExtractedSections: ExtractedSection[] = [
     label: "Contrat actuel",
     status: "complete",
     fields: [
-      { key: "assureur_actuel", label: "Assureur actuel", value: "Generali", type: "select", status: "ok", options: ["Axa", "Allianz", "Generali", "Chubb", "MAIF", "Hiscox", "MMA"] },
+      { key: "assureur_actuel", label: "Assureur actuel", value: "Generali", type: "text", status: "ok" },
       { key: "numero_contrat", label: "N° de contrat", value: "GEN-2025-44102", type: "text", status: "ok" },
       { key: "echeance", label: "Échéance", value: "01/04/2026", type: "date", status: "ok" },
       { key: "prime_annuelle", label: "Prime annuelle", value: "2 340 €", type: "currency", status: "ok" },
