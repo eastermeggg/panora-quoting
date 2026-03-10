@@ -109,9 +109,6 @@ function CompletedContent({ insurer }: { insurer: InsurerData }) {
 
   return (
     <div className="space-y-5 pt-4">
-      {/* Video replay */}
-      <VideoPlaceholder />
-
       {/* Success banner */}
       <div className="flex items-center gap-3 p-3 bg-panora-green-light rounded-lg">
         <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
@@ -231,11 +228,8 @@ function ActionRequiredContent({
   const tailSteps = insurer.allSteps.slice(-4);
 
   return (
-    <div className="space-y-5 pt-4">
-      {/* Video + Alert side by side */}
-      <VideoPlaceholder />
-
-      {/* Alert banner */}
+    <div className="space-y-4 pt-4">
+      {/* Alert banner — full width on top */}
       <div className="bg-panora-warning-bg border border-panora-warning/20 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0 mt-0.5" />
@@ -246,7 +240,7 @@ function ActionRequiredContent({
             <p className="text-sm text-panora-text-secondary leading-relaxed">
               {insurer.alertDescription}
             </p>
-            <div className="flex items-center gap-3 mt-4">
+            <div className="flex items-center gap-3 mt-3">
               <a
                 href="#"
                 className="flex items-center gap-1.5 text-sm text-panora-green hover:underline font-medium"
@@ -279,6 +273,22 @@ function ActionRequiredContent({
         </div>
       </div>
 
+      {/* Video + Timeline side by side (same layout as in_progress) */}
+      <div className="grid grid-cols-2 gap-4">
+        <VideoPlaceholder />
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-medium text-panora-text-secondary">
+              Actions effectuées
+            </span>
+            <span className="text-xs text-panora-text-muted">
+              {insurer.allSteps.length} étapes
+            </span>
+          </div>
+          <LiveAgentTimeline allSteps={tailSteps} isCompleted />
+        </div>
+      </div>
+
       {/* Next action info */}
       {insurer.nextAction && (
         <div className="flex items-start gap-2 text-sm text-panora-text-muted bg-panora-drop/50 rounded-lg p-3">
@@ -293,19 +303,6 @@ function ActionRequiredContent({
           </div>
         </div>
       )}
-
-      {/* Timeline — last steps shown directly with blocking action */}
-      <div className="border-t border-panora-border pt-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm font-medium text-panora-text-secondary">
-            Actions effectuées
-          </span>
-          <span className="text-xs text-panora-text-muted">
-            {insurer.allSteps.length} étapes
-          </span>
-        </div>
-        <LiveAgentTimeline allSteps={tailSteps} isCompleted />
-      </div>
     </div>
   );
 }

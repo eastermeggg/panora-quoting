@@ -4,9 +4,9 @@
   --color-panora-green: #0D7C5F;
   --color-panora-green-light: #E8F5F0;
   --color-panora-green-dark: #0A6B51;
-  --color-panora-bg: #FAFAF8;
+  --color-panora-bg: #FAF8F5;
   --color-panora-card: #FFFFFF;
-  --color-panora-sidebar: #F5F3EF;
+  --color-panora-sidebar: #FAF8F5;
   --color-panora-error: #D94B4B;
   --color-panora-warning: #C4553A;
   --color-panora-warning-bg: #FFF3E8;
@@ -49,6 +49,8 @@ body {
 /* Serif font utility */
 .font-serif {
   font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 /* Scrollbar styling */
