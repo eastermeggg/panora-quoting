@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { TopBar } from "@/components/layout/TopBar";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
-import { currentUser } from "@/data/mock";
 import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
 import type { ExtractedSection } from "@/data/scenarios";
 
@@ -204,9 +203,6 @@ function PreparationContent() {
               devis sur les extranets. Documents, notes, emails… l&apos;extraction
               commence automatiquement.
             </p>
-            <p className="text-xs text-panora-text-muted mt-2">
-              Cotation initiée par {currentUser.name} ({currentUser.email})
-            </p>
           </div>
 
           <div className="px-8 py-6">
@@ -231,7 +227,7 @@ function PreparationContent() {
             </div>
 
             {/* Validation checklist */}
-            <div className="mb-6 bg-panora-card border border-panora-border rounded-lg p-4">
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <ListChecks className="w-4 h-4 text-panora-text-muted" />
                 <span className="text-sm font-medium text-panora-text">

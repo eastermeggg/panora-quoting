@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  ChevronRight,
-  ChevronDown,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Circle,
-} from "lucide-react";
+import { ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   ExtractedSection,
@@ -62,7 +55,7 @@ export function ExtractedDataPanel({
               error:
                 newStatus === "invalid"
                   ? field.type === "email"
-                    ? "Format email invalide"
+                    ? "Email invalide"
                     : field.type === "date"
                     ? "Date invalide"
                     : "Valeur invalide"
@@ -100,11 +93,10 @@ export function ExtractedDataPanel({
   return (
     <div>
       <h2 className="text-base font-semibold text-panora-text mb-1">
-        Données consolidées extraites pour cotation
+        Donnée consolidées extraites pour cotation
       </h2>
       <p className="text-sm text-panora-text-secondary mb-5">
-        Vérifiez, complétez ou corrigez les données extraites des documents et
-        emails.
+        Déposez tous les documents utiles à la cotation.
       </p>
 
       <div className="space-y-2">
@@ -118,6 +110,23 @@ export function ExtractedDataPanel({
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+function AlertCircleIcon({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "w-5 h-5 rounded-full flex items-center justify-center shrink-0",
+        className
+      )}
+    >
+      <span className="text-white text-xs font-bold leading-none">!</span>
     </div>
   );
 }
@@ -141,29 +150,26 @@ function DataSection({
           <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
         )}
         {section.status === "incomplete" && (
-          <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0" />
+          <AlertCircleIcon className="bg-panora-warning" />
         )}
         {section.status === "invalid" && (
-          <AlertTriangle className="w-5 h-5 text-panora-error shrink-0" />
+          <AlertCircleIcon className="bg-panora-error" />
         )}
 
         <span className="text-sm font-medium text-panora-text flex-1">
           {section.label}
         </span>
 
-        <span className="text-xs text-panora-text-muted mr-1">
-          {section.fields.length} champs
-        </span>
-
         {section.status === "incomplete" && section.missingCount! > 0 && (
           <span className="text-xs text-panora-warning mr-2">
-            {section.missingCount} à compléter
+            {section.missingCount} champ{section.missingCount! > 1 ? "s" : ""} à
+            compléter
           </span>
         )}
         {section.status === "invalid" && section.invalidCount! > 0 && (
           <span className="text-xs text-panora-error mr-2">
-            {section.invalidCount} invalide
-            {section.invalidCount! > 1 ? "s" : ""}
+            {section.invalidCount} champ{section.invalidCount! > 1 ? "s" : ""}{" "}
+            invalide{section.invalidCount! > 1 ? "s" : ""}
           </span>
         )}
 
@@ -191,16 +197,6 @@ function DataSection({
   );
 }
 
-function StatusIcon({ status }: { status?: FieldStatus }) {
-  if (status === "missing") {
-    return <Circle className="w-3.5 h-3.5 text-panora-warning/60 shrink-0" />;
-  }
-  if (status === "invalid") {
-    return <AlertCircle className="w-3.5 h-3.5 text-panora-error/60 shrink-0" />;
-  }
-  return <CheckCircle2 className="w-3.5 h-3.5 text-panora-green/40 shrink-0" />;
-}
-
 function FieldRow({
   field,
   onChange,
@@ -208,9 +204,7 @@ function FieldRow({
   field: ExtractedField;
   onChange: (value: string) => void;
 }) {
-  const [editing, setEditing] = useState(
-    field.status === "missing" || field.status === "invalid"
-  );
+  const [editing, setEditing] = useState(field.status === "invalid");
   const [localValue, setLocalValue] = useState(field.value);
 
   const handleSave = () => {
@@ -230,7 +224,6 @@ function FieldRow({
 
   const isMissing = field.status === "missing";
   const isInvalid = field.status === "invalid";
-  const isError = isMissing || isInvalid;
 
   const inputType =
     field.type === "email"
@@ -243,17 +236,30 @@ function FieldRow({
 
   return (
     <div className="flex items-center px-4 py-2.5 gap-2">
-      {/* Status icon left of label */}
-      <StatusIcon status={field.status} />
-
-      {/* Label */}
-      <span className="text-sm text-panora-text-muted shrink-0 w-40">
+      {/* Label — colored based on status */}
+      <span
+        className={cn(
+          "text-sm shrink-0 w-40",
+          isMissing
+            ? "text-panora-warning"
+            : isInvalid
+            ? "text-panora-error"
+            : "text-panora-text-muted"
+        )}
+      >
         {field.label}
       </span>
 
       {/* Value / Input — right-aligned */}
       <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-        {editing || isError ? (
+        {isMissing && !editing ? (
+          <button
+            onClick={() => setEditing(true)}
+            className="border border-panora-border rounded px-2.5 py-1 text-xs text-panora-text-muted hover:bg-panora-drop/50 transition-colors"
+          >
+            À compléter..
+          </button>
+        ) : isInvalid || editing ? (
           <div className="flex items-center gap-2 flex-1 justify-end">
             <input
               type={inputType}
@@ -265,16 +271,16 @@ function FieldRow({
                 field.placeholder || (isMissing ? "À compléter..." : undefined)
               }
               className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-sm outline-none text-right max-w-[220px]",
-                isMissing
-                  ? "border border-panora-warning/50 bg-panora-warning-bg/30 focus:ring-2 focus:ring-panora-warning/20"
-                  : isInvalid
+                "flex-1 rounded-md px-3 py-1.5 text-sm outline-none text-right max-w-[180px]",
+                isInvalid
                   ? "border border-panora-error/50 bg-white focus:ring-2 focus:ring-panora-error/20"
-                  : "border border-panora-green/50 bg-white focus:ring-2 focus:ring-panora-green/20"
+                  : isMissing
+                  ? "border border-panora-warning/50 bg-white focus:ring-2 focus:ring-panora-warning/20"
+                  : "border border-panora-border bg-white focus:ring-2 focus:ring-panora-green/20"
               )}
             />
-            {isInvalid && (
-              <span className="text-[11px] text-panora-error whitespace-nowrap">
+            {isInvalid && field.error && (
+              <span className="text-xs text-panora-error whitespace-nowrap">
                 {field.error}
               </span>
             )}
