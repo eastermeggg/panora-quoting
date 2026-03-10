@@ -44,10 +44,6 @@ export default function FollowupPage() {
     () => Object.values(statuses).filter((s) => s === "action_required").length,
     [statuses]
   );
-  const inProgress = useMemo(
-    () => Object.values(statuses).filter((s) => s === "in_progress").length,
-    [statuses]
-  );
   const total = initialInsurers.length;
   const progressPercent = (completed / total) * 100;
   const allDone = completed === total;
@@ -86,38 +82,36 @@ export default function FollowupPage() {
             ))}
           </div>
 
-          {/* Progress bar */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2.5">
-              <div className="flex-1 h-2.5 bg-panora-border/60 rounded-full overflow-hidden">
+          {/* Progress row — compact, single line */}
+          <div className="flex items-center gap-3 mb-8 flex-wrap">
+            {/* Mini progress bar + count */}
+            <div className="inline-flex items-center gap-2.5 bg-panora-drop rounded-full px-3 py-1.5">
+              <div className="w-24 h-1.5 bg-panora-border/60 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-panora-text rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-xs font-medium text-panora-text-secondary">
+              <span className="text-xs text-panora-text-secondary">
                 {completed} / {total} devis reçus
               </span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {inProgress > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-panora-border bg-panora-drop text-panora-text-secondary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-panora-green animate-pulse" />
-                  {inProgress} en cours
-                </span>
-              )}
-              {actionRequired > 0 && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
-                  {actionRequired} action requise
-                </span>
-              )}
-              {allDone && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-panora-green/30 bg-panora-green-light text-panora-green">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Toutes les cotations sont terminées
-                </span>
-              )}
-            </div>
+
+            <div className="w-px h-4 bg-panora-border" />
+
+            {actionRequired > 0 && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
+                {"{"}
+                {actionRequired}
+                {"}"} action requise
+              </span>
+            )}
+            {allDone && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-panora-green/30 bg-panora-green-light text-panora-green">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Toutes les cotations sont terminées
+              </span>
+            )}
           </div>
 
           {/* Insurer cards */}

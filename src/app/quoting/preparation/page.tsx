@@ -401,7 +401,13 @@ function PreparationContent() {
           </div>
 
           {/* CTA button - sticky bottom */}
-          <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex justify-end">
+          <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex items-center justify-end gap-3">
+            <button
+              onClick={handleLaunch}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-panora-text-secondary bg-white border border-panora-border rounded-full hover:bg-panora-btn-secondary transition-colors"
+            >
+              Simuler la cotation
+            </button>
             <button
               onClick={handleLaunch}
               className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-full transition-colors"

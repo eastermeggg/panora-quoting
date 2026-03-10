@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
+  Play,
+  Pause,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -75,13 +77,16 @@ export function InsurerCard({
           )}
 
           {currentStatus === "in_progress" && (
-            <div className="pt-4">
-              <LiveAgentTimeline
-                allSteps={insurer.allSteps}
-                initialVisible={insurer.initialVisibleSteps ?? 3}
-                stepInterval={2500}
-                onComplete={() => onStatusChange?.("completed")}
-              />
+            <div className="pt-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <VideoPlaceholder isLive />
+                <LiveAgentTimeline
+                  allSteps={insurer.allSteps}
+                  initialVisible={insurer.initialVisibleSteps ?? 3}
+                  stepInterval={2500}
+                  onComplete={() => onStatusChange?.("completed")}
+                />
+              </div>
             </div>
           )}
 
@@ -100,6 +105,9 @@ export function InsurerCard({
 function CompletedContent({ insurer }: { insurer: InsurerData }) {
   return (
     <div className="space-y-5 pt-4">
+      {/* Video replay */}
+      <VideoPlaceholder />
+
       {/* Success banner */}
       <div className="flex items-center gap-3 p-3 bg-panora-green-light rounded-lg">
         <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
@@ -223,6 +231,9 @@ function ActionRequiredContent({
 
   return (
     <div className="space-y-5 pt-4">
+      {/* Video + Alert side by side */}
+      <VideoPlaceholder />
+
       {/* Alert banner */}
       <div className="bg-panora-warning-bg border border-panora-warning/20 rounded-lg p-4">
         <div className="flex items-start gap-3">
@@ -286,6 +297,44 @@ function ActionRequiredContent({
       <CollapsibleSection title="Actions déjà effectuées">
         <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
       </CollapsibleSection>
+    </div>
+  );
+}
+
+function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <div
+      onClick={() => setPlaying(!playing)}
+      className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden cursor-pointer group"
+    >
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+
+      {/* Play/Pause button */}
+      <div className="relative w-12 h-12 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors backdrop-blur-sm">
+        {playing ? (
+          <Pause className="w-5 h-5 text-white fill-white" />
+        ) : (
+          <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+        )}
+      </div>
+
+      {/* Bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-center gap-2">
+        {isLive && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-[11px] text-white/80 font-medium">LIVE</span>
+          </div>
+        )}
+        {!isLive && (
+          <span className="text-[11px] text-white/60">Replay session agent</span>
+        )}
+        <div className="flex-1" />
+        <span className="text-[11px] text-white/40">0:00 / 2:34</span>
+      </div>
     </div>
   );
 }
