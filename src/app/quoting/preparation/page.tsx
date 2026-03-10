@@ -1,32 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   AlertTriangle,
-  Paperclip,
   Upload,
   CheckCircle2,
   ListChecks,
   Building2,
   Car,
-  X,
+  Shield,
   ChevronDown,
+  Mail,
 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
-import { EmailBanner } from "@/components/ui/EmailBanner";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
-import { quotingEmail, cotationId, currentUser } from "@/data/mock";
+import { EmailThread } from "@/components/quoting/EmailThread";
+import { currentUser } from "@/data/mock";
+import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
+import type { ExtractedSection } from "@/data/scenarios";
 
-export default function PreparationPage() {
+function PreparationContent() {
   const router = useRouter();
-  const [projectName, setProjectName] = useState("Cotation 2027");
-  const [selectedInsurers, setSelectedInsurers] = useState<string[]>([
-    "axa",
-    "generali",
-  ]);
+  const searchParams = useSearchParams();
+  const scenarioId = searchParams.get("scenario") || "rc-pro";
+  const scenario = getScenario(scenarioId) || scenarios["rc-pro"];
+
+  const [projectName, setProjectName] = useState(scenario.defaultProjectName);
+  const [selectedInsurers, setSelectedInsurers] = useState<string[]>(
+    scenario.defaultSelectedInsurers
+  );
   const [instructions, setInstructions] = useState("");
+  const [sections, setSections] = useState<ExtractedSection[]>(
+    scenario.extractedSections
+  );
+
+  const stats = useMemo(() => getValidationStats(sections), [sections]);
+  const noInsurers = selectedInsurers.length === 0;
 
   const handleToggleInsurer = (id: string) => {
     setSelectedInsurers((prev) =>
@@ -38,13 +50,14 @@ export default function PreparationPage() {
     router.push("/quoting/followup");
   };
 
-  const missingFields = 3 as number;
-  const invalidFields = 1 as number;
-  const noInsurers = selectedInsurers.length === 0;
+  const ProductIcon = scenario.productIcon === "car" ? Car : Shield;
+
+  // Aggregate all attachments from email thread
+  const allAttachments = scenario.emailThread.flatMap((e) => e.attachments);
 
   return (
     <div className="flex flex-col h-screen">
-      <TopBar variant="preparation" cotationId={cotationId} />
+      <TopBar variant="preparation" cotationId={scenario.cotationId} />
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Left column - White panel, single scroll container with sticky header/footer */}
@@ -65,9 +78,18 @@ export default function PreparationPage() {
           </div>
 
           <div className="px-8 py-6">
-            {/* Email banner */}
+            {/* Email thread banner */}
             <div className="mb-4">
-              <EmailBanner subject={quotingEmail.subject} />
+              <div className="flex items-center gap-2 bg-panora-green-light rounded-lg px-3 py-2 text-sm mb-3">
+                <Mail className="w-3.5 h-3.5 text-panora-green shrink-0" />
+                <span className="text-panora-green font-medium">
+                  Cotation initiée par e-mail
+                </span>
+                <div className="w-px h-4 bg-panora-green/20" />
+                <span className="text-panora-text-secondary truncate text-xs">
+                  {scenario.emailThread[0].subject}
+                </span>
+              </div>
             </div>
 
             {/* Validation checklist */}
@@ -79,30 +101,39 @@ export default function PreparationPage() {
                 </span>
               </div>
               <div className="space-y-2">
-                {missingFields > 0 && (
+                {stats.missingFields > 0 && (
                   <div className="flex items-center gap-2 text-sm text-panora-warning">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>{missingFields} champs requis à compléter</span>
+                    <span>
+                      {stats.missingFields} champ
+                      {stats.missingFields > 1 ? "s" : ""} requis à compléter
+                    </span>
                   </div>
                 )}
                 {noInsurers && (
                   <div className="flex items-center gap-2 text-sm text-panora-warning">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Sélectionner assureurs à solliciter (exemple)</span>
+                    <span>Sélectionner des assureurs à solliciter</span>
                   </div>
                 )}
-                {invalidFields > 0 && (
+                {stats.invalidFields > 0 && (
                   <div className="flex items-center gap-2 text-sm text-panora-error">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>{invalidFields} champ invalide</span>
+                    <span>
+                      {stats.invalidFields} champ
+                      {stats.invalidFields > 1 ? "s" : ""} invalide
+                      {stats.invalidFields > 1 ? "s" : ""}
+                    </span>
                   </div>
                 )}
-                {missingFields === 0 && invalidFields === 0 && !noInsurers && (
-                  <div className="flex items-center gap-2 text-sm text-panora-green">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Tout est prêt pour lancer la cotation</span>
-                  </div>
-                )}
+                {stats.missingFields === 0 &&
+                  stats.invalidFields === 0 &&
+                  !noInsurers && (
+                    <div className="flex items-center gap-2 text-sm text-panora-green">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Tout est prêt pour lancer la cotation</span>
+                    </div>
+                  )}
               </div>
             </div>
 
@@ -130,7 +161,7 @@ export default function PreparationPage() {
                   <div className="flex items-center gap-2 bg-white border border-panora-border rounded-lg px-3 py-2.5 cursor-pointer hover:border-panora-text-muted transition-colors">
                     <Building2 className="w-4 h-4 text-panora-text-muted" />
                     <span className="text-sm text-panora-text flex-1">
-                      Marble Tech SAS - SIREN 00007U26464
+                      {scenario.client} — SIREN {scenario.clientSiren}
                     </span>
                     <ChevronDown className="w-4 h-4 text-panora-text-muted" />
                   </div>
@@ -140,13 +171,10 @@ export default function PreparationPage() {
                     Produit
                   </label>
                   <div className="flex items-center gap-2 bg-white border border-panora-border rounded-lg px-3 py-2.5">
-                    <Car className="w-4 h-4 text-panora-text-muted" />
+                    <ProductIcon className="w-4 h-4 text-panora-text-muted" />
                     <span className="text-sm text-panora-text flex-1">
-                      Flotte Automobile
+                      {scenario.product}
                     </span>
-                    <button className="text-panora-text-muted hover:text-panora-text">
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -160,54 +188,46 @@ export default function PreparationPage() {
               <InsurerSelector
                 selectedIds={selectedInsurers}
                 onToggle={handleToggleInsurer}
-                product="Flotte Automobile"
+                product={scenario.product}
+                insurers={scenario.availableInsurers}
               />
             </div>
 
-            {/* Documents & Instructions */}
+            {/* Email thread & Documents */}
             <div>
               <h3 className="text-base font-semibold text-panora-text mb-4">
-                Documents & instructions
+                Emails & documents source
               </h3>
 
-              {/* Documents sub-header */}
-              <h4 className="text-sm font-medium text-panora-text mb-2">
-                Documents
-              </h4>
-              <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
-                Les pièces jointes de l&apos;email sont extraites
-                automatiquement pour remplir les champs à droite. Vous pouvez
-                ajouter d&apos;autres documents.
-              </p>
-              <div className="space-y-2 mb-4">
-                {quotingEmail.attachments.map((att) => (
-                  <div
-                    key={att.name}
-                    className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg"
-                  >
-                    <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
-                    <span className="text-sm text-panora-text truncate flex-1">
-                      {att.name}
-                    </span>
-                    <span className="text-xs text-panora-text-muted shrink-0">
-                      {att.fieldsExtracted} champs extraits
-                    </span>
-                  </div>
-                ))}
+              {/* Email thread */}
+              <div className="mb-5">
+                <h4 className="text-sm font-medium text-panora-text mb-2">
+                  Thread email ({scenario.emailThread.length} message
+                  {scenario.emailThread.length > 1 ? "s" : ""},{" "}
+                  {allAttachments.length} pièce
+                  {allAttachments.length > 1 ? "s" : ""} jointe
+                  {allAttachments.length > 1 ? "s" : ""})
+                </h4>
+                <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
+                  Les données du corps de l&apos;email et des pièces jointes
+                  sont extraites automatiquement pour remplir les champs à
+                  droite.
+                </p>
+                <EmailThread emails={scenario.emailThread} />
               </div>
 
-              {/* Drop zone */}
+              {/* Drop zone for additional docs */}
               <div className="border-2 border-dashed border-panora-border rounded-lg p-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-6">
                 <Upload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
                 <p className="text-sm text-panora-text-secondary">
-                  Glissez-déposez vos fichiers ici
+                  Ajouter d&apos;autres documents
                 </p>
                 <p className="text-xs text-panora-text-muted mt-1">
-                  ou{" "}
+                  Glissez-déposez ou{" "}
                   <span className="text-panora-green font-medium cursor-pointer hover:underline">
-                    parcourir
+                    parcourez
                   </span>{" "}
-                  - Contraintes fichiers, PDF, Images, Word...
+                  — PDF, images, Word
                 </p>
               </div>
 
@@ -223,7 +243,7 @@ export default function PreparationPage() {
                 <textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
-                  placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise dégât des eaux..\nEx : ....`}
+                  placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise\nEx : ....`}
                   rows={5}
                   className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-y placeholder:text-panora-text-muted/60"
                 />
@@ -245,10 +265,27 @@ export default function PreparationPage() {
         {/* Right column - Beige background with white cards */}
         <div className="w-full lg:w-1/2 bg-panora-bg overflow-y-auto">
           <div className="px-8 py-6">
-            <ExtractedDataPanel />
+            <ExtractedDataPanel
+              sections={scenario.extractedSections}
+              onSectionsChange={setSections}
+            />
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PreparationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <p className="text-sm text-panora-text-muted">Chargement…</p>
+        </div>
+      }
+    >
+      <PreparationContent />
+    </Suspense>
   );
 }

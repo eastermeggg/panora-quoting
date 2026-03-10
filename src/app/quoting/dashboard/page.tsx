@@ -15,6 +15,7 @@ import { EmailBanner } from "@/components/ui/EmailBanner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { insurers, cotationId, quotingEmail } from "@/data/mock";
+import { scenarios } from "@/data/scenarios";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -186,7 +187,7 @@ function RecapSection() {
 
             {/* Right - Extracted data */}
             <div>
-              <ExtractedDataPanel />
+              <ExtractedDataPanel sections={scenarios["rc-pro"].extractedSections} />
             </div>
           </div>
         </div>

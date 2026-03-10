@@ -7,6 +7,7 @@ import { InsurerCard } from "@/components/quoting/InsurerCard";
 import { ActionJournal } from "@/components/quoting/ActionJournal";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { insurers, cotationId, quotingEmail } from "@/data/mock";
+import { scenarios } from "@/data/scenarios";
 import Link from "next/link";
 import {
   LayoutGrid,
@@ -191,7 +192,7 @@ function RecapSection() {
 
             {/* Right - Extracted data */}
             <div>
-              <ExtractedDataPanel />
+              <ExtractedDataPanel sections={scenarios["rc-pro"].extractedSections} />
             </div>
           </div>
         </div>

@@ -3,19 +3,23 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Check, CheckSquare, Square, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { availableInsurers } from "@/data/mock";
+import { availableInsurers as defaultInsurers } from "@/data/mock";
+import type { ScenarioInsurer } from "@/data/scenarios";
 
 interface InsurerSelectorProps {
   selectedIds: string[];
   onToggle: (id: string) => void;
   product?: string;
+  insurers?: ScenarioInsurer[];
 }
 
 export function InsurerSelector({
   selectedIds,
   onToggle,
   product = "Automobile",
+  insurers,
 }: InsurerSelectorProps) {
+  const availableInsurers = insurers || defaultInsurers;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
