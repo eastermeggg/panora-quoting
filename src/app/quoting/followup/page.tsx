@@ -14,6 +14,8 @@ import {
   FileText,
   Paperclip,
   CheckCircle2,
+  Send,
+  Eye,
 } from "lucide-react";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress";
@@ -56,7 +58,7 @@ export default function FollowupPage() {
         <div className="max-w-5xl mx-auto px-6 py-8">
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
-            <h1 className="text-2xl font-semibold text-panora-text tracking-tight">
+            <h1 className="text-2xl font-semibold text-panora-text tracking-tight font-serif">
               Cotation 2027 (Nom du projet)
             </h1>
             <EmailBanner compact />
@@ -101,9 +103,7 @@ export default function FollowupPage() {
 
             {actionRequired > 0 && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
-                {"{"}
-                {actionRequired}
-                {"}"} action requise
+                {actionRequired} action{actionRequired > 1 ? "s" : ""} requise{actionRequired > 1 ? "s" : ""}
               </span>
             )}
             {allDone && (
@@ -113,6 +113,33 @@ export default function FollowupPage() {
               </span>
             )}
           </div>
+
+          {/* All done banner */}
+          {allDone && (
+            <div className="mb-6 bg-panora-green-light border border-panora-green/20 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-panora-green mb-1">
+                    Vous avez reçu tous les devis
+                  </h3>
+                  <p className="text-sm text-panora-green/80 leading-relaxed mb-4">
+                    Notre agent a packagé une comparaison détaillée prête à envoyer à votre client.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <button className="btn-primary flex items-center gap-2 px-4 py-2 text-sm font-medium">
+                      <Eye className="w-4 h-4" />
+                      Voir la comparaison
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-panora-green bg-white border border-panora-green/30 rounded-[10px] hover:bg-panora-green-light transition-all duration-200 ease-in-out">
+                      <Send className="w-4 h-4" />
+                      Partager au client
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Insurer cards */}
           <div className="space-y-3">

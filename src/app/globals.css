@@ -24,6 +24,7 @@
   --color-panora-btn-secondary-hover: #E8E3DA;
 
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Georgia", "Times New Roman", serif;
 }
 
 body {
@@ -37,10 +38,17 @@ body {
   background: linear-gradient(135deg, var(--color-panora-btn-primary) 0%, var(--color-panora-btn-primary-end) 100%);
   color: white;
   border: none;
+  border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: all 0.2s ease-in-out;
 }
 .btn-primary:hover {
   background: linear-gradient(135deg, var(--color-panora-btn-primary-hover) 0%, var(--color-panora-btn-primary-end) 100%);
+}
+
+/* Serif font utility */
+.font-serif {
+  font-family: var(--font-serif);
 }
 
 /* Scrollbar styling */

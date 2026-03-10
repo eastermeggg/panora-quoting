@@ -195,7 +195,7 @@ function PreparationContent() {
         <div className="w-full lg:w-1/2 bg-white overflow-y-auto">
           {/* Sticky header */}
           <div className="sticky top-0 z-10 bg-white px-8 pt-6 pb-4 border-b border-panora-border">
-            <h1 className="text-xl font-semibold text-panora-text mb-1">
+            <h1 className="text-xl font-semibold text-panora-text mb-1 font-serif">
               Préparer et lancer la cotation
             </h1>
             <p className="text-sm text-panora-text-secondary leading-relaxed">
@@ -404,13 +404,13 @@ function PreparationContent() {
           <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex items-center justify-end gap-3">
             <button
               onClick={handleLaunch}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-panora-text-secondary bg-white border border-panora-border rounded-full hover:bg-panora-btn-secondary transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-panora-text-secondary bg-white border border-panora-border rounded-[10px] hover:bg-panora-btn-secondary transition-all duration-200 ease-in-out"
             >
               Simuler la cotation
             </button>
             <button
               onClick={handleLaunch}
-              className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-full transition-colors"
+              className="btn-primary px-6 py-2.5 text-sm font-semibold transition-colors"
             >
               Lancer la cotation
             </button>

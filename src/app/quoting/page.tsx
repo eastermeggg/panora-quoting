@@ -32,7 +32,7 @@ export default function QuotingEmptyState() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-8 pt-12 pb-16">
           {/* Title */}
-          <h1 className="text-2xl font-semibold text-panora-text mb-2">
+          <h1 className="text-2xl font-semibold text-panora-text mb-2 font-serif">
             Bienvenue sur l&apos;assistant cotation
           </h1>
           <p className="text-sm text-panora-text-secondary mb-10 leading-relaxed max-w-lg">
@@ -90,7 +90,7 @@ export default function QuotingEmptyState() {
                     </div>
                     <button
                       onClick={() => setExtranetsConfigured(true)}
-                      className="btn-primary px-4 py-2 text-sm font-medium rounded-full transition-colors"
+                      className="btn-primary px-4 py-2 text-sm font-medium transition-colors"
                     >
                       Configurer mes accès
                     </button>
@@ -204,7 +204,7 @@ export default function QuotingEmptyState() {
                     </p>
                     <button
                       onClick={() => router.push("/email")}
-                      className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-full transition-colors"
+                      className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors"
                     >
                       <Mail className="w-4 h-4" />
                       Simuler envoi via boîte mail

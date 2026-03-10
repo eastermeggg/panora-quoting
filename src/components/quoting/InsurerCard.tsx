@@ -11,6 +11,8 @@ import {
   RefreshCw,
   Play,
   Pause,
+  X,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -36,11 +38,11 @@ export function InsurerCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="bg-white border border-panora-border/40 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] transition-shadow">
+    <div className="bg-white border border-panora-border/40 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-3 w-full px-5 py-4 text-left hover:bg-panora-drop/30 transition-colors"
+        className="flex items-center gap-3 w-full px-5 py-4 text-left hover:bg-panora-drop/30 transition-all duration-200 ease-in-out"
       >
         {expanded ? (
           <ChevronDown className="w-4 h-4 text-panora-text-muted shrink-0" />
@@ -103,6 +105,8 @@ export function InsurerCard({
 }
 
 function CompletedContent({ insurer }: { insurer: InsurerData }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   return (
     <div className="space-y-5 pt-4">
       {/* Video replay */}
@@ -131,7 +135,7 @@ function CompletedContent({ insurer }: { insurer: InsurerData }) {
             {insurer.documents.map((doc, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg cursor-pointer hover:bg-panora-border/30 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg cursor-pointer hover:bg-panora-border/30 transition-all duration-200 ease-in-out"
               >
                 <Download className="w-4 h-4 text-panora-text-muted" />
                 <span className="text-sm text-panora-text truncate">
@@ -184,31 +188,25 @@ function CompletedContent({ insurer }: { insurer: InsurerData }) {
         </div>
       )}
 
-      {/* Quote info */}
-      {insurer.quoteInfo && (
-        <div className="border-t border-panora-border pt-4">
-          <h4 className="text-sm font-medium text-panora-text mb-3">
-            Informations devis
-          </h4>
-          <div className="grid grid-cols-3 gap-x-6 gap-y-3">
-            {insurer.quoteInfo.map((item) => (
-              <div key={item.label}>
-                <span className="text-xs text-panora-text-muted">
-                  {item.label}
-                </span>
-                <p className="text-sm text-panora-text font-medium">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Open timeline drawer button */}
+      <div className="border-t border-panora-border pt-3">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="flex items-center gap-2 text-sm text-panora-text-secondary hover:text-panora-text transition-all duration-200 ease-in-out font-medium"
+        >
+          <Clock className="w-4 h-4" />
+          Voir l&apos;historique de l&apos;agent
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Completed timeline (collapsed) */}
-      <CollapsibleSection title="Historique des actions">
-        <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
-      </CollapsibleSection>
+      {/* Timeline drawer */}
+      {drawerOpen && (
+        <TimelineDrawer
+          insurer={insurer}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -228,6 +226,9 @@ function ActionRequiredContent({
       onValidate();
     }, 1500);
   };
+
+  // Show last 4 steps (including the blocking one)
+  const tailSteps = insurer.allSteps.slice(-4);
 
   return (
     <div className="space-y-5 pt-4">
@@ -257,7 +258,7 @@ function ActionRequiredContent({
                 onClick={handleValidate}
                 disabled={validating}
                 className={cn(
-                  "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-all",
+                  "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all",
                   validating && "opacity-70"
                 )}
               >
@@ -293,11 +294,63 @@ function ActionRequiredContent({
         </div>
       )}
 
-      {/* Timeline of completed steps */}
-      <CollapsibleSection title="Actions déjà effectuées">
-        <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
-      </CollapsibleSection>
+      {/* Timeline — last steps shown directly with blocking action */}
+      <div className="border-t border-panora-border pt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm font-medium text-panora-text-secondary">
+            Actions effectuées
+          </span>
+          <span className="text-xs text-panora-text-muted">
+            {insurer.allSteps.length} étapes
+          </span>
+        </div>
+        <LiveAgentTimeline allSteps={tailSteps} isCompleted />
+      </div>
     </div>
+  );
+}
+
+function TimelineDrawer({
+  insurer,
+  onClose,
+}: {
+  insurer: InsurerData;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-200 ease-in-out"
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <div className="fixed right-0 top-0 bottom-0 w-[480px] bg-panora-card shadow-2xl z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-panora-border">
+          <h2 className="text-base font-semibold text-panora-text">
+            Historique de l&apos;agent — {insurer.name}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-panora-sidebar rounded transition-all duration-200 ease-in-out"
+          >
+            <X className="w-5 h-5 text-panora-text-muted" />
+          </button>
+        </div>
+
+        {/* Video replay */}
+        <div className="px-5 pt-5">
+          <VideoPlaceholder />
+        </div>
+
+        {/* Full timeline */}
+        <div className="flex-1 overflow-y-auto px-5 py-5">
+          <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
+        </div>
+      </div>
+    </>
   );
 }
 
