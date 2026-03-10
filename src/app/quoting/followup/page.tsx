@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { EmailBanner } from "@/components/ui/EmailBanner";
 import { InsurerCard } from "@/components/quoting/InsurerCard";
-import { ActionJournal } from "@/components/quoting/ActionJournal";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
-import { insurers, cotationId, quotingEmail } from "@/data/mock";
+import { initialInsurers, cotationId, quotingEmail } from "@/data/mock";
 import { scenarios } from "@/data/scenarios";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import {
@@ -14,24 +13,44 @@ import {
   ChevronRight,
   FileText,
   Paperclip,
+  CheckCircle2,
 } from "lucide-react";
 
+type InsurerStatus = "completed" | "action_required" | "in_progress";
+
 export default function FollowupPage() {
-  const [journalOpen, setJournalOpen] = useState(false);
-  const [selectedInsurer, setSelectedInsurer] = useState<string>("");
+  const [statuses, setStatuses] = useState<Record<string, InsurerStatus>>(
+    () => {
+      const initial: Record<string, InsurerStatus> = {};
+      for (const ins of initialInsurers) {
+        initial[ins.id] = ins.status;
+      }
+      return initial;
+    }
+  );
 
-  const completed = insurers.filter((i) => i.status === "completed").length;
-  const actionRequired = insurers.filter(
-    (i) => i.status === "action_required"
-  ).length;
-  const errors = insurers.filter((i) => i.status === "error").length;
+  const handleStatusChange = useCallback(
+    (insurerId: string, newStatus: InsurerStatus) => {
+      setStatuses((prev) => ({ ...prev, [insurerId]: newStatus }));
+    },
+    []
+  );
 
-  const progressPercent = (completed / insurers.length) * 100;
-
-  const handleViewActions = (insurerName: string) => {
-    setSelectedInsurer(insurerName);
-    setJournalOpen(true);
-  };
+  const completed = useMemo(
+    () => Object.values(statuses).filter((s) => s === "completed").length,
+    [statuses]
+  );
+  const actionRequired = useMemo(
+    () => Object.values(statuses).filter((s) => s === "action_required").length,
+    [statuses]
+  );
+  const inProgress = useMemo(
+    () => Object.values(statuses).filter((s) => s === "in_progress").length,
+    [statuses]
+  );
+  const total = initialInsurers.length;
+  const progressPercent = (completed / total) * 100;
+  const allDone = completed === total;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -50,13 +69,13 @@ export default function FollowupPage() {
           {/* Tags row */}
           <div className="flex items-center gap-2 flex-wrap mb-5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
-              Nom du client ici
+              Marble Tech SAS
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
-              Nom du produit
+              RC Professionnelle
             </span>
             <div className="w-px h-5 bg-panora-border mx-1" />
-            {insurers.map((i) => (
+            {initialInsurers.map((i) => (
               <span
                 key={i.id}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm"
@@ -72,27 +91,30 @@ export default function FollowupPage() {
             <div className="flex items-center gap-3 mb-2.5">
               <div className="flex-1 h-2.5 bg-panora-border/60 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-panora-text rounded-full transition-all duration-500"
+                  className="h-full bg-panora-text rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
               <span className="text-xs font-medium text-panora-text-secondary">
-                {completed} / {insurers.length} devis reçus
+                {completed} / {total} devis reçus
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              {actionRequired > 0 && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
-                  {"{"}
-                  {actionRequired}
-                  {"}"} action requise
+              {inProgress > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-panora-border bg-panora-drop text-panora-text-secondary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-panora-green animate-pulse" />
+                  {inProgress} en cours
                 </span>
               )}
-              {errors > 0 && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-error/30 bg-panora-error-bg text-panora-error">
-                  {"{"}
-                  {errors}
-                  {"}"} erreur
+              {actionRequired > 0 && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
+                  {actionRequired} action requise
+                </span>
+              )}
+              {allDone && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-panora-green/30 bg-panora-green-light text-panora-green">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Toutes les cotations sont terminées
                 </span>
               )}
             </div>
@@ -100,13 +122,15 @@ export default function FollowupPage() {
 
           {/* Insurer cards */}
           <div className="space-y-3">
-            {insurers.map((insurer, idx) => (
+            {initialInsurers.map((insurer) => (
               <InsurerCard
                 key={insurer.id}
                 insurer={insurer}
-                index={idx + 1}
-                defaultExpanded={insurer.status === "completed"}
-                onViewActions={() => handleViewActions(insurer.name)}
+                currentStatus={statuses[insurer.id]}
+                defaultExpanded
+                onStatusChange={(newStatus) =>
+                  handleStatusChange(insurer.id, newStatus)
+                }
               />
             ))}
           </div>
@@ -117,14 +141,6 @@ export default function FollowupPage() {
           </div>
         </div>
       </div>
-
-      {/* Action Journal drawer */}
-      <ActionJournal
-        isOpen={journalOpen}
-        onClose={() => setJournalOpen(false)}
-        insurerName={selectedInsurer}
-        actions={[]}
-      />
     </div>
   );
 }
@@ -191,7 +207,9 @@ function RecapSection() {
 
             {/* Right - Extracted data */}
             <div>
-              <ExtractedDataPanel sections={scenarios["rc-pro"].extractedSections} />
+              <ExtractedDataPanel
+                sections={scenarios["rc-pro"].extractedSections}
+              />
             </div>
           </div>
         </div>

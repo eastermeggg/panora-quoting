@@ -14,7 +14,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { EmailBanner } from "@/components/ui/EmailBanner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
-import { insurers, cotationId, quotingEmail } from "@/data/mock";
+import { initialInsurers as insurers, cotationId, quotingEmail } from "@/data/mock";
 import { scenarios } from "@/data/scenarios";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";

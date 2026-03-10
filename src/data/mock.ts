@@ -40,58 +40,67 @@ SIREN: 00007U26464`,
 
 export const cotationId = "COT-2026-0142";
 
-export const insurers = [
+export type InsurerAction = {
+  date: string;
+  title: string;
+  description: string;
+  status: "success" | "error" | "in_progress" | "pending";
+};
+
+export type InsurerData = {
+  id: string;
+  name: string;
+  logo: string;
+  logoColor: string;
+  hasCode: boolean;
+  status: "completed" | "action_required" | "in_progress";
+  reference: string;
+  documents?: string[];
+  pricing?: Array<{ formula: string; monthly: string; annual: string }>;
+  quoteInfo?: Array<{ label: string; value: string }>;
+  alertMessage?: string;
+  alertDescription?: string;
+  nextAction?: string;
+  allSteps: InsurerAction[];
+  initialVisibleSteps?: number;
+};
+
+export const initialInsurers: InsurerData[] = [
   {
     id: "axa",
     name: "Axa",
     logo: "🔴",
     logoColor: "#FF1721",
     hasCode: true,
-    status: "completed" as const,
+    status: "completed",
     reference: "4RGWBWMKEB",
     documents: [
-      "Conditions_generales_Metiers_de_nom_super_long.pdf",
-      "Conditions_generales_Metiers_de_nom_super_long.pdf",
-      "Conditions_generales_Metiers_de_nom_super_long.pdf",
+      "Devis_Axa_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_RC_Pro_Axa.pdf",
+      "Tableau_Garanties_Axa.pdf",
     ],
     pricing: [
       { formula: "Essentielle", monthly: "87,71 €", annual: "810,52 €/an" },
-      { formula: "Équilibre", monthly: "XX €", annual: "XXX € / an" },
-      { formula: "Étendue", monthly: "XX €", annual: "XXX € / an" },
+      { formula: "Équilibre", monthly: "112,50 €", annual: "1 040,00 €/an" },
+      { formula: "Étendue", monthly: "145,83 €", annual: "1 350,00 €/an" },
     ],
     quoteInfo: [
-      { label: "Quote ID", value: "4RGWBWMKEB" },
-      { label: "Véhicule", value: "TESLA MODEL 3 AND" },
-      { label: "Usage", value: "Privé + Domicile travail" },
-      { label: "Client", value: "AAA 0926694730" },
-      { label: "Immatriculation", value: "CF-13b...JT" },
-      { label: "Conducteur", value: "Propriétaire" },
-      { label: "Date d'effet", value: "01/03/2026" },
-      { label: "Bonus/Malus", value: "0,5" },
-      { label: "Assureur précédent", value: "MAOCF (3 ans)" },
+      { label: "Référence devis", value: "4RGWBWMKEB" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "1 500 €" },
     ],
-    actions: [
-      { date: "28/05/25 - 18h32", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h30", title: "Action agent", description: "Référence: AXA-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h28", title: "Connexion à l'extranet", description: "Authentification réussie", status: "success" as const },
-      { date: "28/05/25 - 18h25", title: "Début", description: "Lancement de la cotation sur Axa", status: "success" as const },
-    ],
-  },
-  {
-    id: "allianz",
-    name: "Allianz",
-    logo: "🔵",
-    logoColor: "#003781",
-    hasCode: true,
-    status: "action_required" as const,
-    reference: "ALZ-2026-8841",
-    alertMessage: "Sélection des options requise sur l'extranet",
-    alertDescription: "Allianz propose 4 niveaux de franchise. L'agent ne peut pas choisir à votre place. Sélectionnez le niveau de franchise sur l'extranet pour débloquer le tarif.",
-    nextAction: "Récupération des documents de devis.",
-    actions: [
-      { date: "28/05/25 - 18h32", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Action agent", description: "Référence: GEN-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Impossible de récupérer les document, action courtier requise", description: "", status: "error" as const },
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Axa", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client Marble Tech SAS créé — Réf: AXA-CL-90124", status: "success" },
+      { date: "10/03/26 - 14h36", title: "Saisie des informations entreprise", description: "10 champs remplis — SIREN, activité, CA, effectif...", status: "success" },
+      { date: "10/03/26 - 14h38", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis avec coordonnées", status: "success" },
+      { date: "10/03/26 - 14h40", title: "Upload des documents", description: "Kbis, Bilan 2025, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "Demande de tarification", description: "3 formules demandées", status: "success" },
+      { date: "10/03/26 - 14h45", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
     ],
   },
   {
@@ -100,29 +109,72 @@ export const insurers = [
     logo: "🦁",
     logoColor: "#C8102E",
     hasCode: true,
-    status: "in_progress" as const,
+    status: "in_progress",
     reference: "GEN-2026-5523",
-    actions: [
-      { date: "28/05/25 - 18h35", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h33", title: "Action agent", description: "Référence: GEN-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h30", title: "Client créé", description: "Référence: GEN-RR-9072", status: "success" as const },
+    initialVisibleSteps: 3,
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Generali", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client créé — Réf: GEN-RR-9072", status: "success" },
+      { date: "10/03/26 - 14h36", title: "Saisie des informations entreprise", description: "10 champs remplis — SIREN, activité, CA, effectif...", status: "success" },
+      { date: "10/03/26 - 14h38", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis avec coordonnées", status: "success" },
+      { date: "10/03/26 - 14h40", title: "Upload des documents justificatifs", description: "Kbis, Bilan, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "Demande de tarification", description: "Soumission du dossier complet", status: "success" },
+      { date: "10/03/26 - 14h45", title: "Tarifs reçus — Devis récupéré", description: "2 formules disponibles — Documents téléchargés", status: "success" },
+    ],
+    documents: [
+      "Devis_Generali_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_Generali.pdf",
+    ],
+    pricing: [
+      { formula: "Standard", monthly: "95,00 €", annual: "1 140,00 €/an" },
+      { formula: "Premium", monthly: "135,00 €", annual: "1 620,00 €/an" },
+    ],
+    quoteInfo: [
+      { label: "Référence devis", value: "GEN-2026-5523" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "2 000 €" },
     ],
   },
   {
-    id: "chubb",
-    name: "Chubb",
-    logo: "⬛",
-    logoColor: "#000000",
+    id: "allianz",
+    name: "Allianz",
+    logo: "🔵",
+    logoColor: "#003781",
     hasCode: true,
-    status: "error" as const,
-    reference: "CHB-2026-1190",
-    errorMessage: "L'agent a rencontré une erreur",
-    errorDescription: "L'extranet MAIF a retourné une erreur lors de la saisie du véhicule : « Immatriculation non reconnue dans le référentiel SIV ».",
-    errorInfo: "Dernière tentative : aujourd'hui à 14:04 · 2/3 tentatives",
-    actions: [
-      { date: "28/05/25 - 18h30", title: "Action agent successfull", description: "Référence: GEN-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Action agent successfull", description: "Référence: GEN-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h35", title: "Action en erreur de l'agent juste ici", description: "", status: "error" as const },
+    status: "action_required",
+    reference: "ALZ-2026-8841",
+    alertMessage: "Sélection du niveau de franchise requise",
+    alertDescription: "Allianz propose 4 niveaux de franchise. L'agent ne peut pas choisir à votre place. Connectez-vous sur l'extranet Allianz, sélectionnez le niveau de franchise souhaité, puis cliquez sur \"J'ai validé\" ci-dessous.",
+    nextAction: "L'agent récupérera le tarif et les documents de devis.",
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Allianz", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h35", title: "Création du dossier client", description: "Client créé — Réf: ALZ-CL-8841", status: "success" },
+      { date: "10/03/26 - 14h37", title: "Saisie des informations entreprise", description: "10 champs remplis", status: "success" },
+      { date: "10/03/26 - 14h39", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis", status: "success" },
+      { date: "10/03/26 - 14h41", title: "Upload des documents", description: "Kbis, Bilan, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "En attente — Action courtier requise", description: "Sélection du niveau de franchise nécessaire sur l'extranet", status: "error" },
+    ],
+    // These get used after validation
+    documents: [
+      "Devis_Allianz_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_Allianz.pdf",
+    ],
+    pricing: [
+      { formula: "Confort", monthly: "102,00 €", annual: "1 224,00 €/an" },
+      { formula: "Confort+", monthly: "128,50 €", annual: "1 542,00 €/an" },
+    ],
+    quoteInfo: [
+      { label: "Référence devis", value: "ALZ-2026-8841" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "1 000 €" },
     ],
   },
 ];
