@@ -54,7 +54,7 @@ export function InsurerCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="bg-panora-card border border-panora-border rounded-lg overflow-hidden">
+    <div className="bg-white border border-panora-border/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}

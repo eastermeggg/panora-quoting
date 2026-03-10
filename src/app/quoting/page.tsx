@@ -5,34 +5,24 @@ import { TopBar } from "@/components/layout/TopBar";
 import {
   Check,
   Copy,
-  Play,
-  Car,
-  Shield,
   Mail,
   ArrowRight,
   Paperclip,
-  ChevronRight,
+  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { getAllScenarios } from "@/data/scenarios";
+import { useRouter } from "next/navigation";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 
 export default function QuotingEmptyState() {
   const [extranetsConfigured, setExtranetsConfigured] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const scenarioList = getAllScenarios();
+  const router = useRouter();
 
   const handleCopy = () => {
     navigator.clipboard.writeText("cotation+a7f3b2@panora.co");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const productIcons = {
-    car: Car,
-    shield: Shield,
   };
 
   return (
@@ -205,90 +195,25 @@ export default function QuotingEmptyState() {
                     </div>
                   </div>
                 )}
+
+                {/* Simulate button */}
+                {extranetsConfigured && (
+                  <div className="mt-6 pt-6 border-t border-panora-border">
+                    <p className="text-sm text-panora-text-secondary mb-3">
+                      Pas encore d&apos;email client ? Simulez l&apos;envoi pour découvrir le processus complet.
+                    </p>
+                    <button
+                      onClick={() => router.push("/email")}
+                      className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-full transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Simuler envoi via boîte mail
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Divider */}
-          {extranetsConfigured && (
-            <>
-              <div className="border-t border-panora-border mb-8" />
-
-              {/* Step 3 — Demo scenarios */}
-              <div>
-                <div className="flex items-start gap-4">
-                  <div className="w-7 h-7 rounded-full bg-panora-green text-white flex items-center justify-center shrink-0 mt-0.5 text-sm font-semibold">
-                    <Play className="w-3.5 h-3.5 fill-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-panora-text mb-1">
-                      Essayer avec un scénario de démonstration
-                    </h3>
-                    <p className="text-sm text-panora-text-secondary leading-relaxed mb-5">
-                      Choisissez un scénario pour simuler un email entrant et voir le
-                      processus de cotation de bout en bout. Chaque produit a ses propres
-                      champs et documents requis.
-                    </p>
-
-                    {/* Scenario cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {scenarioList.map((scenario) => {
-                        const Icon = productIcons[scenario.productIcon];
-                        const emailCount = scenario.emailThread.length;
-                        const attachmentCount = scenario.emailThread.reduce(
-                          (sum, e) => sum + e.attachments.length,
-                          0
-                        );
-                        const fieldCount = scenario.extractedSections.reduce(
-                          (sum, s) => sum + s.fields.length,
-                          0
-                        );
-
-                        return (
-                          <Link
-                            key={scenario.id}
-                            href={`/quoting/preparation?scenario=${scenario.id}`}
-                            className="group border border-panora-border rounded-xl p-4 bg-panora-card hover:border-panora-green/40 hover:shadow-sm transition-all"
-                          >
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-10 h-10 rounded-lg bg-panora-green-light flex items-center justify-center">
-                                <Icon className="w-5 h-5 text-panora-green" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-semibold text-panora-text">
-                                  {scenario.label}
-                                </h4>
-                                <p className="text-xs text-panora-text-muted truncate">
-                                  {scenario.client}
-                                </p>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-panora-text-muted group-hover:text-panora-green transition-colors" />
-                            </div>
-
-                            <p className="text-xs text-panora-text-secondary leading-relaxed mb-3">
-                              {scenario.description}
-                            </p>
-
-                            <div className="flex items-center gap-3 text-[11px] text-panora-text-muted">
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-3 h-3" />
-                                {emailCount} email{emailCount > 1 ? "s" : ""}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Paperclip className="w-3 h-3" />
-                                {attachmentCount} pièces jointes
-                              </span>
-                              <span>{fieldCount} champs</span>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </div>

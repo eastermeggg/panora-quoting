@@ -7,19 +7,19 @@ type Status = "completed" | "action_required" | "in_progress" | "error";
 const statusConfig: Record<Status, { label: string; className: string }> = {
   completed: {
     label: "Terminé",
-    className: "bg-gray-700 text-white",
+    className: "border border-panora-green/40 bg-panora-green-light text-panora-green",
   },
   action_required: {
     label: "Action requise",
-    className: "bg-panora-green text-white",
+    className: "border border-panora-warning/40 bg-panora-warning-bg text-panora-warning",
   },
   in_progress: {
     label: "En cours",
-    className: "bg-gray-400 text-white",
+    className: "border border-panora-border bg-panora-drop text-panora-text-secondary",
   },
   error: {
     label: "Erreur",
-    className: "bg-panora-error text-white",
+    className: "border border-panora-error/40 bg-panora-error-bg text-panora-error",
   },
 };
 

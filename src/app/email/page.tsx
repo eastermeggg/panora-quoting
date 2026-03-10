@@ -19,27 +19,102 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { emailInboxMock, quotingEmail } from "@/data/mock";
 import { useRouter } from "next/navigation";
+import { scenarios } from "@/data/scenarios";
+
+// Build email data from scenarios
+const emailDetails = [
+  {
+    id: "1",
+    scenario: scenarios["rc-pro"],
+    thread: scenarios["rc-pro"].emailThread[0],
+    from: "Marie Dupont",
+    fromEmail: "contact@marble-tech.com",
+    subject: "Cotation RC Pro - Marble Tech SAS",
+    preview: "Suite à notre échange téléphonique, je vous transmets les documents...",
+    date: "14:32",
+    unread: true,
+    hasAttachments: true,
+    starred: false,
+    avatarInitials: "MD",
+    avatarBg: "bg-purple-100",
+    avatarText: "text-purple-700",
+    scenarioId: "rc-pro",
+  },
+  {
+    id: "2",
+    scenario: scenarios["flotte-auto"],
+    thread: scenarios["flotte-auto"].emailThread[0],
+    from: "Jean Martin",
+    fromEmail: "j.martin@acme-corp.fr",
+    subject: "Renouvellement flotte automobile 2026 - ACME Corp",
+    preview: "Bonjour, nous souhaitons revoir notre contrat flotte automobile...",
+    date: "11:15",
+    unread: true,
+    hasAttachments: true,
+    starred: true,
+    avatarInitials: "JM",
+    avatarBg: "bg-blue-100",
+    avatarText: "text-blue-700",
+    scenarioId: "flotte-auto",
+  },
+  {
+    id: "3",
+    from: "Sophie Laurent",
+    fromEmail: "s.laurent@techvision.io",
+    subject: "RE: Devis RC Pro urgence",
+    preview: "Merci pour votre retour rapide. Voici les documents complémentaires...",
+    date: "Hier",
+    unread: false,
+    hasAttachments: false,
+    starred: false,
+  },
+  {
+    id: "4",
+    from: "Pierre Dubois",
+    fromEmail: "pdubois@greenway.fr",
+    subject: "Demande de cotation multirisque bureaux",
+    preview: "Nous cherchons une couverture pour nos nouveaux locaux...",
+    date: "Hier",
+    unread: false,
+    hasAttachments: true,
+    starred: false,
+  },
+  {
+    id: "5",
+    from: "Panora Support",
+    fromEmail: "support@panora.co",
+    subject: "Bienvenue sur Panora - Configuration de vos extranets",
+    preview: "Votre compte a été créé avec succès. Configurez vos accès...",
+    date: "07/03",
+    unread: false,
+    hasAttachments: false,
+    starred: false,
+  },
+];
 
 export default function EmailPage() {
   const [selectedEmail, setSelectedEmail] = useState<string | null>("1");
   const [showForwardModal, setShowForwardModal] = useState(false);
   const router = useRouter();
 
+  const selected = emailDetails.find((e) => e.id === selectedEmail);
+  const hasDetail = selected?.thread != null;
+
   const handleForward = () => {
     setShowForwardModal(true);
   };
 
   const handleSendForward = () => {
-    router.push("/quoting/preparation");
+    if (selected?.scenarioId) {
+      router.push(`/quoting/preparation?scenario=${selected.scenarioId}`);
+    }
   };
 
   return (
     <div className="flex h-screen bg-white">
       {/* Email sidebar */}
       <div className="w-[220px] bg-gray-50 border-r border-gray-200 flex flex-col">
-        {/* Email client logo */}
         <div className="p-4 flex items-center gap-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">M</span>
@@ -47,7 +122,6 @@ export default function EmailPage() {
           <span className="font-semibold text-gray-800">Mail</span>
         </div>
 
-        {/* Compose button */}
         <div className="px-3 mb-3">
           <button className="btn-primary w-full rounded-full py-2 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2">
             <FileText className="w-4 h-4" />
@@ -55,7 +129,6 @@ export default function EmailPage() {
           </button>
         </div>
 
-        {/* Folders */}
         <nav className="px-2 space-y-0.5 flex-1">
           {[
             { icon: Inbox, label: "Boîte de réception", count: 2, active: true },
@@ -90,7 +163,6 @@ export default function EmailPage() {
           ))}
         </nav>
 
-        {/* Storage indicator */}
         <div className="p-4 text-xs text-gray-400">
           2,4 Go utilisés sur 15 Go
         </div>
@@ -98,7 +170,6 @@ export default function EmailPage() {
 
       {/* Email list */}
       <div className="w-[360px] border-r border-gray-200 flex flex-col">
-        {/* Search bar */}
         <div className="p-3 border-b border-gray-200">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -110,9 +181,8 @@ export default function EmailPage() {
           </div>
         </div>
 
-        {/* Email list */}
         <div className="flex-1 overflow-y-auto">
-          {emailInboxMock.map((email) => (
+          {emailDetails.map((email) => (
             <button
               key={email.id}
               onClick={() => setSelectedEmail(email.id)}
@@ -163,7 +233,7 @@ export default function EmailPage() {
 
       {/* Email detail */}
       <div className="flex-1 flex flex-col">
-        {selectedEmail === "1" ? (
+        {hasDetail && selected ? (
           <>
             {/* Email header */}
             <div className="p-4 border-b border-gray-200">
@@ -172,7 +242,7 @@ export default function EmailPage() {
                   <ArrowLeft className="w-4 h-4 text-gray-500" />
                 </button>
                 <h2 className="text-lg font-semibold text-gray-900 flex-1">
-                  {quotingEmail.subject}
+                  {selected.thread.subject}
                 </h2>
                 <button className="p-1 hover:bg-gray-100 rounded">
                   <Star className="w-4 h-4 text-gray-400" />
@@ -183,18 +253,18 @@ export default function EmailPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                  <span className="text-purple-700 font-semibold text-sm">
-                    MD
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", selected.avatarBg)}>
+                  <span className={cn("font-semibold text-sm", selected.avatarText)}>
+                    {selected.avatarInitials}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900">
-                      {quotingEmail.fromName}
+                      {selected.thread.fromName}
                     </span>
                     <span className="text-sm text-gray-400">
-                      &lt;{quotingEmail.from}&gt;
+                      &lt;{selected.thread.fromEmail}&gt;
                     </span>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-gray-400 mt-0.5">
@@ -203,7 +273,7 @@ export default function EmailPage() {
                   </div>
                 </div>
                 <span className="text-sm text-gray-400 shrink-0">
-                  {quotingEmail.date}
+                  {selected.thread.date}
                 </span>
               </div>
             </div>
@@ -211,32 +281,34 @@ export default function EmailPage() {
             {/* Email body */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-2xl whitespace-pre-line text-sm text-gray-700 leading-relaxed">
-                {quotingEmail.body}
+                {selected.thread.body}
               </div>
 
               {/* Attachments */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-600 mb-3">
-                  {quotingEmail.attachments.length} pièces jointes
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {quotingEmail.attachments.map((att) => (
-                    <div
-                      key={att.name}
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
-                    >
-                      <Paperclip className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">
-                          {att.name}
-                        </p>
-                        <p className="text-xs text-gray-400">{att.size}</p>
+              {selected.thread.attachments.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-600 mb-3">
+                    {selected.thread.attachments.length} pièces jointes
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.thread.attachments.map((att) => (
+                      <div
+                        key={att.name}
+                        className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                      >
+                        <Paperclip className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            {att.name}
+                          </p>
+                          <p className="text-xs text-gray-400">{att.size}</p>
+                        </div>
+                        <Download className="w-3.5 h-3.5 text-gray-400" />
                       </div>
-                      <Download className="w-3.5 h-3.5 text-gray-400" />
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Action buttons */}
@@ -269,7 +341,7 @@ export default function EmailPage() {
       </div>
 
       {/* Forward Modal */}
-      {showForwardModal && (
+      {showForwardModal && selected?.thread && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl w-[520px] overflow-hidden">
             <div className="p-5 border-b border-gray-200">
@@ -294,7 +366,7 @@ export default function EmailPage() {
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="text-xs text-gray-400 mb-1">De</div>
                 <div className="text-sm text-gray-700">
-                  {quotingEmail.fromName} &lt;{quotingEmail.from}&gt;
+                  {selected.thread.fromName} &lt;{selected.thread.fromEmail}&gt;
                 </div>
               </div>
 
@@ -308,14 +380,14 @@ export default function EmailPage() {
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="text-xs text-gray-400 mb-1">Objet</div>
                 <div className="text-sm text-gray-700">
-                  Fwd: {quotingEmail.subject}
+                  Fwd: {selected.thread.subject}
                 </div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="text-xs text-gray-400 mb-1">Pièces jointes</div>
                 <div className="space-y-1">
-                  {quotingEmail.attachments.map((att) => (
+                  {selected.thread.attachments.map((att) => (
                     <div
                       key={att.name}
                       className="flex items-center gap-2 text-sm text-gray-600"

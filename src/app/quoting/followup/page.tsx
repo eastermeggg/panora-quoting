@@ -9,9 +9,7 @@ import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { insurers, cotationId, quotingEmail } from "@/data/mock";
 import { scenarios } from "@/data/scenarios";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import Link from "next/link";
 import {
-  LayoutGrid,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -26,9 +24,6 @@ export default function FollowupPage() {
   const actionRequired = insurers.filter(
     (i) => i.status === "action_required"
   ).length;
-  const inProgress = insurers.filter(
-    (i) => i.status === "in_progress"
-  ).length;
   const errors = insurers.filter((i) => i.status === "error").length;
 
   const progressPercent = (completed / insurers.length) * 100;
@@ -42,30 +37,29 @@ export default function FollowupPage() {
     <div className="flex flex-col min-h-screen">
       <TopBar variant="followup" cotationId={cotationId} />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          {/* Header row: Title + Email banner */}
-          <div className="flex items-start justify-between mb-3">
-            <h1 className="text-xl font-semibold text-panora-text">
+      <div className="flex-1 overflow-y-auto bg-panora-bg">
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-5">
+            <h1 className="text-2xl font-semibold text-panora-text tracking-tight">
               Cotation 2027 (Nom du projet)
             </h1>
-            <div className="flex items-center gap-3">
-              <EmailBanner compact />
-            </div>
+            <EmailBanner compact />
           </div>
 
           {/* Tags row */}
-          <div className="flex items-center gap-2 flex-wrap mb-4">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-panora-drop rounded-md text-xs text-panora-text-secondary">
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
               Nom du client ici
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-panora-drop rounded-md text-xs text-panora-text-secondary">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
               Nom du produit
             </span>
+            <div className="w-px h-5 bg-panora-border mx-1" />
             {insurers.map((i) => (
               <span
                 key={i.id}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-panora-drop rounded-md text-xs text-panora-text-secondary"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm"
               >
                 <InsurerLogo insurerId={i.id} name={i.name} size="sm" />
                 {i.name}
@@ -74,27 +68,31 @@ export default function FollowupPage() {
           </div>
 
           {/* Progress bar */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex-1 h-2 bg-panora-border rounded-full overflow-hidden">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2.5">
+              <div className="flex-1 h-2.5 bg-panora-border/60 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-panora-green rounded-full transition-all duration-500"
+                  className="h-full bg-panora-text rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-xs text-panora-text-muted">
+              <span className="text-xs font-medium text-panora-text-secondary">
                 {completed} / {insurers.length} devis reçus
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {actionRequired > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-panora-green-light text-panora-green">
-                  ({actionRequired}) action requise
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-warning/30 bg-panora-warning-bg text-panora-warning">
+                  {"{"}
+                  {actionRequired}
+                  {"}"} action requise
                 </span>
               )}
               {errors > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-panora-error-bg text-panora-error">
-                  ({errors}) erreur
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-panora-error/30 bg-panora-error-bg text-panora-error">
+                  {"{"}
+                  {errors}
+                  {"}"} erreur
                 </span>
               )}
             </div>
@@ -114,7 +112,7 @@ export default function FollowupPage() {
           </div>
 
           {/* Récapitulatif de la demande */}
-          <div className="mt-6">
+          <div className="mt-8">
             <RecapSection />
           </div>
         </div>
@@ -135,7 +133,7 @@ function RecapSection() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-panora-card border border-panora-border rounded-lg overflow-hidden">
+    <div className="bg-white border border-panora-border/60 rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
