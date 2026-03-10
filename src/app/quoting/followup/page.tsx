@@ -57,26 +57,25 @@ export default function FollowupPage() {
       <div className="flex-1 overflow-y-auto bg-panora-bg">
         <div className="max-w-5xl mx-auto px-6 py-8">
           {/* Header */}
-          <div className="flex items-start justify-between mb-5">
+          <div className="mb-5">
             <h1 className="text-2xl font-semibold text-panora-text tracking-tight font-serif">
               Cotation 2027 (Nom du projet)
             </h1>
-            <EmailBanner compact />
           </div>
 
           {/* Tags row */}
           <div className="flex items-center gap-2 flex-wrap mb-5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary">
               Marble Tech SAS
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary">
               RC Professionnelle
             </span>
             <div className="w-px h-5 bg-panora-border mx-1" />
             {initialInsurers.map((i) => (
               <span
                 key={i.id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary shadow-sm"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-panora-border rounded-full text-xs text-panora-text-secondary"
               >
                 <InsurerLogo insurerId={i.id} name={i.name} size="sm" />
                 {i.name}
