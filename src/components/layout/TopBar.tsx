@@ -60,7 +60,7 @@ export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewMo
   return (
     <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-4 gap-3">
       <Link
-        href="/quoting"
+        href="/quoting/dashboard"
         className="flex items-center gap-1 text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -97,7 +97,7 @@ export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewMo
       )}
 
       <Link
-        href="/quoting"
+        href="/quoting/dashboard"
         className={cn(
           "p-1 hover:bg-panora-sidebar rounded transition-colors",
           "text-panora-text-muted hover:text-panora-text"

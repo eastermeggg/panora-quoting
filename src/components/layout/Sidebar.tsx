@@ -27,7 +27,7 @@ const navItems = [
   },
   {
     label: "Assistant cotation",
-    href: "/quoting",
+    href: "/quoting/dashboard",
     icon: FileText,
     active: true,
   },
@@ -71,8 +71,9 @@ export function Sidebar() {
         </p>
         <nav className="space-y-0.5">
           {navItems.map((item) => {
+            const matchPath = item.href === "/quoting/dashboard" ? "/quoting" : item.href;
             const isActive =
-              item.href !== "#" && pathname.startsWith(item.href);
+              matchPath !== "#" && pathname.startsWith(matchPath);
             return (
               <Link
                 key={item.label}

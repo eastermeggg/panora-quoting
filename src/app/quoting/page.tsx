@@ -9,7 +9,9 @@ import {
   ArrowRight,
   Paperclip,
   Play,
+  LayoutGrid,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
@@ -28,6 +30,17 @@ export default function QuotingEmptyState() {
   return (
     <div className="flex flex-col min-h-screen">
       <TopBar variant="empty" />
+
+      {/* Quick link to dashboard if cotations already exist */}
+      <div className="px-6 pt-4">
+        <Link
+          href="/quoting/dashboard"
+          className="inline-flex items-center gap-2 text-sm text-panora-green hover:underline font-medium"
+        >
+          <LayoutGrid className="w-4 h-4" />
+          Voir mes cotations
+        </Link>
+      </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-8 pt-12 pb-16">
