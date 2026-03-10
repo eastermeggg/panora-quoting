@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { getAllScenarios } from "@/data/scenarios";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 
 export default function QuotingEmptyState() {
   const [extranetsConfigured, setExtranetsConfigured] = useState(false);
@@ -85,16 +86,16 @@ export default function QuotingEmptyState() {
                         Quand vous nous donnez vos codes, notre agent se connecte, remplit les
                         formulaires et récupère les devis — comme si vous le faisiez vous-même.
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-panora-text-muted">
-                        <span className="text-base">🔴</span> Axa
-                        <span className="text-panora-border mx-1">·</span>
-                        <span className="text-base">🔵</span> Allianz
-                        <span className="text-panora-border mx-1">·</span>
-                        <span className="text-base">🦁</span> Generali
-                        <span className="text-panora-border mx-1">·</span>
-                        <span className="text-base">⬛</span> Chubb
-                        <span className="text-panora-border mx-1">·</span>
-                        <span className="text-panora-text-muted">+12 assureurs</span>
+                      <div className="flex items-center gap-3 text-xs text-panora-text-muted">
+                        <span className="inline-flex items-center gap-1"><InsurerLogo insurerId="axa" name="Axa" size="sm" /> Axa</span>
+                        <span className="text-panora-border">·</span>
+                        <span className="inline-flex items-center gap-1"><InsurerLogo insurerId="allianz" name="Allianz" size="sm" /> Allianz</span>
+                        <span className="text-panora-border">·</span>
+                        <span className="inline-flex items-center gap-1"><InsurerLogo insurerId="generali" name="Generali" size="sm" /> Generali</span>
+                        <span className="text-panora-border">·</span>
+                        <span className="inline-flex items-center gap-1"><InsurerLogo insurerId="chubb" name="Chubb" size="sm" /> Chubb</span>
+                        <span className="text-panora-border">·</span>
+                        <span>+12 assureurs</span>
                       </div>
                     </div>
                     <button

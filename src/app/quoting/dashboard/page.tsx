@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { insurers, cotationId, quotingEmail } from "@/data/mock";
 import { scenarios } from "@/data/scenarios";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -61,7 +62,7 @@ export default function DashboardPage() {
                   key={i.id}
                   className="inline-flex items-center gap-1 px-2 py-1 bg-panora-drop rounded-md text-xs text-panora-text-secondary"
                 >
-                  <span className="text-[10px]">{i.logo}</span>
+                  <InsurerLogo insurerId={i.id} name={i.name} size="sm" />
                   {i.name}
                 </span>
               ))}
@@ -94,7 +95,7 @@ export default function DashboardPage() {
                   idx < insurers.length - 1 ? "border-b border-panora-border" : ""
                 }`}
               >
-                <span className="text-lg">{insurer.logo}</span>
+                <InsurerLogo insurerId={insurer.id} name={insurer.name} size="md" />
                 <span className="text-sm font-medium text-panora-text flex-1">
                   {insurer.name}
                 </span>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <rect width="40" height="40" rx="8" fill="#C8102E"/>
+  <!-- Lion simplified -->
+  <g transform="translate(8, 6)" fill="white">
+    <!-- Lion body -->
+    <path d="M12 4C14 2 17 1 19 3C21 1 23 2 22 5C24 4 25 6 23 8C25 7 26 9 24 11L22 13V18L20 20H16L14 18V13L12 11C10 9 11 7 13 8C11 6 12 4 14 5C12 3 10 5 12 4Z"/>
+    <!-- Mane details -->
+    <circle cx="18" cy="6" r="1" fill="#C8102E"/>
+    <!-- Crown -->
+    <path d="M15 2L17 0L19 2L21 0L23 2" stroke="white" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- GENERALI text -->
+  <text x="20" y="35" font-family="Arial, sans-serif" font-size="5.5" font-weight="700" fill="white" text-anchor="middle" letter-spacing="1.5">GENERALI</text>
+</svg>

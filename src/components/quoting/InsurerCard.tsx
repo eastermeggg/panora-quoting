@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ActionTimeline } from "@/components/ui/ActionTimeline";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress" | "error";
 
@@ -65,7 +66,7 @@ export function InsurerCard({
           <ChevronRight className="w-4 h-4 text-panora-text-muted shrink-0" />
         )}
 
-        <span className="text-xl">{insurer.logo}</span>
+        <InsurerLogo insurerId={insurer.id} name={insurer.name} size="lg" />
         <span className="text-sm font-semibold text-panora-text">
           {insurer.name}
         </span>

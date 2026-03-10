@@ -8,6 +8,7 @@ import { ActionJournal } from "@/components/quoting/ActionJournal";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { insurers, cotationId, quotingEmail } from "@/data/mock";
 import { scenarios } from "@/data/scenarios";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
 import {
   LayoutGrid,
@@ -66,7 +67,7 @@ export default function FollowupPage() {
                 key={i.id}
                 className="inline-flex items-center gap-1 px-2 py-1 bg-panora-drop rounded-md text-xs text-panora-text-secondary"
               >
-                <span className="text-[10px]">{i.logo}</span>
+                <InsurerLogo insurerId={i.id} name={i.name} size="sm" />
                 {i.name}
               </span>
             ))}

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, Check, CheckSquare, Square, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { availableInsurers as defaultInsurers } from "@/data/mock";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import type { ScenarioInsurer } from "@/data/scenarios";
 
 interface InsurerSelectorProps {
@@ -79,7 +80,7 @@ export function InsurerSelector({
                 onClick={() => onToggle(id)}
                 className="flex items-center gap-3 w-full px-3 py-2.5 bg-panora-green-light rounded-lg text-left hover:bg-panora-green-light/70 transition-colors"
               >
-                <span className="text-base">{insurer.logo}</span>
+                <InsurerLogo insurerId={insurer.id} name={insurer.name} size="sm" />
                 <span className="text-sm font-medium text-panora-text flex-1">
                   {insurer.name}
                 </span>
@@ -109,7 +110,7 @@ export function InsurerSelector({
                     isSelected && "bg-panora-green-light/50"
                   )}
                 >
-                  <span className="text-base w-5 text-center">{insurer.logo}</span>
+                  <InsurerLogo insurerId={insurer.id} name={insurer.name} size="sm" />
                   <span className="text-sm font-medium text-panora-text flex-1">
                     {insurer.name}
                   </span>
@@ -132,7 +133,7 @@ export function InsurerSelector({
                     key={insurer.id}
                     className="flex items-center gap-3 px-3 py-2.5 opacity-60"
                   >
-                    <div className="w-5 h-5 rounded bg-gray-200" />
+                    <InsurerLogo insurerId={insurer.id} name={insurer.name} size="sm" />
                     <span className="text-sm text-panora-text-muted flex-1">
                       {insurer.name}
                     </span>
