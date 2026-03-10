@@ -4,7 +4,6 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
-  AlertTriangle,
   Upload,
   CheckCircle2,
   ListChecks,
@@ -12,9 +11,12 @@ import {
   Car,
   Shield,
   ChevronDown,
-  Mail,
   Paperclip,
   Search,
+  Play,
+  ExternalLink,
+  X,
+  CloudUpload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TopBar } from "@/components/layout/TopBar";
@@ -26,11 +28,11 @@ import type { ExtractedSection } from "@/data/scenarios";
 
 // Mock clients for dropdown
 const mockClients = [
-  { id: "acme", name: "ACME Corp SAS", siren: "523 847 196" },
-  { id: "marble", name: "Marble Tech SAS", siren: "00007U26464" },
-  { id: "techvision", name: "TechVision SAS", siren: "891 234 567" },
-  { id: "greenway", name: "Greenway SARL", siren: "345 678 912" },
-  { id: "blueleaf", name: "BlueLeaf Industries SA", siren: "456 789 123" },
+  { id: "acme", name: "ACME Corp SAS", siren: "523 847 196", color: "bg-purple-600" },
+  { id: "marble", name: "Marble Tech SAS", siren: "00007U26464", color: "bg-blue-600" },
+  { id: "techvision", name: "TechVision SAS", siren: "891 234 567", color: "bg-emerald-600" },
+  { id: "greenway", name: "Greenway SARL", siren: "345 678 912", color: "bg-amber-600" },
+  { id: "blueleaf", name: "BlueLeaf Industries SA", siren: "456 789 123", color: "bg-sky-600" },
 ];
 
 // Mock products for dropdown
@@ -42,24 +44,32 @@ const mockProducts = [
   { id: "dommages", name: "Dommages aux Biens", icon: "shield" },
 ];
 
-function SearchableDropdown({
-  label,
-  value,
-  icon: Icon,
-  items,
+/* ── Client Logo (colored square with initial) ── */
+function ClientLogo({ name, color }: { name: string; color: string }) {
+  return (
+    <div
+      className={cn(
+        "w-6 h-6 rounded text-white text-[11px] font-bold flex items-center justify-center shrink-0",
+        color
+      )}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+/* ── Searchable dropdown for Client ── */
+function ClientDropdown({
+  selectedId,
   onSelect,
-  renderItem,
 }: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  items: Array<{ id: string; display: string }>;
+  selectedId: string;
   onSelect: (id: string) => void;
-  renderItem: (item: { id: string; display: string }) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const current = mockClients.find((c) => c.id === selectedId)!;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -72,22 +82,24 @@ function SearchableDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const filtered = items.filter((i) =>
-    i.display.toLowerCase().includes(search.toLowerCase())
+  const filtered = mockClients.filter((c) =>
+    `${c.name} ${c.siren}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div ref={ref} className="relative">
-      <label className="text-xs text-panora-text-muted block mb-1.5">
-        {label}
+      <label className="text-xs font-medium text-panora-text block mb-1.5">
+        Client
       </label>
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-left hover:border-panora-text-muted transition-colors"
+          className="flex items-center gap-2.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-left hover:border-panora-text-muted transition-colors"
         >
-          <Icon className="w-4 h-4 text-panora-text-muted" />
-          <span className="text-sm text-panora-text flex-1">{value}</span>
+          <ClientLogo name={current.name} color={current.color} />
+          <span className="text-sm text-panora-text flex-1">
+            {current.name} - SIREN {current.siren}
+          </span>
           <ChevronDown className="w-4 h-4 text-panora-text-muted" />
         </button>
       ) : (
@@ -98,7 +110,7 @@ function SearchableDropdown({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
-            placeholder="Rechercher..."
+            placeholder="Rechercher un client..."
             className="w-full bg-white border border-panora-green rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none ring-2 ring-panora-green/20"
           />
         </div>
@@ -106,17 +118,23 @@ function SearchableDropdown({
       {open && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-panora-border rounded-lg shadow-lg z-20 overflow-hidden">
           <div className="max-h-[200px] overflow-y-auto">
-            {filtered.map((item) => (
+            {filtered.map((c) => (
               <button
-                key={item.id}
+                key={c.id}
                 onClick={() => {
-                  onSelect(item.id);
+                  onSelect(c.id);
                   setOpen(false);
                   setSearch("");
                 }}
-                className="flex items-center gap-2 w-full px-3 py-2.5 text-left text-sm hover:bg-panora-tag/50 transition-colors"
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-sm hover:bg-panora-tag/50 transition-colors",
+                  c.id === selectedId && "bg-panora-green-light/50"
+                )}
               >
-                {renderItem(item)}
+                <ClientLogo name={c.name} color={c.color} />
+                <span className="text-panora-text">
+                  {c.name} - SIREN {c.siren}
+                </span>
               </button>
             ))}
             {filtered.length === 0 && (
@@ -139,7 +157,7 @@ function PreparationContent() {
 
   const [projectName, setProjectName] = useState(scenario.defaultProjectName);
   const [selectedClient, setSelectedClient] = useState(
-    mockClients.find((c) => c.name === scenario.client)?.id || mockClients[0].id
+    mockClients.find((c) => c.name === scenario.client)?.id || mockClients[1].id
   );
   const [selectedProduct, setSelectedProduct] = useState(scenarioId);
   const [selectedInsurers, setSelectedInsurers] = useState<string[]>(
@@ -163,10 +181,8 @@ function PreparationContent() {
     router.push("/quoting/followup");
   };
 
-  const currentClient = mockClients.find((c) => c.id === selectedClient)!;
   const currentProduct = mockProducts.find((p) => p.id === selectedProduct);
-  const ProductIcon =
-    currentProduct?.icon === "car" ? Car : Shield;
+  const ProductIcon = currentProduct?.icon === "car" ? Car : Shield;
 
   // Aggregate all attachments from email thread
   const allAttachments = scenario.emailThread.flatMap((e) => e.attachments);
@@ -195,16 +211,22 @@ function PreparationContent() {
 
           <div className="px-8 py-6">
             {/* Email banner */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 bg-panora-green-light rounded-lg px-3 py-2 text-sm">
-                <Mail className="w-3.5 h-3.5 text-panora-green shrink-0" />
-                <span className="text-panora-green font-medium">
+            <div className="mb-5">
+              <div className="flex items-center gap-2 bg-panora-green-light rounded-lg px-3 py-2.5 text-sm">
+                <div className="w-5 h-5 rounded-full bg-panora-green flex items-center justify-center shrink-0">
+                  <Play className="w-2.5 h-2.5 text-white fill-white ml-0.5" />
+                </div>
+                <span className="text-panora-text font-medium">
                   Cotation initiée par e-mail
                 </span>
-                <div className="w-px h-4 bg-panora-green/20" />
-                <span className="text-panora-text-secondary truncate text-xs">
-                  {scenario.emailThread[0].subject}
+                <div className="flex-1" />
+                <span className="text-panora-text-secondary text-xs truncate max-w-[200px]">
+                  Objet: {scenario.emailThread[0].subject}
                 </span>
+                <button className="text-panora-green hover:underline text-xs font-medium flex items-center gap-1 shrink-0">
+                  Voir
+                  <ExternalLink className="w-3 h-3" />
+                </button>
               </div>
             </div>
 
@@ -216,10 +238,10 @@ function PreparationContent() {
                   Pour lancer la cotation
                 </span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {stats.missingFields > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-panora-warning">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-2.5 text-sm text-panora-warning">
+                    <span className="w-2 h-2 rounded-full bg-panora-warning shrink-0" />
                     <span>
                       {stats.missingFields} champ
                       {stats.missingFields > 1 ? "s" : ""} requis à compléter
@@ -227,14 +249,14 @@ function PreparationContent() {
                   </div>
                 )}
                 {noInsurers && (
-                  <div className="flex items-center gap-2 text-sm text-panora-warning">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Sélectionner des assureurs à solliciter</span>
+                  <div className="flex items-center gap-2.5 text-sm text-panora-warning">
+                    <span className="w-2 h-2 rounded-full bg-panora-warning shrink-0" />
+                    <span>Sélectionner assureurs à solliciter (exemple)</span>
                   </div>
                 )}
                 {stats.invalidFields > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-panora-error">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-2.5 text-sm text-panora-error">
+                    <span className="w-2 h-2 rounded-full bg-panora-error shrink-0" />
                     <span>
                       {stats.invalidFields} champ
                       {stats.invalidFields > 1 ? "s" : ""} invalide
@@ -245,8 +267,8 @@ function PreparationContent() {
                 {stats.missingFields === 0 &&
                   stats.invalidFields === 0 &&
                   !noInsurers && (
-                    <div className="flex items-center gap-2 text-sm text-panora-green">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2.5 text-sm text-panora-green">
+                      <CheckCircle2 className="w-4 h-4" />
                       <span>Tout est prêt pour lancer la cotation</span>
                     </div>
                   )}
@@ -259,8 +281,9 @@ function PreparationContent() {
                 Projet de cotation
               </h3>
               <div className="space-y-4">
+                {/* Project name */}
                 <div>
-                  <label className="text-xs text-panora-text-muted block mb-1.5">
+                  <label className="text-xs font-medium text-panora-text block mb-1.5">
                     Nom du projet
                   </label>
                   <input
@@ -271,45 +294,30 @@ function PreparationContent() {
                   />
                 </div>
 
-                {/* Client searchable dropdown */}
-                <SearchableDropdown
-                  label="Client"
-                  value={`${currentClient.name} — SIREN ${currentClient.siren}`}
-                  icon={Building2}
-                  items={mockClients.map((c) => ({
-                    id: c.id,
-                    display: `${c.name} — ${c.siren}`,
-                  }))}
+                {/* Client */}
+                <ClientDropdown
+                  selectedId={selectedClient}
                   onSelect={setSelectedClient}
-                  renderItem={(item) => (
-                    <>
-                      <Building2 className="w-4 h-4 text-panora-text-muted shrink-0" />
-                      <span className="text-panora-text">{item.display}</span>
-                    </>
-                  )}
                 />
 
-                {/* Product searchable dropdown */}
-                <SearchableDropdown
-                  label="Produit"
-                  value={currentProduct?.name || scenario.product}
-                  icon={ProductIcon}
-                  items={mockProducts.map((p) => ({
-                    id: p.id,
-                    display: p.name,
-                  }))}
-                  onSelect={setSelectedProduct}
-                  renderItem={(item) => {
-                    const prod = mockProducts.find((p) => p.id === item.id);
-                    const PIcon = prod?.icon === "car" ? Car : Shield;
-                    return (
-                      <>
-                        <PIcon className="w-4 h-4 text-panora-text-muted shrink-0" />
-                        <span className="text-panora-text">{item.display}</span>
-                      </>
-                    );
-                  }}
-                />
+                {/* Product — display field with X to clear */}
+                <div>
+                  <label className="text-xs font-medium text-panora-text block mb-1.5">
+                    Produit
+                  </label>
+                  <div className="flex items-center gap-2.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5">
+                    <ProductIcon className="w-4 h-4 text-panora-text-muted shrink-0" />
+                    <span className="text-sm text-panora-text flex-1">
+                      {currentProduct?.name || scenario.product}
+                    </span>
+                    <button
+                      onClick={() => setSelectedProduct("")}
+                      className="p-0.5 hover:bg-panora-tag rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-panora-text-muted" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -332,28 +340,27 @@ function PreparationContent() {
                 Documents & instructions
               </h3>
 
-              {/* Documents list */}
+              {/* Documents */}
               <h4 className="text-sm font-medium text-panora-text mb-2">
-                Documents ({allAttachments.length})
+                Documents
               </h4>
               <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
                 Les pièces jointes de l&apos;email sont extraites
                 automatiquement pour remplir les champs à droite.
+                <br />
+                Vous pouvez ajouter d&apos;autres documents.
               </p>
-              <div className="space-y-1.5 mb-4">
+              <div className="space-y-1 mb-5">
                 {allAttachments.map((att) => (
                   <div
                     key={att.name}
-                    className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg"
+                    className="flex items-center gap-2.5 py-2"
                   >
-                    <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
+                    <Paperclip className="w-4 h-4 text-red-400 shrink-0" />
                     <span className="text-sm text-panora-text truncate flex-1">
                       {att.name}
                     </span>
                     <span className="text-xs text-panora-text-muted shrink-0">
-                      {att.size}
-                    </span>
-                    <span className="text-xs text-panora-green font-medium shrink-0">
                       {att.fieldsExtracted} champs extraits
                     </span>
                   </div>
@@ -361,17 +368,17 @@ function PreparationContent() {
               </div>
 
               {/* Drop zone */}
-              <div className="border-2 border-dashed border-panora-border rounded-lg p-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-6">
-                <Upload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
-                <p className="text-sm text-panora-text-secondary">
-                  Ajouter d&apos;autres documents
+              <div className="border-2 border-dashed border-panora-border rounded-2xl py-8 px-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-8">
+                <CloudUpload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
+                <p className="text-sm font-medium text-panora-text">
+                  Glissez-déposez vos fichiers ici
                 </p>
                 <p className="text-xs text-panora-text-muted mt-1">
-                  Glissez-déposez ou{" "}
+                  ou{" "}
                   <span className="text-panora-green font-medium cursor-pointer hover:underline">
-                    parcourez
+                    parcourir
                   </span>{" "}
-                  — PDF, images, Word
+                  · Contraintes fichiers, PDF, Images, Word...
                 </p>
               </div>
 
@@ -380,14 +387,16 @@ function PreparationContent() {
                 <h4 className="text-sm font-medium text-panora-text mb-1">
                   Instructions à l&apos;agent de cotation
                 </h4>
-                <p className="text-xs text-panora-text-muted mb-2 leading-relaxed">
+                <p className="text-xs text-panora-text-secondary mb-2 leading-relaxed">
                   Informations supplémentaires non couvertes par les champs à
-                  droite. Contexte, préférences, consignes spécifiques.
+                  droite.
+                  <br />
+                  Contexte, préférences, consignes spécifiques.
                 </p>
                 <textarea
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
-                  placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise\nEx : ....`}
+                  placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise dégât des eaux..\nEx : .....`}
                   rows={5}
                   className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-y placeholder:text-panora-text-muted/60"
                 />
@@ -399,7 +408,7 @@ function PreparationContent() {
           <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex justify-end">
             <button
               onClick={handleLaunch}
-              className="px-6 py-2.5 bg-panora-warning text-white text-sm font-semibold rounded-lg hover:bg-panora-warning/90 transition-colors shadow-sm"
+              className="btn-primary px-6 py-2.5 text-sm font-semibold rounded-full transition-colors"
             >
               Lancer la cotation
             </button>

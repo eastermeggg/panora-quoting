@@ -231,7 +231,7 @@ export function InsurerCard({
                       >
                         Aller sur l&apos;extranet
                       </a>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-panora-green text-white text-sm font-medium rounded-lg hover:bg-panora-green-dark transition-colors">
+                      <button className="btn-primary flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full transition-colors">
                         <RefreshCw className="w-3.5 h-3.5" />
                         Relancer l&apos;agent
                       </button>
@@ -335,7 +335,7 @@ export function InsurerCard({
                       >
                         Aller sur l&apos;extranet
                       </a>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-panora-green text-white text-sm font-medium rounded-lg hover:bg-panora-green-dark transition-colors">
+                      <button className="btn-primary flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full transition-colors">
                         <RefreshCw className="w-3.5 h-3.5" />
                         Relancer l&apos;agent
                       </button>

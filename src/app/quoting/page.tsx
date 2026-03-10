@@ -100,7 +100,7 @@ export default function QuotingEmptyState() {
                     </div>
                     <button
                       onClick={() => setExtranetsConfigured(true)}
-                      className="px-4 py-2 bg-panora-green text-white text-sm font-medium rounded-lg hover:bg-panora-green-dark transition-colors"
+                      className="btn-primary px-4 py-2 text-sm font-medium rounded-full transition-colors"
                     >
                       Configurer mes accès
                     </button>

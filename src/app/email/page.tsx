@@ -49,7 +49,7 @@ export default function EmailPage() {
 
         {/* Compose button */}
         <div className="px-3 mb-3">
-          <button className="w-full bg-blue-600 text-white rounded-lg py-2 px-4 text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+          <button className="btn-primary w-full rounded-full py-2 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2">
             <FileText className="w-4 h-4" />
             Nouveau message
           </button>
@@ -241,18 +241,18 @@ export default function EmailPage() {
 
             {/* Action buttons */}
             <div className="p-4 border-t border-gray-200 flex items-center gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm text-panora-text-secondary bg-white border border-panora-border rounded-full hover:bg-panora-btn-secondary transition-colors">
                 <Reply className="w-4 h-4" />
                 Répondre
               </button>
               <button
                 onClick={handleForward}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-panora-green text-white rounded-lg hover:bg-panora-green-dark transition-colors font-medium"
+                className="btn-primary flex items-center gap-2 px-4 py-2 text-sm rounded-full transition-colors font-medium"
               >
                 <Forward className="w-4 h-4" />
                 Transférer à Panora
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm text-panora-text-secondary bg-white border border-panora-border rounded-full hover:bg-panora-btn-secondary transition-colors">
                 <Clock className="w-4 h-4" />
                 Rappel
               </button>
@@ -338,7 +338,7 @@ export default function EmailPage() {
               </button>
               <button
                 onClick={handleSendForward}
-                className="flex items-center gap-2 px-5 py-2 text-sm bg-panora-green text-white rounded-lg hover:bg-panora-green-dark transition-colors font-medium"
+                className="btn-primary flex items-center gap-2 px-5 py-2 text-sm rounded-full transition-colors font-medium"
               >
                 <Send className="w-4 h-4" />
                 Envoyer à Panora

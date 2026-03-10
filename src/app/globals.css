@@ -17,6 +17,11 @@
   --color-panora-text: #1A1A1A;
   --color-panora-text-secondary: #6B6560;
   --color-panora-text-muted: #9B9590;
+  --color-panora-btn-primary: #1A3C34;
+  --color-panora-btn-primary-hover: #243D36;
+  --color-panora-btn-primary-end: #2D5A4E;
+  --color-panora-btn-secondary: #F0ECE5;
+  --color-panora-btn-secondary-hover: #E8E3DA;
 
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 }
@@ -25,6 +30,17 @@ body {
   background: var(--color-panora-bg);
   color: var(--color-panora-text);
   font-family: var(--font-sans);
+}
+
+/* Primary button: forest green gradient */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-panora-btn-primary) 0%, var(--color-panora-btn-primary-end) 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-panora-btn-primary-hover) 0%, var(--color-panora-btn-primary-end) 100%);
 }
 
 /* Scrollbar styling */
