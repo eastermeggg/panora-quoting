@@ -239,6 +239,108 @@ export const extractedData = {
   },
 };
 
+// Cotation statuses for the kanban/table view
+export type CotationStatus = "preparation" | "en_cours" | "terminee";
+
+export type CotationInsurerStatus = "completed" | "action_required" | "in_progress" | "pending";
+
+export type CotationInsurer = {
+  id: string;
+  name: string;
+  status: CotationInsurerStatus;
+  reference?: string;
+  bestPrice?: string;
+};
+
+export type Cotation = {
+  id: string;
+  cotationId: string;
+  client: string;
+  product: string;
+  productIcon: "car" | "shield" | "building";
+  createdAt: string;
+  createdVia: "email" | "manual";
+  insurers: CotationInsurer[];
+};
+
+export function getCotationStatus(cotation: Cotation): CotationStatus {
+  const statuses = cotation.insurers.map((i) => i.status);
+  if (statuses.every((s) => s === "pending")) return "preparation";
+  if (statuses.every((s) => s === "completed")) return "terminee";
+  return "en_cours";
+}
+
+export const cotationsList: Cotation[] = [
+  {
+    id: "cot-1",
+    cotationId: "COT-2026-0142",
+    client: "Marble Tech SAS",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "09/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "4RGWBWMKEB", bestPrice: "810,52 €/an" },
+      { id: "generali", name: "Generali", status: "in_progress", reference: "GEN-2026-5523" },
+      { id: "allianz", name: "Allianz", status: "action_required", reference: "ALZ-2026-8841" },
+    ],
+  },
+  {
+    id: "cot-2",
+    cotationId: "COT-2026-0139",
+    client: "Acme Corp",
+    product: "Flotte automobile",
+    productIcon: "car",
+    createdAt: "07/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-FL-2211", bestPrice: "4 200,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-FL-8877", bestPrice: "3 980,00 €/an" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-FL-1124", bestPrice: "4 450,00 €/an" },
+    ],
+  },
+  {
+    id: "cot-3",
+    cotationId: "COT-2026-0145",
+    client: "TechVision SAS",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "10/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "pending" },
+      { id: "chubb", name: "Chubb", status: "pending" },
+    ],
+  },
+  {
+    id: "cot-4",
+    cotationId: "COT-2026-0146",
+    client: "GreenWay Industries",
+    product: "Multirisque bureaux",
+    productIcon: "building",
+    createdAt: "10/03/2026",
+    createdVia: "manual",
+    insurers: [
+      { id: "axa", name: "Axa", status: "in_progress", reference: "AXA-MR-0091" },
+      { id: "maif", name: "MAIF", status: "completed", reference: "MAIF-MR-4402", bestPrice: "1 850,00 €/an" },
+      { id: "generali", name: "Generali", status: "in_progress", reference: "GEN-MR-2201" },
+    ],
+  },
+  {
+    id: "cot-5",
+    cotationId: "COT-2026-0135",
+    client: "Digital Solutions SARL",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "04/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-RC-7711", bestPrice: "920,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-RC-3302", bestPrice: "875,00 €/an" },
+    ],
+  },
+];
+
 export const emailInboxMock = [
   {
     id: "1",
