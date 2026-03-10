@@ -127,7 +127,7 @@ export default function FollowupPage() {
                 key={insurer.id}
                 insurer={insurer}
                 currentStatus={statuses[insurer.id]}
-                defaultExpanded
+                defaultExpanded={false}
                 onStatusChange={(newStatus) =>
                   handleStatusChange(insurer.id, newStatus)
                 }
@@ -149,7 +149,7 @@ function RecapSection() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-white border border-panora-border/60 rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-white border border-panora-border/40 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
