@@ -60,7 +60,7 @@ function CotationCard({ cotation }: { cotation: Cotation }) {
     .sort()[0];
 
   return (
-    <Link href="/quoting/followup">
+    <Link href={`/quoting/followup?id=${cotation.id}`}>
       <div className="bg-panora-card border border-panora-border rounded-lg p-4 hover:shadow-sm hover:border-panora-text-muted/30 transition-all cursor-pointer group">
         {/* Header: client + product */}
         <div className="flex items-start justify-between mb-3">

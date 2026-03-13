@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-panora-green: #0D7C5F;
-  --color-panora-green-light: #E8F5F0;
-  --color-panora-green-dark: #0A6B51;
-  --color-panora-bg: #FAF8F5;
+  --color-panora-green: #00a272;
+  --color-panora-green-light: #ebf3ef;
+  --color-panora-green-dark: #00784f;
+  --color-panora-green-border: #c9e8d9;
+  --color-panora-bg: #faf8f5;
   --color-panora-card: #FFFFFF;
-  --color-panora-sidebar: #FAF8F5;
-  --color-panora-error: #D94B4B;
-  --color-panora-warning: #C4553A;
+  --color-panora-sidebar: #faf8f5;
+  --color-panora-error: #952617;
+  --color-panora-warning: #cb8052;
+  --color-panora-warning-text: #80452b;
   --color-panora-warning-bg: #FFF3E8;
   --color-panora-error-bg: #FFECEC;
-  --color-panora-border: #E0DDD8;
+  --color-panora-border: #eae7e0;
+  --color-panora-secondary: #eae7e0;
   --color-panora-tag: #F0ECE5;
   --color-panora-drop: #F8F6F2;
-  --color-panora-text: #1A1A1A;
-  --color-panora-text-secondary: #6B6560;
-  --color-panora-text-muted: #9B9590;
+  --color-panora-text: #22201a;
+  --color-panora-text-primary: #162416;
+  --color-panora-text-secondary: #5c5953;
+  --color-panora-text-muted: #85827b;
   --color-panora-btn-primary: #1A3C34;
   --color-panora-btn-primary-hover: #243D36;
   --color-panora-btn-primary-end: #2D5A4E;

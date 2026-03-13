@@ -4,26 +4,23 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
-  Upload,
   CheckCircle2,
-  ListChecks,
-  Building2,
   Car,
   Shield,
   ChevronDown,
-  Paperclip,
   Search,
-  Play,
   ExternalLink,
   X,
   CloudUpload,
+  FileText,
+  ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TopBar } from "@/components/layout/TopBar";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
 import type { ExtractedSection } from "@/data/scenarios";
+import Link from "next/link";
 
 // Mock clients for dropdown
 const mockClients = [
@@ -48,7 +45,7 @@ function ClientLogo({ name, color }: { name: string; color: string }) {
   return (
     <div
       className={cn(
-        "w-6 h-6 rounded text-white text-[11px] font-bold flex items-center justify-center shrink-0",
+        "w-4 h-4 rounded text-white text-[9px] font-bold flex items-center justify-center shrink-0",
         color
       )}
     >
@@ -87,17 +84,15 @@ function ClientDropdown({
 
   return (
     <div ref={ref} className="relative">
-      <label className="text-xs font-medium text-panora-text block mb-1.5">
-        Client
-      </label>
       {!open ? (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-left hover:border-panora-text-muted transition-colors"
+          className="flex items-center gap-1.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-left shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] hover:border-panora-text-muted transition-colors"
         >
           <ClientLogo name={current.name} color={current.color} />
-          <span className="text-sm text-panora-text flex-1">
-            {current.name} - SIREN {current.siren}
+          <span className="text-[13px] text-panora-text-primary flex-1">
+            {current.name} -{" "}
+            <span className="text-panora-text-secondary">SIREN {current.siren}</span>
           </span>
           <ChevronDown className="w-4 h-4 text-panora-text-muted" />
         </button>
@@ -110,7 +105,7 @@ function ClientDropdown({
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
             placeholder="Rechercher un client..."
-            className="w-full bg-white border border-panora-green rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none ring-2 ring-panora-green/20"
+            className="w-full bg-white border border-panora-green rounded-lg pl-9 pr-4 py-2.5 text-[13px] outline-none ring-2 ring-panora-green/20"
           />
         </div>
       )}
@@ -126,7 +121,7 @@ function ClientDropdown({
                   setSearch("");
                 }}
                 className={cn(
-                  "flex items-center gap-2.5 w-full px-3 py-2.5 text-left text-sm hover:bg-panora-tag/50 transition-colors",
+                  "flex items-center gap-2 w-full px-3 py-2.5 text-left text-[13px] hover:bg-panora-tag/50 transition-colors",
                   c.id === selectedId && "bg-panora-green-light/50"
                 )}
               >
@@ -137,13 +132,36 @@ function ClientDropdown({
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="px-3 py-2.5 text-sm text-panora-text-muted">
+              <div className="px-3 py-2.5 text-[13px] text-panora-text-muted">
                 Aucun résultat
               </div>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Warning/Error badge with ! icon ── */
+function AlertBadge({ variant }: { variant: "warning" | "error" }) {
+  return (
+    <div
+      className={cn(
+        "w-5 h-5 rounded-full flex items-center justify-center shrink-0",
+        variant === "warning" ? "bg-panora-warning" : "bg-panora-error"
+      )}
+    >
+      <span className="text-white text-[10px] font-bold leading-none">!</span>
+    </div>
+  );
+}
+
+/* ── Document icon (gray square) ── */
+function DocIcon() {
+  return (
+    <div className="bg-panora-secondary rounded p-1 shrink-0">
+      <FileText className="w-3.5 h-3.5 text-panora-text-secondary" />
     </div>
   );
 }
@@ -177,133 +195,173 @@ function PreparationContent() {
   };
 
   const handleLaunch = () => {
-    router.push("/quoting/followup");
+    router.push("/quoting/followup?id=cot-1");
   };
 
   const currentProduct = mockProducts.find((p) => p.id === selectedProduct);
   const ProductIcon = currentProduct?.icon === "car" ? Car : Shield;
 
-  // Aggregate all attachments from email thread
   const allAttachments = scenario.emailThread.flatMap((e) => e.attachments);
 
   return (
-    <div className="flex flex-col h-screen">
-      <TopBar variant="preparation" cotationId={scenario.cotationId} />
-
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Left column */}
-        <div className="w-full lg:w-1/2 bg-white overflow-y-auto">
-          {/* Sticky header */}
-          <div className="sticky top-0 z-10 bg-white px-8 pt-6 pb-4 border-b border-panora-border">
-            <h1 className="text-xl font-semibold text-panora-text mb-1 font-serif">
-              Préparer et lancer la cotation
-            </h1>
-            <p className="text-sm text-panora-text-secondary leading-relaxed">
-              Rassemblez ici tout ce dont les agents ont besoin pour saisir les
-              devis sur les extranets. Documents, notes, emails… l&apos;extraction
-              commence automatiquement.
-            </p>
+    <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-panora-bg">
+        {/* Header - 44px */}
+        <div className="h-[44px] shrink-0 border-b border-panora-border flex items-center justify-between px-3">
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/quoting/dashboard"
+              className="text-[12px] text-panora-text-secondary hover:text-panora-text transition-colors"
+            >
+              ← Retour
+            </Link>
+            <div className="w-px h-[13px] bg-[#d9d9d9]" />
+            <div className="flex items-center gap-1">
+              <FileText className="w-4 h-4 text-panora-green" />
+              <span className="text-[12px] font-medium text-panora-text-primary">
+                Nouvelle cotation
+              </span>
+              <span className="text-[12px] text-panora-text-secondary">
+                {scenario.cotationId || "COT-XXX"}
+              </span>
+            </div>
           </div>
+          <Link
+            href="/quoting/dashboard"
+            className="p-1 hover:bg-panora-secondary rounded transition-colors text-panora-text-muted hover:text-panora-text"
+          >
+            <X className="w-4 h-4" />
+          </Link>
+        </div>
 
-          <div className="px-8 py-6">
-            {/* Email banner */}
-            <div className="mb-5">
-              <div className="flex items-center gap-2 bg-panora-green-light rounded-lg px-3 py-2.5 text-sm">
-                <div className="w-5 h-5 rounded-full bg-panora-green flex items-center justify-center shrink-0">
-                  <Play className="w-2.5 h-2.5 text-white fill-white ml-0.5" />
+        {/* Title area - full width, border-bottom */}
+        <div className="shrink-0 border-b border-panora-border p-6">
+          <h1 className="text-2xl text-panora-text-primary font-serif tracking-[-0.24px] leading-7 mb-3">
+            Préparer et lancer la cotation
+          </h1>
+          <p className="text-[13px] text-panora-text-secondary leading-5">
+            Rassemblez ici tout ce dont les agents ont besoin pour saisir les
+            devis sur les extranets. Documents, notes, emails… l&apos;extraction
+            commence automatiquement.
+          </p>
+        </div>
+
+        {/* Main content: two columns */}
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+          {/* Left Column */}
+          <div className="flex-1 border-r border-panora-border overflow-y-auto">
+            {/* Email banner section */}
+            <div className="bg-white border-b border-panora-border px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-panora-green flex items-center justify-center shrink-0">
+                    <svg width="8" height="10" viewBox="0 0 8 10" fill="none">
+                      <path d="M7.5 5L0.5 9.33V0.67L7.5 5Z" fill="white" />
+                    </svg>
+                  </div>
+                  <span className="text-[13px] font-medium text-panora-text">
+                    Cotation initiée par e-mail
+                  </span>
                 </div>
-                <span className="text-panora-text font-medium">
-                  Cotation initiée par e-mail
-                </span>
-                <div className="flex-1" />
-                <span className="text-panora-text-secondary text-xs truncate max-w-[200px]">
-                  Objet: {scenario.emailThread[0].subject}
-                </span>
-                <button className="text-panora-green hover:underline text-xs font-medium flex items-center gap-1 shrink-0">
-                  Voir
-                  <ExternalLink className="w-3 h-3" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] text-panora-text-secondary">
+                    Objet
+                  </span>
+                  <span className="text-[13px] text-panora-text max-w-[170px] truncate">
+                    {scenario.emailThread[0].subject}
+                  </span>
+                  <button className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline">
+                    Voir
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Validation checklist */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <ListChecks className="w-4 h-4 text-panora-text-muted" />
-                <span className="text-sm font-medium text-panora-text">
+            {/* Checklist section */}
+            <div className="bg-white border-b border-panora-border px-6 py-4">
+              <div className="flex items-center gap-2 mb-3.5">
+                <ListChecks className="w-5 h-5 text-panora-text-secondary" />
+                <span className="text-[13px] font-medium text-panora-text">
                   Pour lancer la cotation
                 </span>
               </div>
-              <div className="space-y-2.5">
+              <div className="space-y-3.5">
                 {stats.missingFields > 0 && (
-                  <div className="flex items-center gap-2.5 text-sm text-panora-warning">
-                    <span className="w-2 h-2 rounded-full bg-panora-warning shrink-0" />
-                    <span>
-                      {stats.missingFields} champ
-                      {stats.missingFields > 1 ? "s" : ""} requis à compléter
+                  <div className="flex items-center gap-[7px]">
+                    <AlertBadge variant="warning" />
+                    <span className="text-[13px] text-panora-warning-text">
+                      {stats.missingFields} champ{stats.missingFields > 1 ? "s" : ""} requis à compléter
                     </span>
                   </div>
                 )}
                 {noInsurers && (
-                  <div className="flex items-center gap-2.5 text-sm text-panora-warning">
-                    <span className="w-2 h-2 rounded-full bg-panora-warning shrink-0" />
-                    <span>Sélectionner assureurs à solliciter (exemple)</span>
+                  <div className="flex items-center gap-[7px]">
+                    <AlertBadge variant="error" />
+                    <span className="text-[13px] text-panora-text-primary">
+                      Selectionner assureurs à solliciter (exemple)
+                    </span>
                   </div>
                 )}
                 {stats.invalidFields > 0 && (
-                  <div className="flex items-center gap-2.5 text-sm text-panora-error">
-                    <span className="w-2 h-2 rounded-full bg-panora-error shrink-0" />
-                    <span>
-                      {stats.invalidFields} champ
-                      {stats.invalidFields > 1 ? "s" : ""} invalide
-                      {stats.invalidFields > 1 ? "s" : ""}
+                  <div className="flex items-center gap-[7px]">
+                    <AlertBadge variant="error" />
+                    <span className="text-[13px] text-panora-text-primary">
+                      {stats.invalidFields} champ{stats.invalidFields > 1 ? "s" : ""} invalide{stats.invalidFields > 1 ? "s" : ""}
                     </span>
                   </div>
                 )}
                 {stats.missingFields === 0 &&
                   stats.invalidFields === 0 &&
                   !noInsurers && (
-                    <div className="flex items-center gap-2.5 text-sm text-panora-green">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Tout est prêt pour lancer la cotation</span>
+                    <div className="flex items-center gap-[7px]">
+                      <CheckCircle2 className="w-5 h-5 text-panora-green" />
+                      <span className="text-[13px] text-panora-green">
+                        Tout est prêt pour lancer la cotation
+                      </span>
                     </div>
                   )}
               </div>
             </div>
 
-            {/* Project section */}
-            <div className="mb-8">
-              <h3 className="text-base font-semibold text-panora-text mb-4">
+            {/* Form body */}
+            <div className="bg-white border-b border-panora-border p-6">
+              <h3 className="text-[15px] font-semibold text-panora-text mb-5">
                 Projet de cotation
               </h3>
+
               <div className="space-y-4">
-                {/* Project name */}
-                <div>
-                  <label className="text-xs font-medium text-panora-text block mb-1.5">
+                {/* Nom du projet - half width */}
+                <div className="max-w-[50%]">
+                  <label className="text-[13px] font-medium text-panora-text block mb-1.5">
                     Nom du projet
                   </label>
                   <input
                     type="text"
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
-                    className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green"
+                    className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-[13px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green"
                   />
                 </div>
 
-                {/* Client */}
-                <ClientDropdown
-                  selectedId={selectedClient}
-                  onSelect={setSelectedClient}
-                />
-
-                {/* Product — display field with X to clear */}
+                {/* Client - full width */}
                 <div>
-                  <label className="text-xs font-medium text-panora-text block mb-1.5">
+                  <label className="text-[13px] font-medium text-panora-text-primary block mb-1.5">
+                    Client
+                  </label>
+                  <ClientDropdown
+                    selectedId={selectedClient}
+                    onSelect={setSelectedClient}
+                  />
+                </div>
+
+                {/* Produit - full width */}
+                <div>
+                  <label className="text-[13px] font-medium text-panora-text block mb-1.5">
                     Produit
                   </label>
-                  <div className="flex items-center gap-2.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
                     <ProductIcon className="w-4 h-4 text-panora-text-muted shrink-0" />
-                    <span className="text-sm text-panora-text flex-1">
+                    <span className="text-[13px] text-panora-text flex-1">
                       {currentProduct?.name || scenario.product}
                     </span>
                     <button
@@ -314,62 +372,67 @@ function PreparationContent() {
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Insurers section */}
-            <div className="mb-8">
-              <h3 className="text-base font-semibold text-panora-text mb-4">
-                Assureurs à solliciter
-              </h3>
-              <InsurerSelector
-                selectedIds={selectedInsurers}
-                onToggle={handleToggleInsurer}
-                product={currentProduct?.name || scenario.product}
-                insurers={scenario.availableInsurers}
-              />
+                {/* Assureurs - full width */}
+                <div>
+                  <label className="text-[13px] font-medium text-panora-text-primary block mb-2">
+                    Assureurs à solliciter
+                  </label>
+                  <InsurerSelector
+                    selectedIds={selectedInsurers}
+                    onToggle={handleToggleInsurer}
+                    product={currentProduct?.name || scenario.product}
+                    insurers={scenario.availableInsurers}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Documents & Instructions */}
-            <div>
-              <h3 className="text-base font-semibold text-panora-text mb-4">
+            <div className="bg-white p-6">
+              <h3 className="text-[15px] font-semibold text-panora-text mb-6">
                 Documents & instructions
               </h3>
 
-              {/* Documents */}
-              <h4 className="text-sm font-medium text-panora-text mb-2">
-                Documents
-              </h4>
-              <p className="text-xs text-panora-text-secondary mb-3 leading-relaxed">
-                Les pièces jointes de l&apos;email sont extraites
-                automatiquement pour remplir les champs à droite.
-                <br />
-                Vous pouvez ajouter d&apos;autres documents.
-              </p>
-              <div className="space-y-1 mb-5">
-                {allAttachments.map((att) => (
-                  <div
-                    key={att.name}
-                    className="flex items-center gap-2.5 py-2"
-                  >
-                    <Paperclip className="w-4 h-4 text-red-400 shrink-0" />
-                    <span className="text-sm text-panora-text truncate flex-1">
-                      {att.name}
-                    </span>
-                    <span className="text-xs text-panora-text-muted shrink-0">
-                      {att.fieldsExtracted} champs extraits
-                    </span>
-                  </div>
-                ))}
+              {/* Documents sub-section */}
+              <div className="mb-5">
+                <p className="text-[13px] font-medium text-panora-text-primary mb-1">
+                  Documents
+                </p>
+                <p className="text-[13px] text-panora-text-secondary leading-5 mb-5">
+                  Les pièces jointes de l&apos;email sont extraites
+                  automatiquement pour remplir les champs à droite.
+                  Vous pouvez ajouter d&apos;autres documents.
+                </p>
+
+                {/* Document list */}
+                <div className="space-y-3">
+                  {allAttachments.map((att, i) => (
+                    <div key={att.name}>
+                      <div className="flex items-center gap-2">
+                        <DocIcon />
+                        <span className="text-[13px] text-panora-text-primary truncate flex-1">
+                          {att.name}
+                        </span>
+                        <span className="text-[12px] text-panora-text-muted shrink-0 text-right flex-1">
+                          {att.fieldsExtracted} champs extraits
+                        </span>
+                      </div>
+                      {i < allAttachments.length - 1 && (
+                        <div className="h-px bg-panora-border mt-3" />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Drop zone */}
-              <div className="border-2 border-dashed border-panora-border rounded-2xl py-8 px-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-8">
+              <div className="border-2 border-dashed border-panora-border rounded-2xl py-8 px-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-6">
                 <CloudUpload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
-                <p className="text-sm font-medium text-panora-text">
+                <p className="text-[13px] font-medium text-panora-text">
                   Glissez-déposez vos fichiers ici
                 </p>
-                <p className="text-xs text-panora-text-muted mt-1">
+                <p className="text-[12px] text-panora-text-muted mt-1">
                   ou{" "}
                   <span className="text-panora-green font-medium cursor-pointer hover:underline">
                     parcourir
@@ -380,13 +443,12 @@ function PreparationContent() {
 
               {/* Instructions */}
               <div>
-                <h4 className="text-sm font-medium text-panora-text mb-1">
+                <p className="text-[13px] font-medium text-panora-text-primary mb-1">
                   Instructions à l&apos;agent de cotation
-                </h4>
-                <p className="text-xs text-panora-text-secondary mb-2 leading-relaxed">
+                </p>
+                <p className="text-[13px] text-panora-text-secondary mb-2 leading-5">
                   Informations supplémentaires non couvertes par les champs à
                   droite.
-                  <br />
                   Contexte, préférences, consignes spécifiques.
                 </p>
                 <textarea
@@ -394,39 +456,32 @@ function PreparationContent() {
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder={`Ex: Le client veut absolument moins cher que le contrat actuel\nEx : Privilégier les formules sans franchise dégât des eaux..\nEx : .....`}
                   rows={5}
-                  className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-y placeholder:text-panora-text-muted/60"
+                  className="w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-[13px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:ring-2 focus:ring-panora-green/20 focus:border-panora-green resize-y placeholder:text-panora-text-muted/60"
                 />
               </div>
             </div>
           </div>
 
-          {/* CTA button - sticky bottom */}
-          <div className="sticky bottom-0 z-10 bg-white border-t border-panora-border p-4 flex items-center justify-end gap-3">
-            <button
-              onClick={handleLaunch}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-panora-text-secondary bg-white border border-panora-border rounded-[10px] hover:bg-panora-btn-secondary transition-all duration-200 ease-in-out"
-            >
-              Simuler la cotation
-            </button>
-            <button
-              onClick={handleLaunch}
-              className="btn-primary px-6 py-2.5 text-sm font-semibold transition-colors"
-            >
-              Lancer la cotation
-            </button>
+          {/* Right Column - Beige background */}
+          <div className="flex-1 bg-panora-bg overflow-y-auto">
+            <div className="p-6">
+              <ExtractedDataPanel
+                sections={scenario.extractedSections}
+                onSectionsChange={setSections}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Right column - Beige background with white cards */}
-        <div className="w-full lg:w-1/2 bg-panora-bg overflow-y-auto">
-          <div className="px-8 py-6">
-            <ExtractedDataPanel
-              sections={scenario.extractedSections}
-              onSectionsChange={setSections}
-            />
-          </div>
+        {/* Footer bar */}
+        <div className="shrink-0 border-t border-panora-border bg-white px-6 py-3 flex items-center justify-end">
+          <button
+            onClick={handleLaunch}
+            className="btn-primary px-6 py-2.5 text-[13px] font-semibold transition-colors"
+          >
+            Lancer la cotation
+          </button>
         </div>
-      </div>
     </div>
   );
 }
@@ -436,7 +491,7 @@ export default function PreparationPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center h-screen">
-          <p className="text-sm text-panora-text-muted">Chargement…</p>
+          <p className="text-[13px] text-panora-text-muted">Chargement…</p>
         </div>
       }
     >

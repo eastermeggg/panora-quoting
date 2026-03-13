@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  Download,
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
@@ -13,11 +12,14 @@ import {
   Pause,
   X,
   Clock,
+  Paperclip,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { LiveAgentTimeline } from "@/components/ui/LiveAgentTimeline";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { TwoFaActionBox } from "@/components/quoting/TwoFaActionBox";
 import type { InsurerData } from "@/data/mock";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress";
@@ -38,58 +40,55 @@ export function InsurerCard({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="bg-white border border-panora-border/40 rounded-xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] transition-all duration-200 ease-in-out">
+    <div className="bg-white border border-panora-border rounded-[10px] overflow-hidden shadow-[0px_3px_6px_0px_rgba(0,0,0,0.02),0px_11px_11px_0px_rgba(0,0,0,0.02),0px_24px_15px_0px_rgba(0,0,0,0.01)]">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-3 w-full px-5 py-4 text-left hover:bg-panora-drop/30 transition-all duration-200 ease-in-out"
+        className="flex items-center gap-3 w-full px-4 py-4 text-left hover:bg-panora-drop/30 transition-colors border-b border-panora-border"
       >
         {expanded ? (
-          <ChevronDown className="w-4 h-4 text-panora-text-muted shrink-0" />
+          <ChevronDown className="w-3 h-3 text-panora-text-muted shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-panora-text-muted shrink-0" />
+          <ChevronRight className="w-3 h-3 text-panora-text-muted shrink-0" />
         )}
 
-        <InsurerLogo insurerId={insurer.id} name={insurer.name} size="lg" />
-        <span className="text-sm font-semibold text-panora-text">
+        <InsurerLogo insurerId={insurer.id} name={insurer.name} size="md" />
+        <span className="text-[15px] font-semibold text-panora-text-primary leading-5">
           {insurer.name}
         </span>
 
-        <StatusBadge status={currentStatus} />
+        <div className="flex-1" />
 
-        <span className="text-xs text-panora-text-muted ml-auto mr-2">
-          {insurer.reference}
-        </span>
-
-        <a
-          href="#"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-xs text-panora-green hover:underline font-medium"
-        >
-          Ouvrir dans l&apos;extranet
-          <ExternalLink className="w-3 h-3" />
-        </a>
+        <div className="flex items-center gap-[11px]">
+          <StatusBadge status={currentStatus} />
+          <div className="w-px h-[15px] bg-panora-border" />
+          <span className="text-[12px] text-panora-text-muted leading-4">
+            {insurer.reference}
+          </span>
+          <div className="w-px h-[15px] bg-panora-border" />
+          <a
+            href="#"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1.5 text-[12px] text-panora-green hover:underline font-medium leading-[18px]"
+          >
+            Ouvrir dans l&apos;extranet
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
       </button>
 
       {/* Expanded content */}
       {expanded && (
-        <div className="px-5 pb-5 border-t border-panora-border">
+        <div className="p-6">
           {currentStatus === "completed" && (
             <CompletedContent insurer={insurer} />
           )}
 
           {currentStatus === "in_progress" && (
-            <div className="pt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <VideoPlaceholder isLive />
-                <LiveAgentTimeline
-                  allSteps={insurer.allSteps}
-                  initialVisible={insurer.initialVisibleSteps ?? 3}
-                  stepInterval={2500}
-                  onComplete={() => onStatusChange?.("completed")}
-                />
-              </div>
-            </div>
+            <InProgressContent
+              insurer={insurer}
+              onComplete={() => onStatusChange?.("completed")}
+            />
           )}
 
           {currentStatus === "action_required" && (
@@ -104,98 +103,207 @@ export function InsurerCard({
   );
 }
 
+/* ── Documents section ── */
+function DocumentsSection({ documents }: { documents: string[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] font-medium text-panora-text-primary leading-5 px-0.5">
+        Documents récupérés
+      </p>
+      {documents.map((doc, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-2 bg-panora-bg border border-panora-border rounded-lg p-2.5"
+        >
+          <div className="bg-panora-secondary rounded p-1 shrink-0">
+            <Paperclip className="w-3.5 h-3.5 text-panora-text-secondary" />
+          </div>
+          <span className="text-[13px] text-panora-text-primary truncate flex-1 leading-5">
+            {doc}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Pricing table ── */
+function PricingTable({
+  pricing,
+}: {
+  pricing: Array<{ formula: string; monthly: string; annual: string }>;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] font-medium text-panora-text-primary leading-5 px-0.5">
+        Tarifs / offres obtenues
+      </p>
+      <div className="border border-panora-border rounded-lg overflow-hidden">
+        {/* Table header */}
+        <div className="flex bg-panora-bg border-b border-panora-border">
+          <div className="flex-1 px-4 py-[11px]">
+            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+              Formule
+            </span>
+          </div>
+          <div className="w-[183px] px-4 py-[11px] text-right">
+            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+              Montant mensuel
+            </span>
+          </div>
+          <div className="w-[183px] px-4 py-[11px] text-right">
+            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+              Montant annuel
+            </span>
+          </div>
+        </div>
+        {/* Table rows */}
+        {pricing.map((row, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex items-center",
+              i < pricing.length - 1 && "border-b border-panora-border"
+            )}
+          >
+            <div className="flex-1 px-4 py-4 flex items-center gap-2.5">
+              <span className="text-[13px] font-medium text-panora-text leading-5 flex-1">
+                {row.formula}
+              </span>
+              <div className="bg-panora-secondary rounded p-[3px] opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="w-3.5 h-3.5 text-panora-text-secondary" />
+              </div>
+            </div>
+            <div className="w-[183px] px-4 py-4 text-right">
+              <span className="text-[13px] font-medium text-panora-text leading-5">
+                {row.monthly}
+              </span>
+            </div>
+            <div className="w-[183px] px-4 py-4 text-right">
+              <span className="text-[13px] font-medium text-panora-text leading-5">
+                {row.annual}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Collapsible section ── */
+function CollapsibleSection({
+  title,
+  headerRight,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  headerRight?: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2.5 px-0.5"
+      >
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted" />
+        )}
+        <span className="text-[13px] font-medium text-panora-text-primary leading-5">
+          {title}
+        </span>
+        {headerRight}
+      </button>
+      {open && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
+
+/* ── Quote info grid ── */
+function QuoteInfoGrid({
+  quoteInfo,
+}: {
+  quoteInfo: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-x-5">
+      {quoteInfo.map((item, i) => (
+        <div
+          key={i}
+          className={cn(
+            "flex items-center gap-1 px-0.5 py-3",
+            i < quoteInfo.length - 3 && "border-b border-panora-border"
+          )}
+        >
+          <span className="text-[12px] font-medium text-panora-text-muted leading-4 w-[120px] shrink-0">
+            {item.label}
+          </span>
+          <span className="text-[13px] text-panora-text-primary leading-5">
+            {item.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Completed state ── */
 function CompletedContent({ insurer }: { insurer: InsurerData }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="space-y-5 pt-4">
-      {/* Success banner */}
-      <div className="flex items-center gap-3 p-3 bg-panora-green-light rounded-lg">
-        <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-panora-green">
-            Cotation terminée
-          </p>
-          <p className="text-xs text-panora-green/70">
-            {insurer.allSteps.length} étapes complétées avec succès
-          </p>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-6">
       {/* Documents */}
       {insurer.documents && insurer.documents.length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium text-panora-text mb-3">
-            Documents récupérés
-          </h4>
-          <div className="space-y-1.5">
-            {insurer.documents.map((doc, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 px-3 py-2 bg-panora-drop rounded-lg cursor-pointer hover:bg-panora-border/30 transition-all duration-200 ease-in-out"
-              >
-                <Download className="w-4 h-4 text-panora-text-muted" />
-                <span className="text-sm text-panora-text truncate">
-                  {doc}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <DocumentsSection documents={insurer.documents} />
       )}
 
-      {/* Pricing table */}
+      {/* Separator */}
       {insurer.pricing && insurer.pricing.length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium text-panora-text mb-3">
-            Tarifs / offres obtenues
-          </h4>
-          <div className="border border-panora-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-panora-drop">
-                  <th className="text-left px-4 py-2 text-xs font-medium text-panora-text-muted">
-                    Formule
-                  </th>
-                  <th className="text-right px-4 py-2 text-xs font-medium text-panora-text-muted">
-                    Montant mensuel
-                  </th>
-                  <th className="text-right px-4 py-2 text-xs font-medium text-panora-text-muted">
-                    Montant annuel
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {insurer.pricing.map((row, i) => (
-                  <tr key={i} className="border-t border-panora-border">
-                    <td className="px-4 py-2.5 text-panora-text font-medium">
-                      {row.formula}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-panora-text-secondary">
-                      {row.monthly}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-panora-text font-medium">
-                      {row.annual}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <>
+          <div className="h-px bg-panora-border" />
+          <PricingTable pricing={insurer.pricing} />
+        </>
       )}
 
-      {/* Open timeline drawer button */}
-      <div className="border-t border-panora-border pt-3">
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-2 text-sm text-panora-text-secondary hover:text-panora-text transition-all duration-200 ease-in-out font-medium"
-        >
-          <Clock className="w-4 h-4" />
-          Voir l&apos;historique de l&apos;agent
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Separator + Agent actions */}
+      <div className="h-px bg-panora-border" />
+      <CollapsibleSection
+        title="Dernières actions de l'agent"
+        headerRight={
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setDrawerOpen(true);
+            }}
+            className="text-[13px] font-medium text-panora-green leading-5 ml-2"
+          >
+            Voir tout
+          </button>
+        }
+      >
+        <LiveAgentTimeline
+          allSteps={insurer.allSteps.slice(-4)}
+          isCompleted
+        />
+      </CollapsibleSection>
+
+      {/* Separator + Quote info */}
+      {insurer.quoteInfo && insurer.quoteInfo.length > 0 && (
+        <>
+          <div className="h-px bg-panora-border" />
+          <CollapsibleSection title="Informations devis">
+            <QuoteInfoGrid quoteInfo={insurer.quoteInfo} />
+          </CollapsibleSection>
+        </>
+      )}
 
       {/* Timeline drawer */}
       {drawerOpen && (
@@ -208,6 +316,41 @@ function CompletedContent({ insurer }: { insurer: InsurerData }) {
   );
 }
 
+/* ── In-progress state ── */
+function InProgressContent({
+  insurer,
+  onComplete,
+}: {
+  insurer: InsurerData;
+  onComplete: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Video + Timeline side by side */}
+      <div className="grid grid-cols-2 gap-4">
+        <VideoPlaceholder isLive />
+        <LiveAgentTimeline
+          allSteps={insurer.allSteps}
+          initialVisible={insurer.initialVisibleSteps ?? 3}
+          stepInterval={2500}
+          onComplete={onComplete}
+        />
+      </div>
+
+      {/* Quote info if available */}
+      {insurer.quoteInfo && insurer.quoteInfo.length > 0 && (
+        <>
+          <div className="h-px bg-panora-border" />
+          <CollapsibleSection title="Informations devis">
+            <QuoteInfoGrid quoteInfo={insurer.quoteInfo} />
+          </CollapsibleSection>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── Action required state ── */
 function ActionRequiredContent({
   insurer,
   onValidate,
@@ -215,6 +358,9 @@ function ActionRequiredContent({
   insurer: InsurerData;
   onValidate: () => void;
 }) {
+  const actionType = insurer.twoFaAction?.type ?? "manual";
+  const is2fa = actionType !== "manual";
+
   const [validating, setValidating] = useState(false);
 
   const handleValidate = () => {
@@ -224,74 +370,74 @@ function ActionRequiredContent({
     }, 1500);
   };
 
-  // Show last 4 steps (including the blocking one)
   const tailSteps = insurer.allSteps.slice(-4);
 
   return (
-    <div className="space-y-4 pt-4">
-      {/* Alert banner — full width on top */}
-      <div className="bg-panora-warning-bg border border-panora-warning/20 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold text-panora-text mb-1">
-              {insurer.alertMessage}
-            </h4>
-            <p className="text-sm text-panora-text-secondary leading-relaxed">
-              {insurer.alertDescription}
-            </p>
-            <div className="flex items-center gap-3 mt-3">
-              <a
-                href="#"
-                className="flex items-center gap-1.5 text-sm text-panora-green hover:underline font-medium"
-              >
-                Ouvrir l&apos;extranet {insurer.name}
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-              <button
-                onClick={handleValidate}
-                disabled={validating}
-                className={cn(
-                  "btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all",
-                  validating && "opacity-70"
-                )}
-              >
-                {validating ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Reprise en cours...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    J&apos;ai validé sur l&apos;extranet
-                  </>
-                )}
-              </button>
+    <div className="flex flex-col gap-6">
+      {/* 2FA action box — replaces the manual alert banner */}
+      {is2fa && insurer.twoFaAction ? (
+        <TwoFaActionBox
+          action={insurer.twoFaAction}
+          insurerName={insurer.name}
+          onResolved={onValidate}
+        />
+      ) : (
+        /* Manual action banner (existing behavior) */
+        <div className="bg-panora-warning-bg border border-panora-warning/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-[13px] font-semibold text-panora-text mb-1">
+                {insurer.alertMessage}
+              </h4>
+              <p className="text-[13px] text-panora-text-secondary leading-5">
+                {insurer.alertDescription}
+              </p>
+              <div className="flex items-center gap-3 mt-3">
+                <a
+                  href="#"
+                  className="flex items-center gap-1.5 text-[13px] text-panora-green hover:underline font-medium"
+                >
+                  Ouvrir l&apos;extranet {insurer.name}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  onClick={handleValidate}
+                  disabled={validating}
+                  className={cn(
+                    "btn-primary flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium transition-all",
+                    validating && "opacity-70"
+                  )}
+                >
+                  {validating ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Reprise en cours...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      J&apos;ai validé sur l&apos;extranet
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Video + Timeline side by side (same layout as in_progress) */}
+      {/* Video + Timeline side by side */}
       <div className="grid grid-cols-2 gap-4">
         <VideoPlaceholder />
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-medium text-panora-text-secondary">
-              Actions effectuées
-            </span>
-            <span className="text-xs text-panora-text-muted">
-              {insurer.allSteps.length} étapes
-            </span>
-          </div>
           <LiveAgentTimeline allSteps={tailSteps} isCompleted />
         </div>
       </div>
 
       {/* Next action info */}
       {insurer.nextAction && (
-        <div className="flex items-start gap-2 text-sm text-panora-text-muted bg-panora-drop/50 rounded-lg p-3">
+        <div className="flex items-start gap-2 text-[13px] text-panora-text-muted bg-panora-drop/50 rounded-lg p-3">
           <RefreshCw className="w-4 h-4 shrink-0 mt-0.5" />
           <div>
             <span className="font-medium text-panora-text-secondary">
@@ -303,10 +449,21 @@ function ActionRequiredContent({
           </div>
         </div>
       )}
+
+      {/* Quote info */}
+      {insurer.quoteInfo && insurer.quoteInfo.length > 0 && (
+        <>
+          <div className="h-px bg-panora-border" />
+          <CollapsibleSection title="Informations devis">
+            <QuoteInfoGrid quoteInfo={insurer.quoteInfo} />
+          </CollapsibleSection>
+        </>
+      )}
     </div>
   );
 }
 
+/* ── Timeline drawer ── */
 function TimelineDrawer({
   insurer,
   onClose,
@@ -316,33 +473,25 @@ function TimelineDrawer({
 }) {
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-200 ease-in-out"
+        className="fixed inset-0 bg-black/30 z-40 transition-opacity"
         onClick={onClose}
       />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-[480px] bg-panora-card shadow-2xl z-50 flex flex-col">
-        {/* Header */}
+      <div className="fixed right-0 top-0 bottom-0 w-[480px] bg-white shadow-2xl z-50 flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-panora-border">
-          <h2 className="text-base font-semibold text-panora-text">
+          <h2 className="text-[15px] font-semibold text-panora-text">
             Historique de l&apos;agent — {insurer.name}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-panora-sidebar rounded transition-all duration-200 ease-in-out"
+            className="p-1 hover:bg-panora-bg rounded transition-colors"
           >
             <X className="w-5 h-5 text-panora-text-muted" />
           </button>
         </div>
-
-        {/* Video replay */}
         <div className="px-5 pt-5">
           <VideoPlaceholder />
         </div>
-
-        {/* Full timeline */}
         <div className="flex-1 overflow-y-auto px-5 py-5">
           <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
         </div>
@@ -351,6 +500,7 @@ function TimelineDrawer({
   );
 }
 
+/* ── Video placeholder ── */
 function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
   const [playing, setPlaying] = useState(false);
 
@@ -359,10 +509,7 @@ function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
       onClick={() => setPlaying(!playing)}
       className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden cursor-pointer group"
     >
-      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-
-      {/* Play/Pause button */}
       <div className="relative w-12 h-12 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors backdrop-blur-sm">
         {playing ? (
           <Pause className="w-5 h-5 text-white fill-white" />
@@ -370,8 +517,6 @@ function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
           <Play className="w-5 h-5 text-white fill-white ml-0.5" />
         )}
       </div>
-
-      {/* Bottom bar */}
       <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-center gap-2">
         {isLive && (
           <div className="flex items-center gap-1.5">
@@ -385,36 +530,6 @@ function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
         <div className="flex-1" />
         <span className="text-[11px] text-white/40">0:00 / 2:34</span>
       </div>
-    </div>
-  );
-}
-
-function CollapsibleSection({
-  title,
-  headerRight,
-  children,
-}: {
-  title: string;
-  headerRight?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="border-t border-panora-border pt-3">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
-      >
-        {open ? (
-          <ChevronDown className="w-4 h-4" />
-        ) : (
-          <ChevronRight className="w-4 h-4" />
-        )}
-        <span className="font-medium">{title}</span>
-        {headerRight && <div className="ml-auto">{headerRight}</div>}
-      </button>
-      {open && <div className="mt-3">{children}</div>}
     </div>
   );
 }

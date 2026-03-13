@@ -7,19 +7,19 @@ type Status = "completed" | "action_required" | "in_progress" | "error";
 const statusConfig: Record<Status, { label: string; className: string }> = {
   completed: {
     label: "Terminé",
-    className: "border border-panora-green/40 bg-panora-green-light text-panora-green",
+    className: "bg-[#dbeee5] text-[#173c2d]",
   },
   action_required: {
     label: "Action requise",
-    className: "border border-panora-warning/40 bg-panora-warning-bg text-panora-warning",
+    className: "bg-[#f2ddc1] text-panora-warning-text",
   },
   in_progress: {
     label: "En cours",
-    className: "border border-panora-border bg-panora-drop text-panora-text-secondary",
+    className: "bg-panora-secondary text-panora-text-secondary",
   },
   error: {
     label: "Erreur",
-    className: "border border-panora-error/40 bg-panora-error-bg text-panora-error",
+    className: "bg-[#f6e1db] text-panora-error",
   },
 };
 
@@ -28,7 +28,7 @@ export function StatusBadge({ status }: { status: Status }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "inline-flex items-center px-2 h-5 rounded-full text-[12px] font-medium leading-4",
         config.className
       )}
     >

@@ -92,10 +92,10 @@ export function ExtractedDataPanel({
 
   return (
     <div>
-      <h2 className="text-base font-semibold text-panora-text mb-1">
+      <h2 className="text-[15px] font-semibold text-panora-text mb-1">
         Donnée consolidées extraites pour cotation
       </h2>
-      <p className="text-sm text-panora-text-secondary mb-5">
+      <p className="text-[13px] text-panora-text-secondary mb-5 leading-5">
         Déposez tous les documents utiles à la cotation.
       </p>
 
@@ -114,19 +114,15 @@ export function ExtractedDataPanel({
   );
 }
 
-function AlertCircleIcon({
-  className,
-}: {
-  className?: string;
-}) {
+function AlertCircleIcon({ variant }: { variant: "warning" | "error" }) {
   return (
     <div
       className={cn(
         "w-5 h-5 rounded-full flex items-center justify-center shrink-0",
-        className
+        variant === "warning" ? "bg-panora-warning" : "bg-panora-error"
       )}
     >
-      <span className="text-white text-xs font-bold leading-none">!</span>
+      <span className="text-white text-[10px] font-bold leading-none">!</span>
     </div>
   );
 }
@@ -150,24 +146,24 @@ function DataSection({
           <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
         )}
         {section.status === "incomplete" && (
-          <AlertCircleIcon className="bg-panora-warning" />
+          <AlertCircleIcon variant="warning" />
         )}
         {section.status === "invalid" && (
-          <AlertCircleIcon className="bg-panora-error" />
+          <AlertCircleIcon variant="error" />
         )}
 
-        <span className="text-sm font-medium text-panora-text flex-1">
+        <span className="text-[13px] font-medium text-panora-text flex-1">
           {section.label}
         </span>
 
         {section.status === "incomplete" && section.missingCount! > 0 && (
-          <span className="text-xs text-panora-warning mr-2">
+          <span className="text-[12px] text-panora-warning-text mr-2">
             {section.missingCount} champ{section.missingCount! > 1 ? "s" : ""} à
             compléter
           </span>
         )}
         {section.status === "invalid" && section.invalidCount! > 0 && (
-          <span className="text-xs text-panora-error mr-2">
+          <span className="text-[12px] text-panora-error mr-2">
             {section.invalidCount} champ{section.invalidCount! > 1 ? "s" : ""}{" "}
             invalide{section.invalidCount! > 1 ? "s" : ""}
           </span>
@@ -235,27 +231,30 @@ function FieldRow({
       : "text";
 
   return (
-    <div className="flex items-center px-4 py-2.5 gap-2">
-      {/* Label — colored based on status */}
+    <div className={cn(
+      "flex items-center px-4 py-2.5 gap-2",
+      isInvalid && "border-l-2 border-l-panora-error"
+    )}>
+      {/* Label */}
       <span
         className={cn(
-          "text-sm shrink-0 w-40",
+          "text-[13px] shrink-0 w-40",
           isMissing
-            ? "text-panora-warning"
+            ? "text-panora-warning-text"
             : isInvalid
             ? "text-panora-error"
-            : "text-panora-text-muted"
+            : "text-panora-text-secondary"
         )}
       >
         {field.label}
       </span>
 
-      {/* Value / Input — right-aligned */}
+      {/* Value / Input */}
       <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
         {isMissing && !editing ? (
           <button
             onClick={() => setEditing(true)}
-            className="border border-panora-border rounded px-2.5 py-1 text-xs text-panora-text-muted hover:bg-panora-drop/50 transition-colors"
+            className="border border-panora-border rounded-lg px-2 py-1 text-[13px] text-panora-text-muted hover:bg-panora-drop/50 transition-colors"
           >
             À compléter..
           </button>
@@ -271,7 +270,7 @@ function FieldRow({
                 field.placeholder || (isMissing ? "À compléter..." : undefined)
               }
               className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-sm outline-none text-right max-w-[180px]",
+                "flex-1 rounded-lg px-2 py-1 text-[13px] outline-none text-right max-w-[180px]",
                 isInvalid
                   ? "border border-panora-error/50 bg-white focus:ring-2 focus:ring-panora-error/20"
                   : isMissing
@@ -280,7 +279,7 @@ function FieldRow({
               )}
             />
             {isInvalid && field.error && (
-              <span className="text-xs text-panora-error whitespace-nowrap">
+              <span className="text-[12px] text-panora-error whitespace-nowrap">
                 {field.error}
               </span>
             )}
@@ -288,7 +287,7 @@ function FieldRow({
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="text-sm text-panora-text text-right hover:text-panora-green transition-colors cursor-text"
+            className="text-[13px] text-panora-text text-right hover:text-panora-green transition-colors cursor-text"
             title="Cliquer pour modifier"
           >
             {field.value}

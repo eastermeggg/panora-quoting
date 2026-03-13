@@ -47,6 +47,22 @@ export type InsurerAction = {
   status: "success" | "error" | "in_progress" | "pending";
 };
 
+export type ActionType = "manual" | "2fa_otp" | "2fa_push" | "2fa_expired";
+
+export type TwoFaAction = {
+  type: ActionType;
+  title: string;
+  desc: string;
+  portalName: string;
+  /** OTP-specific */
+  channel?: "sms" | "email" | "totp";
+  codeLength?: number;
+  canResend?: boolean;
+  /** ISO timestamp for expiration (OTP & push) */
+  expiresAt?: string;
+  interruptId?: string;
+};
+
 export type InsurerData = {
   id: string;
   name: string;
@@ -63,6 +79,8 @@ export type InsurerData = {
   nextAction?: string;
   allSteps: InsurerAction[];
   initialVisibleSteps?: number;
+  /** 2FA action data — when present, the action_required state uses this */
+  twoFaAction?: TwoFaAction;
 };
 
 export const initialInsurers: InsurerData[] = [
@@ -321,9 +339,9 @@ export const cotationsList: Cotation[] = [
     createdAt: "10/03/2026",
     createdVia: "manual",
     insurers: [
-      { id: "axa", name: "Axa", status: "in_progress", reference: "AXA-MR-0091" },
+      { id: "axa", name: "Axa", status: "action_required", reference: "AXA-MR-0091" },
       { id: "maif", name: "MAIF", status: "completed", reference: "MAIF-MR-4402", bestPrice: "1 850,00 €/an" },
-      { id: "generali", name: "Generali", status: "in_progress", reference: "GEN-MR-2201" },
+      { id: "generali", name: "Generali", status: "action_required", reference: "GEN-MR-2201" },
     ],
   },
   {
@@ -340,6 +358,320 @@ export const cotationsList: Cotation[] = [
     ],
   },
 ];
+
+// ─── Followup data per cotation ───────────────────────────────────────
+// Maps cotation IDs to their detailed insurer data for the followup page.
+
+export type FollowupData = {
+  cotation: Cotation;
+  projectName: string;
+  emailSubject: string;
+  insurers: InsurerData[];
+  scenarioId: string;
+  attachments: Array<{ name: string; size: string; fieldsExtracted: number }>;
+};
+
+function makeSteps(insurerName: string, count: number): InsurerAction[] {
+  const templates: InsurerAction[] = [
+    { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: `Cotation lancée`, status: "success" },
+    { date: "10/03/26 - 14h33", title: `Connexion à l'extranet ${insurerName}`, description: "Authentification réussie", status: "success" },
+    { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client créé avec succès", status: "success" },
+    { date: "10/03/26 - 14h36", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+    { date: "10/03/26 - 14h38", title: "Upload des documents", description: "Documents transmis", status: "success" },
+    { date: "10/03/26 - 14h40", title: "Demande de tarification", description: "Soumission du dossier complet", status: "success" },
+    { date: "10/03/26 - 14h42", title: "Tarifs reçus — Devis récupéré", description: "Formules disponibles — Documents téléchargés", status: "success" },
+  ];
+  return templates.slice(0, count);
+}
+
+const cotationFollowupMap: Record<string, FollowupData> = {
+  "cot-1": {
+    cotation: cotationsList[0],
+    projectName: "RC Pro Marble Tech 2026",
+    emailSubject: "Cotation Panora RC Pro - Marble Tech SAS",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_Marble_Tech.pdf", size: "245 Ko", fieldsExtracted: 4 },
+      { name: "Bilan_2025_Marble_Tech.pdf", size: "1.2 Mo", fieldsExtracted: 3 },
+      { name: "RIB_Marble_Tech.pdf", size: "89 Ko", fieldsExtracted: 1 },
+    ],
+    insurers: initialInsurers,
+  },
+  "cot-2": {
+    cotation: cotationsList[1],
+    projectName: "Flotte Auto ACME 2026",
+    emailSubject: "Renouvellement flotte automobile 2026 - ACME Corp",
+    scenarioId: "flotte-auto",
+    attachments: [
+      { name: "Releve_Info_Flotte_ACME.pdf", size: "1.8 Mo", fieldsExtracted: 8 },
+      { name: "Cartes_Grises_Parc_2026.pdf", size: "3.4 Mo", fieldsExtracted: 5 },
+      { name: "Attestation_Sinistralite_3ans.pdf", size: "520 Ko", fieldsExtracted: 6 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-FL-2211",
+        documents: ["Devis_Axa_Flotte_ACME.pdf", "Conditions_Generales_Flotte_Axa.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", monthly: "295,00 €", annual: "3 540,00 €/an" },
+          { formula: "Tous risques", monthly: "350,00 €", annual: "4 200,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-FL-2211" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "500 € / sinistre" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-FL-8877",
+        documents: ["Devis_Allianz_Flotte_ACME.pdf", "Tableau_Garanties_Allianz.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", monthly: "275,00 €", annual: "3 300,00 €/an" },
+          { formula: "Tous risques", monthly: "331,67 €", annual: "3 980,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-FL-8877" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "750 € / sinistre" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-FL-1124",
+        documents: ["Devis_Generali_Flotte_ACME.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "320,00 €", annual: "3 840,00 €/an" },
+          { formula: "Premium", monthly: "370,83 €", annual: "4 450,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-FL-1124" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "500 € / sinistre" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-3": {
+    cotation: cotationsList[2],
+    projectName: "RC Pro TechVision 2026",
+    emailSubject: "Devis RC Pro urgence - TechVision SAS",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_TechVision.pdf", size: "210 Ko", fieldsExtracted: 3 },
+      { name: "Bilan_2025_TechVision.pdf", size: "980 Ko", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-RC-9912",
+        documents: ["Devis_Axa_RC_Pro_TechVision.pdf", "Conditions_Generales_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "68,33 €", annual: "820,00 €/an" },
+          { formula: "Étendue", monthly: "98,33 €", annual: "1 180,00 €/an" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-RC-9912" },
+          { label: "Client", value: "TechVision SAS" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 000 €" },
+        ],
+      },
+      {
+        id: "chubb", name: "Chubb", logo: "⬛", logoColor: "#000", hasCode: true,
+        status: "completed", reference: "CHB-RC-4401",
+        documents: ["Devis_Chubb_RC_Pro_TechVision.pdf", "Tableau_Garanties_Chubb.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "85,00 €", annual: "1 020,00 €/an" },
+          { formula: "Premium", monthly: "120,83 €", annual: "1 450,00 €/an" },
+        ],
+        allSteps: makeSteps("Chubb", 7),
+        quoteInfo: [
+          { label: "Référence devis", value: "CHB-RC-4401" },
+          { label: "Client", value: "TechVision SAS" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 500 €" },
+        ],
+      },
+    ],
+  },
+  "cot-4": {
+    cotation: cotationsList[3],
+    projectName: "Multirisque GreenWay 2026",
+    emailSubject: "Demande de cotation multirisque bureaux - GreenWay",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Bail_Commercial_GreenWay.pdf", size: "1.5 Mo", fieldsExtracted: 5 },
+      { name: "Plan_Locaux_2026.pdf", size: "2.1 Mo", fieldsExtracted: 3 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "action_required", reference: "AXA-MR-0091",
+        twoFaAction: {
+          type: "2fa_otp",
+          title: "Code de vérification requis",
+          desc: "AXA demande un code à 6 chiffres envoyé par e-mail à d••••e@howden.fr.",
+          portalName: "AXA",
+          channel: "email",
+          codeLength: 6,
+          canResend: true,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          interruptId: "int-axa-otp-001",
+        },
+        documents: ["Devis_Axa_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "142,50 €", annual: "1 710,00 €/an" },
+          { formula: "Confort", monthly: "178,33 €", annual: "2 140,00 €/an" },
+          { formula: "Étendue", monthly: "215,00 €", annual: "2 580,00 €/an" },
+        ],
+        allSteps: [
+          { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification en cours", status: "success" },
+          { date: "13/03/26 - 09h15", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
+          { date: "13/03/26 - 09h16", title: "Double authentification requise", description: "Code envoyé par e-mail à d••••e@howden.fr", status: "in_progress" },
+          { date: "13/03/26 - 09h17", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
+          { date: "13/03/26 - 09h18", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
+          { date: "13/03/26 - 09h20", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+          { date: "13/03/26 - 09h22", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
+          { date: "13/03/26 - 09h24", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-MR-0091" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "500 €" },
+        ],
+      },
+      {
+        id: "maif", name: "MAIF", logo: "🟢", logoColor: "#00A651", hasCode: true,
+        status: "completed", reference: "MAIF-MR-4402",
+        documents: ["Devis_MAIF_Multirisque_GreenWay.pdf"],
+        pricing: [
+          { formula: "Confort", monthly: "154,17 €", annual: "1 850,00 €/an" },
+          { formula: "Sérénité", monthly: "195,00 €", annual: "2 340,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MAIF-MR-4402" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "300 €" },
+        ],
+        allSteps: makeSteps("MAIF", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "action_required", reference: "GEN-MR-2201",
+        twoFaAction: {
+          type: "2fa_otp",
+          title: "Code de vérification requis",
+          desc: "Generali demande un code à 6 chiffres envoyé par SMS au 06 •• •• 42.",
+          portalName: "Generali",
+          channel: "sms",
+          codeLength: 6,
+          canResend: false,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          interruptId: "int-gen-otp-001",
+        },
+        documents: ["Devis_Generali_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Generali.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "165,00 €", annual: "1 980,00 €/an" },
+          { formula: "Premium", monthly: "208,33 €", annual: "2 500,00 €/an" },
+        ],
+        allSteps: [
+          { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification en cours", status: "success" },
+          { date: "13/03/26 - 09h12", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
+          { date: "13/03/26 - 09h13", title: "Double authentification requise", description: "Code SMS envoyé au 06 •• •• 42", status: "in_progress" },
+          { date: "13/03/26 - 09h14", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
+          { date: "13/03/26 - 09h15", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
+          { date: "13/03/26 - 09h17", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+          { date: "13/03/26 - 09h19", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
+          { date: "13/03/26 - 09h21", title: "Tarifs reçus — Devis récupéré", description: "2 formules disponibles — Documents téléchargés", status: "success" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-MR-2201" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "400 €" },
+        ],
+      },
+    ],
+  },
+  "cot-5": {
+    cotation: cotationsList[4],
+    projectName: "RC Pro Digital Solutions 2026",
+    emailSubject: "Cotation RC Pro - Digital Solutions SARL",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_Digital_Solutions.pdf", size: "195 Ko", fieldsExtracted: 3 },
+      { name: "Bilan_2025_Digital_Solutions.pdf", size: "1.1 Mo", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-RC-7711",
+        documents: ["Devis_Axa_RC_Pro_Digital_Solutions.pdf", "Conditions_Generales_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "76,67 €", annual: "920,00 €/an" },
+          { formula: "Étendue", monthly: "110,00 €", annual: "1 320,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-RC-7711" },
+          { label: "Client", value: "Digital Solutions SARL" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 000 €" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-RC-3302",
+        documents: ["Devis_Allianz_RC_Pro_Digital_Solutions.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "72,92 €", annual: "875,00 €/an" },
+          { formula: "Premium", monthly: "105,00 €", annual: "1 260,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-RC-3302" },
+          { label: "Client", value: "Digital Solutions SARL" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 500 €" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+    ],
+  },
+};
+
+export function getFollowupData(cotationId: string): FollowupData | undefined {
+  return cotationFollowupMap[cotationId];
+}
 
 export const emailInboxMock = [
   {
