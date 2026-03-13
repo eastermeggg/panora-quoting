@@ -390,47 +390,45 @@ function ActionRequiredContent({
           onResolved={onValidate}
         />
       ) : (
-        /* Manual action banner (existing behavior) */
-        <div className="bg-panora-warning-bg border border-panora-warning/20 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-panora-warning shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="text-[13px] font-semibold text-panora-text mb-1">
-                {insurer.alertMessage}
-              </h4>
-              <p className="text-[13px] text-panora-text-secondary leading-5">
-                {insurer.alertDescription}
-              </p>
-              <div className="flex items-center gap-3 mt-3">
-                <a
-                  href="#"
-                  className="flex items-center gap-1.5 text-[13px] text-panora-green hover:underline font-medium"
-                >
-                  Ouvrir l&apos;extranet {insurer.name}
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-                <button
-                  onClick={handleValidate}
-                  disabled={validating}
-                  className={cn(
-                    "btn-primary flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium transition-all",
-                    validating && "opacity-70"
-                  )}
-                >
-                  {validating ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Reprise en cours...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      J&apos;ai validé sur l&apos;extranet
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+        /* Manual action banner — Figma style */
+        <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-end gap-1.5 pl-[21px] pr-4 py-4">
+          {/* Left accent border */}
+          <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#cb8052]" />
+
+          <div className="flex-1 flex flex-col gap-1.5 text-[#80452b]">
+            <h4 className="text-[15px] font-semibold leading-[21px] tracking-[-0.15px]">
+              ⚠ {insurer.alertMessage}
+            </h4>
+            <p className="text-[13px] font-normal leading-5">
+              {insurer.alertDescription}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="flex items-center gap-2.5 px-3 py-2 bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] text-[13px] font-medium text-panora-text-muted whitespace-nowrap hover:bg-panora-bg transition-colors"
+            >
+              Aller sur l&apos;extranet
+            </a>
+            <button
+              onClick={handleValidate}
+              disabled={validating}
+              className={cn(
+                "btn-primary flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium whitespace-nowrap transition-opacity",
+                validating && "opacity-70"
+              )}
+            >
+              {validating ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Reprise en cours...
+                </>
+              ) : (
+                "Relancer l\u2019agent"
+              )}
+            </button>
           </div>
         </div>
       )}
