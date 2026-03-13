@@ -10,6 +10,7 @@ import {
   Mail,
   AlertCircle,
   Send,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TwoFaAction } from "@/data/mock";
@@ -33,12 +34,31 @@ export function TwoFaActionBox({
 
   if (currentType === "2fa_otp") {
     return (
-      <OtpBox
-        action={action}
-        insurerName={insurerName}
-        onResolved={onResolved}
-        onExpired={handleExpired}
-      />
+      <>
+        <OtpBox
+          action={action}
+          insurerName={insurerName}
+          onResolved={onResolved}
+          onExpired={handleExpired}
+        />
+        {action.channel === "email" && (
+          <div className="relative bg-[rgba(234,231,224,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-1.5 pl-[21px] pr-4 py-3.5">
+            <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#c4bfb6]" />
+            <div className="flex-1 flex items-center gap-2.5 text-panora-text-muted">
+              <Mail className="w-4 h-4 shrink-0" />
+              <p className="text-[13px] leading-5">
+                Recevez vos codes 2FA automatiquement en connectant votre boîte mail.
+              </p>
+            </div>
+            <a
+              href="/email?connect=true"
+              className="shrink-0 text-[13px] font-medium text-panora-green hover:underline whitespace-nowrap"
+            >
+              Connecter ma boîte mail
+            </a>
+          </div>
+        )}
+      </>
     );
   }
 
