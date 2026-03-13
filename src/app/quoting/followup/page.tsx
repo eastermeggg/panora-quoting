@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { InsurerCard } from "@/components/quoting/InsurerCard";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
@@ -14,6 +14,7 @@ import {
 } from "@/data/mock";
 import type { InsurerData } from "@/data/mock";
 import Link from "next/link";
+import { parsePriceEuros, formatPriceEuros } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronRight,
@@ -21,16 +22,17 @@ import {
   FileText,
   Paperclip,
   CheckCircle2,
-  Send,
-  Eye,
   ExternalLink,
   X,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress";
 
 function FollowupContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const cotationParamId = searchParams.get("id");
 
   // Resolve cotation data based on URL param
@@ -90,12 +92,12 @@ function FollowupContent() {
       {/* Header - 44px */}
       <div className="h-[44px] shrink-0 border-b border-panora-border flex items-center justify-between px-3">
         <div className="flex items-center gap-2.5">
-          <Link
-            href="/quoting/dashboard"
+          <button
+            onClick={() => router.back()}
             className="text-[12px] text-panora-text-secondary hover:text-panora-text transition-colors"
           >
             ← Retour
-          </Link>
+          </button>
           <div className="w-px h-[13px] bg-[#d9d9d9]" />
           <div className="flex items-center gap-1">
             <div className="w-4 h-4 shrink-0">
@@ -135,12 +137,12 @@ function FollowupContent() {
             </button>
           </div>
           <div className="w-px h-4 bg-panora-border" />
-          <Link
-            href="/quoting/dashboard"
+          <button
+            onClick={() => router.back()}
             className="p-0.5 hover:bg-panora-secondary rounded transition-colors text-panora-text-muted hover:text-panora-text"
           >
             <X className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -238,33 +240,8 @@ function FollowupContent() {
       {/* Scrollable main content */}
       <div className="flex-1 overflow-y-auto bg-panora-bg">
         <div className="max-w-[1046px] mx-auto px-6 py-6">
-          {/* All done banner */}
-          {allDone && (
-            <div className="mb-6 bg-[#dbeee5] border border-panora-green/20 rounded-xl p-5">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="text-[13px] font-semibold text-panora-green mb-1">
-                    Vous avez reçu tous les devis
-                  </h3>
-                  <p className="text-[13px] text-panora-green/80 leading-5 mb-4">
-                    Notre agent a packagé une comparaison détaillée prête à
-                    envoyer à votre client.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <button className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium">
-                      <Eye className="w-4 h-4" />
-                      Voir la comparaison
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-panora-green bg-white border border-panora-green/30 rounded-[10px] hover:bg-[#dbeee5] transition-colors">
-                      <Send className="w-4 h-4" />
-                      Partager au client
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* All done banner — rich mini-comparison */}
+          {allDone && <AllDoneBanner insurers={insurersList} clientName={clientName} productName={productName} cotParamId={cotationParamId ?? ""} />}
 
           {/* Insurer cards */}
           <div className="space-y-3">
@@ -306,6 +283,95 @@ export default function FollowupPage() {
     >
       <FollowupContent />
     </Suspense>
+  );
+}
+
+function AllDoneBanner({
+  insurers,
+  clientName,
+  productName,
+  cotParamId,
+}: {
+  insurers: InsurerData[];
+  clientName: string;
+  productName: string;
+  cotParamId: string;
+}) {
+  const insurerPrices = insurers.map((ins) => {
+    const annuals = (ins.pricing ?? []).map((p) => parsePriceEuros(p.annual));
+    const cheapest = annuals.length > 0 ? Math.min(...annuals) : 0;
+    return { ...ins, cheapest, offerCount: ins.pricing?.length ?? 0 };
+  });
+
+  const globalCheapest = Math.min(...insurerPrices.map((i) => i.cheapest).filter((p) => p > 0));
+
+  // Pick the insurer that best matches client needs (most formulas = broadest coverage)
+  const sortedByBreadth = [...insurerPrices].sort((a, b) => b.offerCount - a.offerCount);
+  const bestFit = sortedByBreadth[0];
+  const totalFormulas = insurerPrices.reduce((sum, i) => sum + i.offerCount, 0);
+
+  return (
+    <div className="mb-6 bg-white border border-panora-border rounded-[10px] overflow-hidden shadow-[0px_3px_6px_0px_rgba(0,0,0,0.02),0px_11px_11px_0px_rgba(0,0,0,0.02)]">
+      {/* Top bar */}
+      <div className="px-5 py-3 border-b border-panora-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-panora-green" />
+          <span className="text-[13px] font-semibold text-panora-text">
+            {insurers.length} devis reçus
+          </span>
+          <span className="text-[12px] text-panora-text-muted">
+            — {clientName}
+          </span>
+        </div>
+        <Link
+          href={`/quoting/comparison?id=${cotParamId}`}
+          className="btn-primary flex items-center gap-2 px-4 py-1.5 text-[13px] font-medium"
+        >
+          Comparer
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* Insurer mini-cards */}
+      <div className="px-5 py-4">
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${insurers.length}, 1fr)` }}>
+          {insurerPrices.map((ins) => {
+            const isBest = ins === bestFit;
+            return (
+              <div
+                key={ins.id}
+                className={`rounded-[8px] border px-3.5 py-3 ${isBest ? "border-panora-green/30 bg-[#f5fbf7]" : "border-panora-border bg-panora-bg/50"}`}
+              >
+                <div className="flex items-center gap-2 mb-2.5">
+                  <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[4px]" />
+                  <span className="text-[13px] font-medium text-panora-text">{ins.name}</span>
+                </div>
+                <div className="text-[12px] text-panora-text-muted mb-1">à partir de</div>
+                <div className="text-[18px] font-semibold tracking-[-0.3px] mb-1 text-panora-text">
+                  {ins.cheapest > 0 ? formatPriceEuros(ins.cheapest) : "—"}
+                  <span className="text-[12px] font-normal text-panora-text-muted">/an</span>
+                </div>
+                <div className="text-[12px] text-panora-text-muted">
+                  {ins.offerCount} formule{ins.offerCount > 1 ? "s" : ""}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* AI insight — based on client needs, not price */}
+      <div className="px-5 pb-4">
+        <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-[8px] bg-panora-bg border border-panora-border">
+          <Sparkles className="w-3.5 h-3.5 text-panora-green shrink-0 mt-0.5" />
+          <p className="text-[12px] text-panora-text-secondary leading-[18px]">
+            Au regard du profil {productName.toLowerCase()} de <strong className="text-panora-text">{clientName}</strong>,{" "}
+            <strong className="text-panora-text">{bestFit.name}</strong> propose la couverture la plus large avec {bestFit.offerCount} formules adaptées.
+            {" "}{totalFormulas} offres au total à analyser — comparez les garanties et franchises pour valider l&apos;adéquation aux besoins du client.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 

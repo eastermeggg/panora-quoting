@@ -42,7 +42,7 @@ export function TwoFaActionBox({
           onExpired={handleExpired}
         />
         {action.channel === "email" && (
-          <div className="relative bg-[rgba(234,231,224,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-1.5 pl-[21px] pr-4 py-3.5">
+          <div className="relative bg-[rgba(234,231,224,0.4)] rounded-[10px] flex items-center gap-1.5 pl-[21px] pr-4 py-3.5">
             <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#c4bfb6]" />
             <div className="flex-1 flex items-center gap-2.5 text-panora-text-muted">
               <Mail className="w-4 h-4 shrink-0" />
@@ -256,7 +256,7 @@ function OtpBox({
   const channel = channelLabel(action.channel);
 
   return (
-    <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 pl-[21px]">
+    <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] p-4 pl-[21px]">
       {/* Left accent border */}
       <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#cb8052]" />
 
@@ -418,7 +418,7 @@ function PushBox({
   };
 
   return (
-    <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 pl-[21px]">
+    <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] p-4 pl-[21px]">
       {/* Left accent border */}
       <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#cb8052]" />
 
@@ -524,7 +524,7 @@ function ExpiredBox({
   };
 
   return (
-    <div className="relative bg-[rgba(232,230,225,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 pl-[21px]">
+    <div className="relative bg-[rgba(232,230,225,0.4)] rounded-[10px] p-4 pl-[21px]">
       {/* Left accent border — gray for expired */}
       <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#9c9890]" />
 

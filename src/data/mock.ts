@@ -673,6 +673,212 @@ export function getFollowupData(cotationId: string): FollowupData | undefined {
   return cotationFollowupMap[cotationId];
 }
 
+// ─── Comparison data ─────────────────────────────────────────────────
+// Structured guarantee/coverage data extracted by the comparison agent.
+
+export type CellValue =
+  | { type: "check" }
+  | { type: "cross" }
+  | { type: "text"; value: string }
+  | { type: "empty" };
+
+export type GuaranteeRow = {
+  label: string;
+  /** keyed by insurer id */
+  values: Record<string, CellValue>;
+};
+
+export type GuaranteeSection = {
+  title: string;
+  rows: GuaranteeRow[];
+};
+
+export type ComparisonData = {
+  sections: GuaranteeSection[];
+};
+
+/** Mock comparison data per cotation (keyed by cotation id) */
+const comparisonDataMap: Record<string, ComparisonData> = {
+  "cot-2": {
+    sections: [
+      {
+        title: "Couvertures véhicules",
+        rows: [
+          {
+            label: "Responsabilité civile",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+          },
+          {
+            label: "Dommages tous accidents",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+          },
+          {
+            label: "Vol et tentative de vol",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+          },
+          {
+            label: "Bris de glace",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+          },
+          {
+            label: "Incendie, explosion, tempête",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+          },
+          {
+            label: "Catastrophes naturelles",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+          },
+          {
+            label: "Protection juridique",
+            values: { axa: { type: "check" }, allianz: { type: "cross" }, generali: { type: "check" } },
+          },
+        ],
+      },
+      {
+        title: "Garanties conducteur",
+        rows: [
+          {
+            label: "Protection corporelle du conducteur",
+            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "750 000 €" } },
+          },
+          {
+            label: "Assistance 0 km",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+          },
+          {
+            label: "Véhicule de remplacement",
+            values: { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "15 jours" }, generali: { type: "text", value: "21 jours" } },
+          },
+          {
+            label: "Franchise sinistre responsable",
+            values: { axa: { type: "text", value: "500 €" }, allianz: { type: "text", value: "750 €" }, generali: { type: "text", value: "500 €" } },
+          },
+        ],
+      },
+      {
+        title: "Services inclus",
+        rows: [
+          {
+            label: "Gestion de flotte en ligne",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+          },
+          {
+            label: "Carte verte dématérialisée",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+          },
+          {
+            label: "Reporting sinistralité",
+            values: { axa: { type: "text", value: "Trimestriel" }, allianz: { type: "text", value: "Mensuel" }, generali: { type: "text", value: "Annuel" } },
+          },
+        ],
+      },
+    ],
+  },
+  "cot-5": {
+    sections: [
+      {
+        title: "Couvertures RC Professionnelle",
+        rows: [
+          {
+            label: "Fautes professionnelles",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+          },
+          {
+            label: "Atteinte aux droits de propriété intellectuelle",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+          },
+          {
+            label: "Perte de données client",
+            values: { axa: { type: "check" }, allianz: { type: "cross" } },
+          },
+          {
+            label: "Violation du RGPD",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+          },
+          {
+            label: "Sous-traitance",
+            values: { axa: { type: "text", value: "Couverte" }, allianz: { type: "text", value: "Exclue" } },
+          },
+        ],
+      },
+      {
+        title: "Limites et franchises",
+        rows: [
+          {
+            label: "Plafond par sinistre",
+            values: { axa: { type: "text", value: "500 000 €" }, allianz: { type: "text", value: "500 000 €" } },
+          },
+          {
+            label: "Plafond annuel",
+            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
+          },
+          {
+            label: "Franchise",
+            values: { axa: { type: "text", value: "1 000 €" }, allianz: { type: "text", value: "1 500 €" } },
+          },
+          {
+            label: "Défense pénale",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export function getComparisonData(cotationId: string): ComparisonData | undefined {
+  return comparisonDataMap[cotationId];
+}
+
+// ─── Comparison task list ────────────────────────────────────────────
+// Persisted comparison agent tasks shown on the /quoting/comparison list page.
+
+export type ComparisonTaskStatus = "in_progress" | "done";
+
+export type ComparisonTask = {
+  id: string;
+  cotationId: string;
+  client: string;
+  products: string[];
+  insurerIds: string[];
+  createdBy: string;
+  date: string;
+  status: ComparisonTaskStatus;
+};
+
+export const comparisonTasks: ComparisonTask[] = [
+  {
+    id: "cmp-1",
+    cotationId: "cot-1",
+    client: "Marble Tech SAS",
+    products: ["RC Pro"],
+    insurerIds: ["axa", "generali", "allianz"],
+    createdBy: "Delphine",
+    date: "10/03/2026",
+    status: "in_progress",
+  },
+  {
+    id: "cmp-2",
+    cotationId: "cot-2",
+    client: "Acme Corp",
+    products: ["Flotte automobile"],
+    insurerIds: ["axa", "allianz", "generali"],
+    createdBy: "Delphine",
+    date: "07/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-3",
+    cotationId: "cot-5",
+    client: "Digital Solutions SARL",
+    products: ["RC Pro"],
+    insurerIds: ["axa", "allianz"],
+    createdBy: "Delphine",
+    date: "04/03/2026",
+    status: "done",
+  },
+];
+
 export const emailInboxMock = [
   {
     id: "1",

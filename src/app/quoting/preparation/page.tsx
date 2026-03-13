@@ -208,12 +208,12 @@ function PreparationContent() {
         {/* Header - 44px */}
         <div className="h-[44px] shrink-0 border-b border-panora-border flex items-center justify-between px-3">
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/quoting/dashboard"
+            <button
+              onClick={() => router.back()}
               className="text-[12px] text-panora-text-secondary hover:text-panora-text transition-colors"
             >
               ← Retour
-            </Link>
+            </button>
             <div className="w-px h-[13px] bg-[#d9d9d9]" />
             <div className="flex items-center gap-1">
               <FileText className="w-4 h-4 text-panora-green" />
@@ -225,12 +225,12 @@ function PreparationContent() {
               </span>
             </div>
           </div>
-          <Link
-            href="/quoting/dashboard"
+          <button
+            onClick={() => router.back()}
             className="p-1 hover:bg-panora-secondary rounded transition-colors text-panora-text-muted hover:text-panora-text"
           >
             <X className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
 
         {/* Title area - full width, border-bottom */}

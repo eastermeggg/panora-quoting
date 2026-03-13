@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Mail } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { TopBar, ViewMode } from "@/components/layout/TopBar";
 import { KanbanBoard } from "@/components/quoting/KanbanBoard";
 import { cotationsList } from "@/data/mock";
@@ -25,39 +25,29 @@ export default function DashboardPage() {
       />
 
       {/* Sticky email forward banner */}
-      <div className="sticky top-0 z-10 bg-panora-green-light border-b border-panora-green/10 px-6 py-2.5">
-        <div className="flex items-center gap-3">
-          <Mail className="w-4 h-4 text-panora-green shrink-0" />
-          <span className="text-sm text-panora-green font-medium">
-            Cotez par e-mail
+      <div className="sticky top-0 z-10 bg-[#ebf3ef] border-b border-[#e5e7eb] px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium text-[#173c2d]">
+            Côtez directement en envoyant vos informations de cotation à
           </span>
-          <span className="text-sm text-panora-text-secondary">
-            Transférez un e-mail client vers
-          </span>
-          <span className="text-sm text-panora-green font-medium font-mono">
+          <span className="text-[13px] font-medium text-panora-green">
             cotation+a7f3b2@panora.co
           </span>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 text-xs text-panora-green hover:underline font-medium shrink-0"
+            className="shrink-0"
           >
             {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                Copié
-              </>
+              <Check className="w-4 h-4 text-panora-green" />
             ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                Copier
-              </>
+              <Copy className="w-4 h-4 text-[#173c2d]/50 hover:text-[#173c2d] transition-colors" />
             )}
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-6 py-5">
         {viewMode === "kanban" ? (
           <KanbanBoard cotations={cotationsList} />
         ) : (

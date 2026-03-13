@@ -391,7 +391,7 @@ function ActionRequiredContent({
         />
       ) : (
         /* Manual action banner — Figma style */
-        <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-end gap-1.5 pl-[21px] pr-4 py-4">
+        <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] flex items-end gap-1.5 pl-[21px] pr-4 py-4">
           {/* Left accent border */}
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#cb8052]" />
 

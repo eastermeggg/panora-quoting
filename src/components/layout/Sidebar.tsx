@@ -24,7 +24,7 @@ const navItems = [
   },
   {
     label: "Assistant comparateur",
-    href: "#",
+    href: "/quoting/comparison",
     icon: Search,
     type: "item" as const,
   },
@@ -85,10 +85,18 @@ export function Sidebar() {
 
           {/* Nav items */}
           {navItems.map((item) => {
-            const matchPath =
-              item.href === "/quoting/dashboard" ? "/quoting" : item.href;
-            const isActive =
-              matchPath !== "#" && pathname.startsWith(matchPath);
+            // Comparison agent matches /quoting/comparison specifically
+            // Cotation agent matches /quoting but NOT /quoting/comparison
+            const isActive = (() => {
+              if (item.href === "#") return false;
+              if (item.href === "/quoting/comparison") {
+                return pathname.startsWith("/quoting/comparison");
+              }
+              if (item.href === "/quoting/dashboard") {
+                return pathname.startsWith("/quoting") && !pathname.startsWith("/quoting/comparison");
+              }
+              return pathname.startsWith(item.href);
+            })();
 
             return (
               <Link
