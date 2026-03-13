@@ -545,7 +545,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         allSteps: [
           { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification en cours", status: "success" },
           { date: "13/03/26 - 09h15", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
-          { date: "13/03/26 - 09h16", title: "Double authentification requise", description: "Code envoyé par e-mail à d••••e@howden.fr", status: "in_progress" },
+          { date: "13/03/26 - 09h16", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par e-mail à d••••e@howden.fr. L'agent ne peut pas continuer sans ce code.", status: "error" },
           { date: "13/03/26 - 09h17", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
           { date: "13/03/26 - 09h18", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
           { date: "13/03/26 - 09h20", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
@@ -601,7 +601,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         allSteps: [
           { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification en cours", status: "success" },
           { date: "13/03/26 - 09h12", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
-          { date: "13/03/26 - 09h13", title: "Double authentification requise", description: "Code SMS envoyé au 06 •• •• 42", status: "in_progress" },
+          { date: "13/03/26 - 09h13", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par SMS au 06 •• •• 42. L'agent ne peut pas continuer sans ce code.", status: "error" },
           { date: "13/03/26 - 09h14", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
           { date: "13/03/26 - 09h15", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
           { date: "13/03/26 - 09h17", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },

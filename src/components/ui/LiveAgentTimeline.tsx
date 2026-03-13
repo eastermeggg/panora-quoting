@@ -61,37 +61,9 @@ export function LiveAgentTimeline({
 
   const visibleSteps = allSteps.slice(0, visibleCount);
   const isRunning = !isCompleted && visibleCount < allSteps.length;
-  const totalSteps = allSteps.length;
 
   return (
     <div>
-      {/* Progress header */}
-      <div className="flex items-center gap-3 mb-4">
-        <h4 className="text-sm font-medium text-panora-text">
-          Actions de l&apos;agent
-        </h4>
-        <div className="flex-1" />
-        {isRunning && (
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-panora-green animate-pulse" />
-            <span className="text-xs text-panora-green font-medium">
-              En cours...
-            </span>
-          </div>
-        )}
-        <span className="text-xs text-panora-text-muted">
-          {Math.min(visibleCount, totalSteps)}/{totalSteps} étapes
-        </span>
-      </div>
-
-      {/* Steps progress bar */}
-      <div className="h-1.5 bg-panora-border/40 rounded-full mb-4 overflow-hidden">
-        <div
-          className="h-full bg-panora-green rounded-full transition-all duration-700 ease-out"
-          style={{ width: `${(visibleCount / totalSteps) * 100}%` }}
-        />
-      </div>
-
       {/* Timeline */}
       <div className="space-y-0 max-h-[300px] overflow-y-auto pr-1">
         {visibleSteps.map((step, i) => {

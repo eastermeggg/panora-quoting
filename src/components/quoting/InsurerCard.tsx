@@ -370,7 +370,15 @@ function ActionRequiredContent({
     }, 1500);
   };
 
-  const tailSteps = insurer.allSteps.slice(-4);
+  // Show only steps up to the blocking point (first non-success step)
+  const blockingIndex = insurer.allSteps.findIndex(
+    (s) => s.status === "in_progress" || s.status === "error"
+  );
+  const visibleSteps =
+    blockingIndex >= 0
+      ? insurer.allSteps.slice(0, blockingIndex + 1)
+      : insurer.allSteps;
+  const tailSteps = visibleSteps.slice(-4);
 
   return (
     <div className="flex flex-col gap-6">
