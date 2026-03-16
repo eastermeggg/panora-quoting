@@ -27,6 +27,7 @@ function InlineEdit({
   editing,
   onStartEdit,
   onStopEdit,
+  align = "left",
 }: {
   value: string;
   originalValue?: string;
@@ -36,6 +37,7 @@ function InlineEdit({
   editing: boolean;
   onStartEdit: () => void;
   onStopEdit: () => void;
+  align?: "left" | "right";
 }) {
   const [local, setLocal] = useState(value);
   const isOverridden = originalValue !== undefined && value !== originalValue;
@@ -85,6 +87,20 @@ function InlineEdit({
     );
   }
 
+  const pencilIcon = (
+    <Pencil className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/field:opacity-100 transition-opacity shrink-0" />
+  );
+  const textSpan = (
+    <span
+      className={cn(
+        "text-[13px] leading-5 text-panora-text whitespace-nowrap",
+        bold && "font-semibold"
+      )}
+    >
+      {value || "—"}
+    </span>
+  );
+
   return (
     <div
       onClick={() => {
@@ -97,15 +113,11 @@ function InlineEdit({
       )}
     >
       {isOverridden && <OverrideDot />}
-      <span
-        className={cn(
-          "text-[13px] leading-5 text-panora-text whitespace-nowrap",
-          bold && "font-semibold"
-        )}
-      >
-        {value || "—"}
-      </span>
-      <Pencil className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/field:opacity-100 transition-opacity shrink-0" />
+      {align === "right" ? (
+        <>{pencilIcon}{textSpan}</>
+      ) : (
+        <>{textSpan}{pencilIcon}</>
+      )}
     </div>
   );
 }
@@ -146,13 +158,19 @@ export function PanelCardA({ rows, originalRows, onChange }: PanelCardAProps) {
 
   return (
     <div className="border border-panora-border rounded-[10px] overflow-clip">
+      {/* Card title header row */}
+      {rows.length > 0 && (
+        <div className="h-[44px] flex items-center px-3 border-b border-panora-border">
+          <span className="text-[13px] leading-5 text-panora-text">Nom de la carte</span>
+        </div>
+      )}
       {rows.map((row, idx) => {
         const rowEditing = isRowEditing(row.id);
         return (
           <div
             key={row.id}
             className={cn(
-              "flex items-center p-[10px]",
+              "h-[44px] flex items-center px-3",
               idx < rows.length - 1 && "border-b border-panora-border"
             )}
           >
@@ -179,6 +197,7 @@ export function PanelCardA({ rows, originalRows, onChange }: PanelCardAProps) {
                 originalValue={getOriginal(row.id, "value")}
                 onChange={(v) => updateRow(row.id, "value", v)}
                 bold
+                align="right"
                 editing={editingCell === `${row.id}-value`}
                 onStartEdit={() => setEditingCell(`${row.id}-value`)}
                 onStopEdit={() => setEditingCell(null)}
@@ -268,6 +287,7 @@ export function PanelCardB({ rows, originalRows, onChange }: PanelCardBProps) {
                   originalValue={getOriginal(row.id, "price")}
                   onChange={(v) => updateRow(row.id, "price", v)}
                   bold
+                  align="right"
                   editing={editingCell === `${row.id}-price`}
                   onStartEdit={() => setEditingCell(`${row.id}-price`)}
                   onStopEdit={() => setEditingCell(null)}

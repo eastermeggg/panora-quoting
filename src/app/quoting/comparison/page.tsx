@@ -228,6 +228,8 @@ function getCellDetail(
       insurerName: ins?.name ?? cellId.insurerId,
       description: "",
       cellType: "guarantee",
+      mainLimit: "1 500 €",
+      mainDeductible: "5 000 €",
       subLimits: [],
       sources: [],
     };
