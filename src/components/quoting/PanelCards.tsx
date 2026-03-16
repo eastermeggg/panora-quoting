@@ -49,35 +49,38 @@ function InlineEdit({
 
   if (editing) {
     return (
-      <div className={cn("rounded-[8px] border border-panora-green p-[2px]", className)}>
-        <div className="bg-white border border-[#e2dfd8] rounded-[6px] flex items-center gap-1.5 px-2 py-1">
-          {isOverridden && <OverrideDot />}
-          <input
-            autoFocus
-            value={local}
-            onChange={(e) => setLocal(e.target.value)}
-            onBlur={() => {
+      <div
+        className={cn(
+          "flex items-center gap-1.5 px-2 py-1 rounded-[8px] ring-2 ring-panora-green/40 bg-white",
+          className
+        )}
+      >
+        {isOverridden && <OverrideDot />}
+        <input
+          autoFocus
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          onBlur={() => {
+            onChange(local);
+            prevRef.current = local;
+            onStopEdit();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
               onChange(local);
               prevRef.current = local;
               onStopEdit();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                onChange(local);
-                prevRef.current = local;
-                onStopEdit();
-              }
-              if (e.key === "Escape") {
-                setLocal(value);
-                onStopEdit();
-              }
-            }}
-            className={cn(
-              "flex-1 text-[13px] leading-5 text-panora-text outline-none bg-transparent min-w-0",
-              bold && "font-semibold"
-            )}
-          />
-        </div>
+            }
+            if (e.key === "Escape") {
+              setLocal(value);
+              onStopEdit();
+            }
+          }}
+          className={cn(
+            "flex-1 text-[13px] leading-5 text-panora-text outline-none bg-transparent min-w-0",
+            bold && "font-semibold"
+          )}
+        />
       </div>
     );
   }

@@ -8,7 +8,7 @@ import {
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
-import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData } from "@/data/mock";
+import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow } from "@/data/mock";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
@@ -251,6 +251,26 @@ function getCellDetail(
       sources: [],
     };
   }
+  if (cellId.type === "exclusion" && data?.exclusions) {
+    const row = data.exclusions.find((r) => r.id === cellId.exclusionId);
+    if (!row) return null;
+    const detail = row.details?.[cellId.insurerId];
+    if (detail) return detail;
+    const cellVal = row.values[cellId.insurerId];
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    return {
+      title: row.label,
+      covered: cellVal?.type === "inclus",
+      insurerId: cellId.insurerId,
+      insurerName: ins?.name ?? cellId.insurerId,
+      description: "",
+      cellType: "exclusion",
+      origin: row.origin,
+      exclusionId: row.id,
+      subLimits: [],
+      sources: [],
+    };
+  }
   return null;
 }
 
@@ -337,7 +357,75 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           return { ...ins, pricing };
         })
       );
+    } else if (cellId.type === "exclusion") {
+      setComparisonResult((prev) => {
+        if (!prev?.exclusions) return prev;
+        const exclusions = prev.exclusions.map((row) => {
+          if (row.id !== cellId.exclusionId) return row;
+          // Update cell value based on covered toggle
+          const currentCell = row.values[cellId.insurerId];
+          let newCell = currentCell;
+          if (updatedDetail.covered && currentCell?.type !== "inclus") {
+            newCell = { type: "inclus" };
+          } else if (!updatedDetail.covered && currentCell?.type !== "exclu") {
+            newCell = { type: "exclu" };
+          }
+          return {
+            ...row,
+            label: updatedDetail.title || row.label,
+            values: { ...row.values, [cellId.insurerId]: newCell },
+            details: { ...row.details, [cellId.insurerId]: updatedDetail },
+          };
+        });
+        return { ...prev, exclusions };
+      });
     }
+  }, []);
+
+  const handleAddManualExclusion = useCallback((): string => {
+    const newId = `excl-m-${Date.now()}`;
+    const newRow: ExclusionRow = {
+      id: newId,
+      label: "",
+      origin: "manual",
+      values: Object.fromEntries(mutableInsurers.map((ins) => [ins.id, { type: "exclu" as const }])),
+    };
+    setComparisonResult((prev) => {
+      if (!prev) return prev;
+      return { ...prev, exclusions: [...(prev.exclusions ?? []), newRow] };
+    });
+    return newId;
+  }, [mutableInsurers]);
+
+  const handleUpdateExclusionLabel = useCallback((exclusionId: string, label: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return {
+        ...prev,
+        exclusions: prev.exclusions.map((r) =>
+          r.id === exclusionId ? { ...r, label } : r
+        ),
+      };
+    });
+  }, []);
+
+  const handleDiscardExclusion = useCallback((exclusionId: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return { ...prev, exclusions: prev.exclusions.filter((r) => r.id !== exclusionId) };
+    });
+  }, []);
+
+  const handleDeleteExclusion = useCallback((exclusionId: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return { ...prev, exclusions: prev.exclusions.filter((r) => r.id !== exclusionId) };
+    });
+    setSelectedCell(null);
+  }, []);
+
+  const handlePanelClose = useCallback(() => {
+    setSelectedCell(null);
   }, []);
 
   if (!followupData) {
@@ -406,13 +494,21 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               cotParamId={cotParamId}
               selectedCell={selectedCell}
               onCellSelect={setSelectedCell}
+              onAddExclusion={handleAddManualExclusion}
+              onUpdateExclusionLabel={handleUpdateExclusionLabel}
+              onDiscardExclusion={handleDiscardExclusion}
             />
           </div>
           {selectedCell && currentDetail && (
             <DetailPanel
               cellDetail={currentDetail}
               onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
-              onClose={() => setSelectedCell(null)}
+              onClose={handlePanelClose}
+              onDelete={
+                selectedCell.type === "exclusion" && currentDetail.origin === "manual"
+                  ? () => handleDeleteExclusion(selectedCell.exclusionId)
+                  : undefined
+              }
             />
           )}
         </div>

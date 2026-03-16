@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X as XIcon, ExternalLink, Check } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { X as XIcon, ExternalLink, Check, Trash2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { PanelCardA, PanelCardB } from "@/components/quoting/PanelCards";
@@ -11,18 +11,19 @@ interface DetailPanelProps {
   cellDetail: CellDetail;
   onUpdate: (updated: CellDetail) => void;
   onClose: () => void;
+  onDelete?: () => void;
 }
 
 function OverrideDot() {
   return (
     <span
       className="w-[6px] h-[6px] rounded-full bg-panora-green shrink-0"
-      title="Modifié"
+      title="Modifi&eacute;"
     />
   );
 }
 
-export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps) {
+export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete }: DetailPanelProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(cellDetail.title);
   const [editingDesc, setEditingDesc] = useState(false);
@@ -56,9 +57,18 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
   const titleOverridden = cellDetail.title !== originals.title;
   const descOverridden = cellDetail.description !== originals.description;
 
-  const update = (patch: Partial<CellDetail>) => {
+  const [saveFlash, setSaveFlash] = useState(false);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const update = useCallback((patch: Partial<CellDetail>) => {
     onUpdate({ ...cellDetail, ...patch });
-  };
+    setSaveFlash(true);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setSaveFlash(false), 1500);
+  }, [cellDetail, onUpdate]);
+
+  const isExclusion = cellDetail.cellType === "exclusion";
+  const isManualExclusion = isExclusion && cellDetail.origin === "manual";
 
   return (
     <div
@@ -67,13 +77,26 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
     >
       {/* Header */}
       <div className="h-[52px] shrink-0 border-b border-[#e3e3e3] flex items-center justify-between px-4">
-        <span className="text-[13px] text-panora-text-muted">Détail de la garantie</span>
-        <button
-          onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center rounded-[6px] bg-panora-secondary hover:bg-panora-drop transition-colors"
-        >
-          <XIcon className="w-3.5 h-3.5 text-panora-text" />
-        </button>
+        <span className="text-[13px] text-panora-text-muted">
+          {isExclusion ? "D\u00e9tail de l\u2019exclusion" : "D\u00e9tail de la garantie"}
+        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "flex items-center gap-1 text-[12px] text-panora-green transition-opacity duration-300",
+              saveFlash ? "opacity-100" : "opacity-0"
+            )}
+          >
+            <Check className="w-3 h-3" />
+            Enregistr\u00e9
+          </span>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center rounded-[6px] bg-panora-secondary hover:bg-panora-drop transition-colors"
+          >
+            <XIcon className="w-3.5 h-3.5 text-panora-text" />
+          </button>
+        </div>
       </div>
 
       {/* Title + insurer badge + description */}
@@ -103,15 +126,18 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
               className="flex-1 text-[20px] font-serif tracking-[-0.2px] leading-6 text-black bg-white border border-panora-border rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-panora-green/20"
             />
           ) : (
-            <h2
+            <div
               onClick={() => {
                 setLocalTitle(cellDetail.title);
                 setEditingTitle(true);
               }}
-              className="text-[20px] font-serif tracking-[-0.2px] leading-6 text-black cursor-text hover:text-panora-green transition-colors"
+              className="group/title flex items-center gap-2 cursor-text"
             >
-              {cellDetail.title}
-            </h2>
+              <h2 className="text-[20px] font-serif tracking-[-0.2px] leading-6 text-black">
+                {cellDetail.title || <span className="text-panora-text-muted">Ajouter un titre…</span>}
+              </h2>
+              <Pencil className="w-3.5 h-3.5 text-panora-text-muted opacity-0 group-hover/title:opacity-100 transition-opacity shrink-0" />
+            </div>
           )}
         </div>
 
@@ -123,16 +149,16 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
           </div>
         </div>
 
-        {/* Covered / Non couvert toggle — guarantee only */}
+        {/* Covered / Non couvert toggle — guarantee */}
         {cellDetail.cellType === "guarantee" && (
-          <div className="inline-flex self-start rounded-[8px] overflow-hidden border border-panora-border">
+          <div className="inline-flex self-start gap-2">
             <button
               onClick={() => update({ covered: true })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium transition-colors",
+                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
                 cellDetail.covered
-                  ? "bg-[#dbeee5]"
-                  : "bg-white text-panora-text-muted hover:bg-panora-bg/50"
+                  ? "bg-[#dbeee5] border-[#b5e0cc]"
+                  : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
@@ -146,10 +172,10 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
             <button
               onClick={() => update({ covered: false })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium transition-colors border-l border-panora-border",
+                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
                 !cellDetail.covered
-                  ? "bg-[#fde8e8]"
-                  : "bg-white text-panora-text-muted hover:bg-panora-bg/50"
+                  ? "bg-[#fde8e8] border-[#f0c4c4]"
+                  : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
@@ -159,6 +185,46 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
                 <XIcon className={cn("w-3 h-3", !cellDetail.covered ? "text-[#952617]" : "text-panora-text-muted")} />
               </span>
               <span className={!cellDetail.covered ? "text-[#952617]" : ""}>Non couvert</span>
+            </button>
+          </div>
+        )}
+
+        {/* Inclus / Exclu toggle — exclusion */}
+        {isExclusion && (
+          <div className="inline-flex self-start gap-2">
+            <button
+              onClick={() => update({ covered: true })}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                cellDetail.covered
+                  ? "bg-[#dbeee5] border-[#b5e0cc]"
+                  : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
+              )}
+            >
+              <span className={cn(
+                "inline-flex items-center justify-center w-5 h-5 rounded-full",
+                cellDetail.covered ? "bg-panora-green/20" : "bg-panora-border"
+              )}>
+                <Check className={cn("w-3 h-3", cellDetail.covered ? "text-panora-green" : "text-panora-text-muted")} />
+              </span>
+              <span className={cellDetail.covered ? "text-panora-text" : ""}>Incluse</span>
+            </button>
+            <button
+              onClick={() => update({ covered: false })}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                !cellDetail.covered
+                  ? "bg-[#fde8e8] border-[#f0c4c4]"
+                  : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
+              )}
+            >
+              <span className={cn(
+                "inline-flex items-center justify-center w-5 h-5 rounded-full",
+                !cellDetail.covered ? "bg-[#952617]/20" : "bg-panora-border"
+              )}>
+                <span className={cn("text-[11px] font-bold leading-none", !cellDetail.covered ? "text-[#952617]" : "text-panora-text-muted")}>!</span>
+              </span>
+              <span className={!cellDetail.covered ? "text-[#952617]" : ""}>Exclue</span>
             </button>
           </div>
         )}
@@ -185,20 +251,23 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
               className="flex-1 text-[13px] leading-5 text-panora-text bg-white border border-panora-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-panora-green/20 resize-none"
             />
           ) : (
-            <p
+            <div
               onClick={() => {
                 setLocalDesc(cellDetail.description);
                 setEditingDesc(true);
               }}
-              className="text-[13px] leading-5 text-panora-text cursor-text hover:text-panora-green transition-colors"
+              className="group/desc flex items-start gap-2 cursor-text"
             >
-              {cellDetail.description || "Cliquer pour ajouter une description..."}
-            </p>
+              <p className="text-[13px] leading-5 text-panora-text">
+                {cellDetail.description || <span className="text-panora-text-muted">Ajouter une description…</span>}
+              </p>
+              <Pencil className="w-3.5 h-3.5 text-panora-text-muted opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0 mt-0.5" />
+            </div>
           )}
         </div>
       </div>
 
-      {/* Cards section */}
+      {/* Cards section — guarantee: "Sous limites" */}
       {cellDetail.cellType === "guarantee" && (
         <div className="border-b border-[#e3e3e3] p-4 pb-5 flex flex-col gap-3">
           <h3 className="text-[15px] font-semibold text-panora-text">Sous limites</h3>
@@ -221,13 +290,30 @@ export function DetailPanel({ cellDetail, onUpdate, onClose }: DetailPanelProps)
         </div>
       )}
 
-      {/* Sources (read-only) */}
-      {cellDetail.sources && cellDetail.sources.length > 0 && (
+      {/* Sources (read-only) — hidden for manual exclusions */}
+      {cellDetail.sources && cellDetail.sources.length > 0 && !isManualExclusion && (
         <div className="p-4 flex flex-col gap-3">
           <h3 className="text-[15px] font-semibold text-panora-text">Sources</h3>
           {cellDetail.sources.map((source: SourceRef, idx: number) => (
             <SourceCard key={idx} source={source} />
           ))}
+        </div>
+      )}
+
+      {/* Delete button — manual exclusions only */}
+      {isManualExclusion && onDelete && (
+        <div className="p-4 border-t border-[#e3e3e3] mt-auto">
+          <button
+            onClick={() => {
+              if (window.confirm("Supprimer cette exclusion manuelle ?")) {
+                onDelete();
+              }
+            }}
+            className="flex items-center gap-2 text-[13px] font-medium text-[#952617] hover:text-[#952617]/80 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Supprimer l&apos;exclusion
+          </button>
         </div>
       )}
     </div>

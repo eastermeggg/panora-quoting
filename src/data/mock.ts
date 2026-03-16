@@ -702,21 +702,26 @@ export type SourceRef = {
   page?: string;
 };
 
+export type ExclusionOrigin = "deterministic" | "ai" | "manual";
+
 export type CellDetail = {
   title: string;
   covered: boolean;
   insurerId: string;
   insurerName: string;
   description: string;
-  cellType: "guarantee" | "price";
+  cellType: "guarantee" | "price" | "exclusion";
   subLimits?: SubLimitRow[];
   pricingRows?: PricingCardRow[];
   sources?: SourceRef[];
+  origin?: ExclusionOrigin;
+  exclusionId?: string;
 };
 
 export type CellIdentifier =
   | { type: "guarantee"; sectionIndex: number; rowIndex: number; insurerId: string }
-  | { type: "price"; insurerId: string; formulaIndex: number };
+  | { type: "price"; insurerId: string; formulaIndex: number }
+  | { type: "exclusion"; exclusionId: string; insurerId: string };
 
 export type GuaranteeRow = {
   label: string;
@@ -731,8 +736,23 @@ export type GuaranteeSection = {
   rows: GuaranteeRow[];
 };
 
+export type ExclusionCellValue =
+  | { type: "exclu" }
+  | { type: "inclus" }
+  | { type: "exclu-text"; value: string }
+  | { type: "empty" };
+
+export type ExclusionRow = {
+  id: string;
+  label: string;
+  origin: ExclusionOrigin;
+  values: Record<string, ExclusionCellValue>;
+  details?: Record<string, CellDetail>;
+};
+
 export type ComparisonData = {
   sections: GuaranteeSection[];
+  exclusions?: ExclusionRow[];
 };
 
 function makeDetail(
@@ -756,6 +776,31 @@ function makeDetail(
   };
 }
 
+function makeExclusionDetail(
+  label: string,
+  insurerId: string,
+  insurerName: string,
+  covered: boolean,
+  origin: ExclusionOrigin,
+  exclusionId: string,
+  description: string,
+  subLimits: SubLimitRow[] = [],
+  sources: SourceRef[] = [],
+): CellDetail {
+  return {
+    title: label,
+    covered,
+    insurerId,
+    insurerName,
+    description,
+    cellType: "exclusion",
+    origin,
+    exclusionId,
+    subLimits,
+    sources,
+  };
+}
+
 const defaultSources: SourceRef[] = [
   { title: "Conditions Générales", description: "Détail des garanties et limites applicables au contrat.", badge: "Contrat", page: "Page 12" },
 ];
@@ -763,6 +808,63 @@ const defaultSources: SourceRef[] = [
 /** Mock comparison data per cotation (keyed by cotation id) */
 const comparisonDataMap: Record<string, ComparisonData> = {
   "cot-2": {
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle", "axa", "Axa", false, "deterministic", "excl-d1", "Les dommages causés intentionnellement par l'assuré sont exclus de toute garantie.", [{ id: "sl-1", label: "Condition", value: "Aucune dérogation possible" }], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle", "allianz", "Allianz", false, "deterministic", "excl-d1", "Exclusion légale : tout acte intentionnel de l'assuré.", [{ id: "sl-1", label: "Condition", value: "Article L113-1 Code des assurances" }], defaultSources),
+          generali: makeExclusionDetail("Faute intentionnelle", "generali", "Generali", false, "deterministic", "excl-d1", "Dommages résultant d'une faute intentionnelle ou dolosive.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Guerre et terrorisme",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Guerre et terrorisme", "axa", "Axa", false, "deterministic", "excl-d2", "Dommages résultant de faits de guerre, guerre civile ou actes de terrorisme.", [{ id: "sl-1", label: "Exception", value: "Loi GAREAT pour le terrorisme" }], defaultSources),
+          allianz: makeExclusionDetail("Guerre et terrorisme", "allianz", "Allianz", false, "deterministic", "excl-d2", "Exclusion des risques de guerre et assimilés.", [], defaultSources),
+          generali: makeExclusionDetail("Guerre et terrorisme", "generali", "Generali", false, "deterministic", "excl-d2", "Événements de guerre et terrorisme exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d3",
+        label: "Usure normale du véhicule",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "inclus" } },
+        details: {
+          axa: makeExclusionDetail("Usure normale du véhicule", "axa", "Axa", false, "deterministic", "excl-d3", "L'usure normale et la vétusté du véhicule ne sont pas couvertes.", [], defaultSources),
+          allianz: makeExclusionDetail("Usure normale du véhicule", "allianz", "Allianz", false, "deterministic", "excl-d3", "Dommages liés à l'usure, la corrosion ou le défaut d'entretien.", [], defaultSources),
+          generali: makeExclusionDetail("Usure normale du véhicule", "generali", "Generali", true, "deterministic", "excl-d3", "Prise en charge partielle de l'usure dans la formule Premium.", [{ id: "sl-1", label: "Plafond", value: "500 €/an" }], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Activités non déclarées",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu-text", value: "Sauf avenant" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Activités non déclarées", "axa", "Axa", false, "ai", "excl-a1", "Exclusion des sinistres liés à une activité non déclarée au contrat.", [{ id: "sl-1", label: "Condition", value: "Déclaration exhaustive requise" }], defaultSources),
+          allianz: makeExclusionDetail("Activités non déclarées", "allianz", "Allianz", false, "ai", "excl-a1", "Activités non mentionnées au contrat exclues, sauf avenant spécifique.", [{ id: "sl-1", label: "Dérogation", value: "Avenant possible sous 30j" }], defaultSources),
+          generali: makeExclusionDetail("Activités non déclarées", "generali", "Generali", false, "ai", "excl-a1", "Toute activité non portée à la connaissance de l'assureur est exclue.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a2",
+        label: "Dommages aux biens confiés",
+        origin: "ai",
+        values: { axa: { type: "inclus" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Dommages aux biens confiés", "axa", "Axa", true, "ai", "excl-a2", "Les dommages aux biens confiés sont couverts dans le cadre de la RC exploitation.", [{ id: "sl-1", label: "Sous-limite", value: "50 000 €" }], defaultSources),
+          allianz: makeExclusionDetail("Dommages aux biens confiés", "allianz", "Allianz", false, "ai", "excl-a2", "Les biens confiés par les clients sont exclus de la couverture de base.", [], defaultSources),
+          generali: makeExclusionDetail("Dommages aux biens confiés", "generali", "Generali", false, "ai", "excl-a2", "Exclusion des dommages aux biens dont l'assuré a la garde.", [], defaultSources),
+        },
+      },
+    ],
     sections: [
       {
         title: "Couvertures véhicules",
@@ -908,6 +1010,48 @@ const comparisonDataMap: Record<string, ComparisonData> = {
     ],
   },
   "cot-5": {
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle ou dolosive",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle ou dolosive", "axa", "Axa", false, "deterministic", "excl-d1", "Tout dommage résultant d'un acte volontaire de l'assuré.", [], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle ou dolosive", "allianz", "Allianz", false, "deterministic", "excl-d1", "Exclusion des fautes intentionnelles conformément au Code des assurances.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Amendes et pénalités",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Amendes et pénalités", "axa", "Axa", false, "deterministic", "excl-d2", "Les amendes, pénalités et sanctions financières ne sont pas assurables.", [], defaultSources),
+          allianz: makeExclusionDetail("Amendes et pénalités", "allianz", "Allianz", false, "deterministic", "excl-d2", "Exclusion légale des amendes et pénalités administratives ou judiciaires.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Activités de conseil juridique",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "inclus" } },
+        details: {
+          axa: makeExclusionDetail("Activités de conseil juridique", "axa", "Axa", false, "ai", "excl-a1", "Les prestations de conseil juridique sont exclues sauf si exercées à titre accessoire.", [{ id: "sl-1", label: "Condition", value: "< 10% du CA" }], defaultSources),
+          allianz: makeExclusionDetail("Activités de conseil juridique", "allianz", "Allianz", true, "ai", "excl-a1", "Le conseil juridique accessoire est couvert dans la formule Confort.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a2",
+        label: "Travaux sur infrastructures critiques",
+        origin: "ai",
+        values: { axa: { type: "exclu-text", value: "Limité" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Travaux sur infrastructures critiques", "axa", "Axa", false, "ai", "excl-a2", "Interventions sur systèmes critiques (santé, transport, énergie) soumises à sous-limite.", [{ id: "sl-1", label: "Sous-limite", value: "100 000 €" }], defaultSources),
+          allianz: makeExclusionDetail("Travaux sur infrastructures critiques", "allianz", "Allianz", false, "ai", "excl-a2", "Exclusion totale des interventions sur infrastructures critiques.", [], defaultSources),
+        },
+      },
+    ],
     sections: [
       {
         title: "Couvertures RC Professionnelle",
