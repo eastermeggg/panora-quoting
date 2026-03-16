@@ -25,6 +25,58 @@ function OverrideDot() {
   );
 }
 
+/** Inline editable field used for main limit / deductible values */
+function InlineValue({
+  value,
+  originalValue,
+  onChange,
+}: {
+  value: string;
+  originalValue?: string;
+  onChange: (v: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [local, setLocal] = useState(value);
+  const isOverridden = originalValue !== undefined && value !== originalValue;
+  const prevRef = useRef(value);
+  if (value !== prevRef.current && !editing) {
+    prevRef.current = value;
+    setLocal(value);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-[8px] ring-2 ring-panora-green/40 bg-white">
+        {isOverridden && <OverrideDot />}
+        <input
+          autoFocus
+          value={local}
+          onChange={(e) => setLocal(e.target.value)}
+          onBlur={() => { onChange(local); prevRef.current = local; setEditing(false); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { onChange(local); prevRef.current = local; setEditing(false); }
+            if (e.key === "Escape") { setLocal(value); setEditing(false); }
+          }}
+          className="flex-1 text-[13px] leading-5 text-panora-text font-semibold outline-none bg-transparent min-w-0 text-right"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { setLocal(value); setEditing(true); }}
+      className="group/val flex items-center gap-1.5 px-2 py-1 rounded-[8px] cursor-text hover:bg-[rgba(34,32,26,0.05)] transition-colors"
+    >
+      <Pencil className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/val:opacity-100 transition-opacity shrink-0" />
+      {isOverridden && <OverrideDot />}
+      <span className="text-[13px] leading-5 text-panora-text font-semibold whitespace-nowrap">
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
+
 export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDetail, onToggleDisplayMode }: DetailPanelProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(cellDetail.title);
@@ -36,6 +88,8 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
     key: `${cellDetail.insurerId}-${cellDetail.title}`,
     title: cellDetail.title,
     description: cellDetail.description,
+    mainLimit: cellDetail.mainLimit,
+    mainDeductible: cellDetail.mainDeductible,
     subLimits: cellDetail.subLimits ? [...cellDetail.subLimits] : undefined,
     pricingRows: cellDetail.pricingRows ? [...cellDetail.pricingRows] : undefined,
   });
@@ -47,6 +101,8 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
       key: currentKey,
       title: cellDetail.title,
       description: cellDetail.description,
+      mainLimit: cellDetail.mainLimit,
+      mainDeductible: cellDetail.mainDeductible,
       subLimits: cellDetail.subLimits ? [...cellDetail.subLimits] : undefined,
       pricingRows: cellDetail.pricingRows ? [...cellDetail.pricingRows] : undefined,
     });
@@ -72,6 +128,9 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
   const isExclusion = cellDetail.cellType === "exclusion";
   const isManualExclusion = isExclusion && cellDetail.origin === "manual";
 
+  // Insurer initial letter for avatar
+  const insurerInitial = cellDetail.insurerName?.charAt(0).toUpperCase() || "?";
+
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -90,7 +149,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
             )}
           >
             <Check className="w-3 h-3" />
-            Enregistr\u00e9
+            Enregistr&eacute;
           </span>
           <button
             onClick={onClose}
@@ -103,7 +162,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-      {/* Title + insurer badge + description */}
+      {/* Title + insurer badge + toggles + main limits + description */}
       <div className="border-b border-[#e3e3e3] p-4 flex flex-col gap-3">
         {/* Editable title */}
         <div className="flex items-center gap-2">
@@ -127,7 +186,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
                   setEditingTitle(false);
                 }
               }}
-              className="flex-1 text-[20px] font-serif tracking-[-0.2px] leading-6 text-black bg-white border border-panora-border rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-panora-green/20"
+              className="flex-1 text-[20px] font-serif tracking-[-0.2px] leading-6 text-black bg-white border border-panora-green rounded-lg px-3 py-2 outline-none ring-2 ring-panora-green/20"
             />
           ) : (
             <div
@@ -145,8 +204,12 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
           )}
         </div>
 
-        {/* Insurer badge */}
+        {/* Insurer badge — letter avatar | logo + name */}
         <div className="flex items-center gap-[7px]">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-[4px] bg-panora-bg border border-panora-border text-[11px] font-semibold text-panora-text leading-none">
+            {insurerInitial}
+          </span>
+          <span className="w-px h-[15px] bg-panora-border" />
           <div className="flex items-center gap-1.5">
             <InsurerLogo insurerId={cellDetail.insurerId} name={cellDetail.insurerName} size="sm" className="w-4 h-4 rounded-[4px]" />
             <span className="text-[13px] text-panora-text">{cellDetail.insurerName}</span>
@@ -233,9 +296,39 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
           </div>
         )}
 
-        {/* Editable description */}
-        <div className="flex items-start gap-2">
-          {descOverridden && <OverrideDot />}
+        {/* Main limit & deductible card */}
+        {cellDetail.cellType === "guarantee" && (cellDetail.mainLimit || cellDetail.mainDeductible) && (
+          <div className="border border-panora-border rounded-[10px] overflow-clip">
+            {cellDetail.mainLimit && (
+              <div className="flex items-center justify-between px-3 py-2 border-b border-panora-border">
+                <span className="text-[13px] leading-5 text-panora-text">Limite principale</span>
+                <InlineValue
+                  value={cellDetail.mainLimit}
+                  originalValue={originals.mainLimit}
+                  onChange={(v) => update({ mainLimit: v })}
+                />
+              </div>
+            )}
+            {cellDetail.mainDeductible && (
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-[13px] leading-5 text-panora-text">Franchise principale</span>
+                <InlineValue
+                  value={cellDetail.mainDeductible}
+                  originalValue={originals.mainDeductible}
+                  onChange={(v) => update({ mainDeductible: v })}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Description + Modifier button */}
+        <div className="flex flex-col gap-1.5">
+          {descOverridden && (
+            <div className="flex items-center gap-1.5">
+              <OverrideDot />
+            </div>
+          )}
           {editingDesc ? (
             <textarea
               autoFocus
@@ -251,22 +344,25 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
                   setEditingDesc(false);
                 }
               }}
-              rows={3}
-              className="flex-1 text-[13px] leading-5 text-panora-text bg-white border border-panora-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-panora-green/20 resize-none"
+              rows={4}
+              className="text-[13px] leading-5 text-panora-text bg-white border border-panora-green rounded-lg px-3 py-2.5 outline-none ring-2 ring-panora-green/20 resize-none"
             />
           ) : (
-            <div
-              onClick={() => {
-                setLocalDesc(cellDetail.description);
-                setEditingDesc(true);
-              }}
-              className="group/desc flex items-start gap-2 cursor-text"
-            >
+            <>
               <p className="text-[13px] leading-5 text-panora-text">
-                {cellDetail.description || <span className="text-panora-text-muted">Ajouter une description…</span>}
+                {cellDetail.description || <span className="text-panora-text-muted">Aucune description.</span>}
               </p>
-              <Pencil className="w-3.5 h-3.5 text-panora-text-muted opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0 mt-0.5" />
-            </div>
+              <button
+                onClick={() => {
+                  setLocalDesc(cellDetail.description);
+                  setEditingDesc(true);
+                }}
+                className="inline-flex items-center gap-1.5 text-[13px] text-panora-green hover:text-panora-green/80 transition-colors self-start"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Modifier
+              </button>
+            </>
           )}
         </div>
       </div>

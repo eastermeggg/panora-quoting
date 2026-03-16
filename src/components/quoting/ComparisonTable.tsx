@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { parsePriceEuros } from "@/lib/utils";
-import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Lock, Sparkles, PenLine, Eye, EyeOff, Info } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin } from "@/data/mock";
+import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Sparkles, Eye, EyeOff, Info } from "lucide-react";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -39,6 +39,11 @@ function deriveKeyDetail(
     return { text: detail.pricingRows[0].price, isPrice: true };
   }
   return null;
+}
+
+/** Returns true when a string contains a number, currency, or unit (e.g. "1 500 €", "30 jours", "Illimité"). */
+function hasNumericContent(s: string): boolean {
+  return /\d/.test(s) || /illimité/i.test(s);
 }
 
 function cellIdEquals(a: CellIdentifier | null | undefined, b: CellIdentifier): boolean {
@@ -77,7 +82,7 @@ function CellBadge({ cell }: { cell: CellValue }) {
         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#dbeee5]">
           <Check className="w-3.5 h-3.5 text-panora-green" />
         </span>
-        <span className="text-[13px] font-medium text-panora-text">{cell.value}</span>
+        <span className={`text-[13px] text-panora-text ${hasNumericContent(cell.value) ? "font-medium" : ""}`}>{cell.value}</span>
       </span>
     );
   }
@@ -87,19 +92,13 @@ function CellBadge({ cell }: { cell: CellValue }) {
 function ExclusionCellBadge({ cell }: { cell: ExclusionCellValue }) {
   if (cell.type === "exclu") {
     return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#fde8e8] text-[13px] font-bold text-[#952617] leading-none">!</span>
-        <span className="text-[13px] font-medium text-[#952617]">Exclue</span>
-      </span>
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#fde8e8] text-[13px] font-bold text-[#952617] leading-none">!</span>
     );
   }
   if (cell.type === "inclus") {
     return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#dbeee5]">
-          <Check className="w-3.5 h-3.5 text-panora-green" />
-        </span>
-        <span className="text-[13px] font-medium text-panora-text">Incluse</span>
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#dbeee5]">
+        <Check className="w-3.5 h-3.5 text-panora-green" />
       </span>
     );
   }
@@ -107,40 +106,13 @@ function ExclusionCellBadge({ cell }: { cell: ExclusionCellValue }) {
     return (
       <span className="inline-flex items-center gap-1.5">
         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#fde8e8] text-[13px] font-bold text-[#952617] leading-none">!</span>
-        <span className="text-[13px] font-medium text-[#952617]">{cell.value}</span>
+        <span className="text-[13px] text-[#952617]">{cell.value}</span>
       </span>
     );
   }
   return <span className="text-[13px] text-panora-text-muted">—</span>;
 }
 
-const SUB_GROUP_CONFIG: Record<ExclusionOrigin, {
-  label: string;
-  icon: typeof Lock;
-  iconClass: string;
-  tooltip: string;
-}> = {
-  deterministic: {
-    label: "Déterministe",
-    icon: Lock,
-    iconClass: "text-panora-text-muted",
-    tooltip: "Exclusions standards présentes dans tous les contrats d\u2019assurance",
-  },
-  ai: {
-    label: "Détecté par IA",
-    icon: Sparkles,
-    iconClass: "text-[#8b5cf6]",
-    tooltip: "Exclusions détectées automatiquement par l\u2019analyse IA des documents",
-  },
-  manual: {
-    label: "Manuel",
-    icon: PenLine,
-    iconClass: "text-panora-text-muted",
-    tooltip: "Exclusions ajoutées manuellement par le courtier",
-  },
-};
-
-const SUB_GROUP_ORDER: ExclusionOrigin[] = ["deterministic", "ai", "manual"];
 
 function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
   const [locked, setLocked] = useState(false);
@@ -355,7 +327,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                       <div className="mt-1.5 space-y-1 pl-5">
                         <div className="flex items-center justify-between">
                           <span className="text-[12px] text-panora-text-muted">{ins.name} net</span>
-                          <span className={`text-[13px] font-semibold ${isCheapest ? "text-panora-green" : "text-panora-text"}`}>
+                          <span className={`text-[13px] font-medium ${isCheapest ? "text-panora-green" : "text-panora-text"}`}>
                             {formula.annual}
                           </span>
                         </div>
@@ -394,7 +366,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             return (
             <div key={rIdx} className="flex border-b border-panora-border group/row">
               <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
-                <span className={`text-[13px] leading-[20px] flex-1 min-w-0 truncate ${rowActive ? "font-medium text-panora-text" : "text-panora-text"}`}>{row.label}</span>
+                <span className={`text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text`}>{row.label}</span>
                 <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
                 {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
               </div>
@@ -415,7 +387,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                     {keyDetail ? (
                       <span className="inline-flex items-center gap-1.5">
                         <CellBadge cell={cell} />
-                        <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice ? "font-medium" : ""}`}>{keyDetail.text}</span>
+                        <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
                       </span>
                     ) : (
                       <CellBadge cell={cell} />
@@ -431,138 +403,135 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
       ))}
 
       {/* Exclusions section */}
-      {comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (
-        <div>
-          <SectionHeader title="Exclusions" variant="destructive" />
-          <SectionDivider />
-          {SUB_GROUP_ORDER.map((origin) => {
-            const rows = exclusionsByOrigin(origin);
-            const groupKey = `excl-group-${origin}`;
-            const isGroupExpanded = expanded[groupKey] ?? true;
+      {comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
+        const deterministicRows = exclusionsByOrigin("deterministic");
+        const aiRows = exclusionsByOrigin("ai");
+        const manualRows = exclusionsByOrigin("manual");
+        const aiGroupKey = "excl-group-ai";
+        const isAiExpanded = expanded[aiGroupKey] ?? (aiRows.length <= 5);
 
-            // Skip empty non-manual groups
-            if (rows.length === 0 && origin !== "manual") return null;
+        const renderExclusionRow = (row: ExclusionRow) => {
+          const exclRowActive = isExclusionRowActive(row.id);
+          const exclRowShown = shownRows.has(`excl-${row.id}`);
+          return (
+            <div key={row.id} className="flex border-b border-panora-border group/row">
+              <div
+                className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border transition-colors flex items-center gap-2.5 relative ${
+                  editingRowId === row.id
+                    ? "bg-[#f0f7f4] ring-1 ring-inset ring-panora-green/30"
+                    : exclRowActive
+                      ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]"
+                      : ""
+                }`}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setEditingRowId(row.id);
+                }}
+              >
+                {editingRowId === row.id ? (
+                  <InlineExclusionInput
+                    initialValue={row.label}
+                    onCommit={(value) => {
+                      setEditingRowId(null);
+                      if (value.trim()) {
+                        onUpdateExclusionLabel?.(row.id, value.trim());
+                      } else if (row.origin === "manual" && !row.label) {
+                        onDiscardExclusion?.(row.id);
+                      }
+                    }}
+                    onDiscard={() => {
+                      setEditingRowId(null);
+                      if (row.origin === "manual" && !row.label) onDiscardExclusion?.(row.id);
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span className={`text-[13px] leading-[20px] flex-1 min-w-0 truncate cursor-text ${exclRowActive ? "font-medium" : ""} ${row.label ? "text-panora-text" : "text-panora-text-muted"}`}>{row.label || "Sans titre"}</span>
+                    <ShowHideToggle shown={exclRowShown} onToggle={() => toggleRowVisibility(`excl-${row.id}`)} />
+                  </>
+                )}
+                {exclRowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
+              </div>
+              {insurers.map((ins) => {
+                const cell = row.values[ins.id] ?? { type: "empty" as const };
+                const cellId: CellIdentifier = { type: "exclusion", exclusionId: row.id, insurerId: ins.id };
+                const isSelected = cellIdEquals(selectedCell, cellId);
 
-            const config = SUB_GROUP_CONFIG[origin];
-            const IconComp = config.icon;
+                return (
+                  <ComparisonCell
+                    key={ins.id}
+                    isSelected={isSelected}
+                    onClick={() => onCellSelect?.(cellId)}
+                    className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                  >
+                    <ExclusionCellBadge cell={cell} />
+                  </ComparisonCell>
+                );
+              })}
+            </div>
+          );
+        };
 
-            return (
-              <div key={origin}>
-                {/* Sub-group header */}
+        return (
+          <div>
+            <SectionHeader title="Exclusions" variant="destructive" />
+            <SectionDivider />
+
+            {/* Deterministic rows — flat, no sub-group */}
+            {deterministicRows.map(renderExclusionRow)}
+
+            {/* AI sub-group — collapsible */}
+            {aiRows.length > 0 && (
+              <div>
                 <div className="flex bg-[#faf8f5] border-b border-panora-border h-[46px]">
                   <div className="w-[250px] shrink-0 px-4 flex items-center gap-2 border-r border-panora-border">
                     <button
-                      onClick={() => toggle(groupKey)}
+                      onClick={() => toggle(aiGroupKey)}
                       className="flex items-center justify-center p-1 rounded-[4px] bg-[#eae7e0] shrink-0"
                     >
-                      {isGroupExpanded ? (
+                      {isAiExpanded ? (
                         <ChevronDown className="w-3.5 h-3.5 text-panora-text" />
                       ) : (
                         <ChevronRight className="w-3.5 h-3.5 text-panora-text" />
                       )}
                     </button>
-                    <IconComp className={`w-3.5 h-3.5 shrink-0 ${config.iconClass}`} />
-                    <span className="text-[13px] font-medium text-panora-text whitespace-nowrap">{config.label}</span>
-                    <span className="text-[13px] text-panora-text-muted whitespace-nowrap">({rows.length})</span>
-                    <span className="relative group/tip shrink-0 flex items-center">
-                      <span className="w-[14px] h-[14px] inline-flex items-center justify-center rounded-full border border-panora-border text-[9px] font-medium text-panora-text-muted cursor-default leading-none">?</span>
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-[200px] px-2.5 py-1.5 rounded-[6px] bg-panora-text text-white text-[11px] leading-[15px] opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-20 text-center">
-                        {config.tooltip}
-                      </span>
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#8b5cf6]" />
+                    <span className="text-[13px] font-medium text-panora-text whitespace-nowrap">
+                      {aiRows.length} autre{aiRows.length > 1 ? "s" : ""} exclusion{aiRows.length > 1 ? "s" : ""} détectée{aiRows.length > 1 ? "s" : ""} par l&apos;IA
                     </span>
                   </div>
                   <div className="flex-1" />
                 </div>
-
-                {/* Rows */}
-                {isGroupExpanded && rows.map((row) => {
-                  const exclRowActive = isExclusionRowActive(row.id);
-                  const exclRowShown = shownRows.has(`excl-${row.id}`);
-                  return (
-                  <div key={row.id} className="flex border-b border-panora-border group/row">
-                    <div
-                      className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border transition-colors flex items-center gap-2.5 relative ${
-                        editingRowId === row.id
-                          ? "bg-[#f0f7f4] ring-1 ring-inset ring-panora-green/30"
-                          : exclRowActive
-                            ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]"
-                            : ""
-                      }`}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        setEditingRowId(row.id);
-                      }}
-                    >
-                      {editingRowId === row.id ? (
-                        <InlineExclusionInput
-                          initialValue={row.label}
-                          onCommit={(value) => {
-                            setEditingRowId(null);
-                            if (value.trim()) {
-                              onUpdateExclusionLabel?.(row.id, value.trim());
-                            } else if (row.origin === "manual" && !row.label) {
-                              onDiscardExclusion?.(row.id);
-                            }
-                          }}
-                          onDiscard={() => {
-                            setEditingRowId(null);
-                            if (row.origin === "manual" && !row.label) onDiscardExclusion?.(row.id);
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <span className={`text-[13px] leading-[20px] flex-1 min-w-0 truncate cursor-text ${exclRowActive ? "font-medium" : ""} ${row.label ? "text-panora-text" : "text-panora-text-muted"}`}>{row.label || "Sans titre"}</span>
-                          <ShowHideToggle shown={exclRowShown} onToggle={() => toggleRowVisibility(`excl-${row.id}`)} />
-                        </>
-                      )}
-                      {exclRowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
-                    </div>
-                    {insurers.map((ins) => {
-                      const cell = row.values[ins.id] ?? { type: "empty" as const };
-                      const cellId: CellIdentifier = { type: "exclusion", exclusionId: row.id, insurerId: ins.id };
-                      const isSelected = cellIdEquals(selectedCell, cellId);
-
-                      return (
-                        <ComparisonCell
-                          key={ins.id}
-                          isSelected={isSelected}
-                          onClick={() => onCellSelect?.(cellId)}
-                          className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
-                        >
-                          <ExclusionCellBadge cell={cell} />
-                        </ComparisonCell>
-                      );
-                    })}
-                  </div>
-                  );
-                })}
-
-                {/* "+ Add" row below manual group */}
-                {isGroupExpanded && origin === "manual" && (
-                  <div
-                    className="flex border-b border-panora-border hover:bg-panora-bg/30 transition-colors cursor-pointer"
-                    onClick={() => {
-                      if (onAddExclusion) {
-                        const newId = onAddExclusion();
-                        setEditingRowId(newId);
-                      }
-                    }}
-                  >
-                    <div className="w-[250px] shrink-0 px-4 py-3 border-r border-panora-border">
-                      <span className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green">
-                        <Plus className="w-3.5 h-3.5" />
-                        Ajouter une exclusion
-                      </span>
-                    </div>
-                    <div className="flex-1" />
-                  </div>
-                )}
+                {isAiExpanded && aiRows.map(renderExclusionRow)}
               </div>
-            );
-          })}
-          <SectionDivider />
-        </div>
-      )}
+            )}
+
+            {/* "Ajouter une exclusion manuelle" — inline action row */}
+            <div
+              className="flex border-b border-panora-border hover:bg-panora-bg/30 transition-colors cursor-pointer"
+              onClick={() => {
+                if (onAddExclusion) {
+                  const newId = onAddExclusion();
+                  setEditingRowId(newId);
+                }
+              }}
+            >
+              <div className="w-[250px] shrink-0 px-4 py-3 border-r border-panora-border">
+                <span className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green">
+                  <Plus className="w-3.5 h-3.5" />
+                  Ajouter une exclusion manuelle
+                </span>
+              </div>
+              <div className="flex-1" />
+            </div>
+
+            {/* Manual rows — flat, below the action row */}
+            {manualRows.map(renderExclusionRow)}
+
+            <SectionDivider />
+          </div>
+        );
+      })()}
     </div>
   );
 }
