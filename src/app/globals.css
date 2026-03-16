@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Display:wght@600&display=swap");
 @import "tailwindcss";
 
 @theme inline {
@@ -69,6 +70,11 @@ body {
   font-family: var(--font-serif);
   font-weight: 500;
   letter-spacing: -0.02em;
+}
+
+/* Inter Display for section headers */
+.font-display {
+  font-family: "Inter Display", "Inter", system-ui, sans-serif;
 }
 
 /* Scrollbar styling */

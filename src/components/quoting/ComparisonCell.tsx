@@ -24,7 +24,7 @@ export function ComparisonCell({
       className={cn(
         "cursor-pointer transition-colors",
         isSelected
-          ? "ring-2 ring-panora-green/30 bg-panora-green/5"
+          ? "ring-2 ring-panora-green z-10 rounded-[4px]"
           : "hover:bg-panora-bg/50",
         className
       )}
