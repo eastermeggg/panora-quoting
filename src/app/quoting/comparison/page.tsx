@@ -1,0 +1,489 @@
+"use client";
+
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  getFollowupData,
+  getComparisonData,
+  comparisonTasks,
+  currentUser,
+} from "@/data/mock";
+import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData } from "@/data/mock";
+import { DetailPanel } from "@/components/quoting/DetailPanel";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { ComparisonTable } from "@/components/quoting/ComparisonTable";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  ArrowRight,
+  FileSignature,
+  Loader2,
+  FileSearch,
+  CheckCircle2,
+  Sparkles,
+  ExternalLink,
+  Search,
+  MoreVertical,
+} from "lucide-react";
+
+// ─── List View ───────────────────────────────────────────────────────
+
+function ComparisonListView() {
+  const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
+  const done = comparisonTasks.filter((t) => t.status === "done");
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
+      {/* Header */}
+      <div className="shrink-0 border-b border-[#e5e7eb] bg-white px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Search className="w-[17px] h-[17px] text-panora-text-muted" />
+          <h1 className="text-[15px] font-medium text-panora-text font-serif">
+            Assistant comparaison
+          </h1>
+        </div>
+        <button className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
+          <Sparkles className="w-4 h-4" />
+          Nouvelle comparaison
+        </button>
+      </div>
+
+      {/* Column headers */}
+      <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Client</div>
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Produits</div>
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Date</div>
+        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Progrès</div>
+        <div className="w-10 shrink-0" />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* In progress */}
+        {inProgress.length > 0 && (
+          <>
+            <StatusGroupHeader label="En cours" color="bg-[#be93e4]" bgColor="bg-[#fbf7fe]" />
+            {inProgress.map((task) => (
+              <TaskRow key={task.id} task={task} />
+            ))}
+            <div className="h-1.5 border-y border-panora-border" />
+          </>
+        )}
+
+        {/* Done */}
+        {done.length > 0 && (
+          <>
+            <StatusGroupHeader label="Terminé" color="bg-[#94ce9a]" bgColor="bg-[#f5fbf5]" />
+            {done.map((task) => (
+              <TaskRow key={task.id} task={task} />
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatusGroupHeader({ label, color, bgColor }: { label: string; color: string; bgColor: string }) {
+  return (
+    <div className={`${bgColor} px-4 py-2`}>
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${color}`} />
+        <span className="text-[12px] font-medium text-panora-text">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({ task }: { task: ComparisonTask }) {
+  const maxVisible = 2;
+  const visibleInsurers = task.insurerIds.slice(0, maxVisible);
+  const extraCount = task.insurerIds.length - maxVisible;
+  // Map insurer id to name
+  const insurerNames: Record<string, string> = {
+    axa: "Axa", allianz: "Allianz", generali: "Generali", chubb: "Chubb", maif: "MAIF",
+  };
+
+  return (
+    <div className="flex items-center bg-white border-b border-panora-border hover:bg-panora-bg/30 transition-colors">
+      {/* Client */}
+      <div className="flex-1 px-4 py-4">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-[6px] bg-panora-green/20 border border-black/10 flex items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold text-panora-green">{task.client.charAt(0)}</span>
+          </div>
+          <span className="text-[13px] font-medium text-panora-text truncate">{task.client}</span>
+        </div>
+      </div>
+
+      {/* Products */}
+      <div className="flex-1 px-4 py-4">
+        <div className="flex flex-wrap gap-1.5">
+          {task.products.map((p) => (
+            <span key={p} className="inline-flex h-5 items-center px-2 rounded-full bg-panora-secondary text-[12px] text-panora-text-muted">
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Insurers */}
+      <div className="flex-1 px-4 py-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {visibleInsurers.map((id) => (
+            <span key={id} className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-panora-secondary text-[12px] text-panora-text-muted">
+              <InsurerLogo insurerId={id} name={insurerNames[id] ?? id} size="sm" className="w-3 h-3 rounded-full" />
+              {insurerNames[id] ?? id}
+            </span>
+          ))}
+          {extraCount > 0 && (
+            <span className="inline-flex h-5 items-center px-2 rounded-full bg-panora-secondary text-[12px] text-panora-text-muted">
+              +{extraCount}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Created by */}
+      <div className="flex-1 px-4 py-4">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-panora-green/20 flex items-center justify-center shrink-0">
+            <span className="text-[8px] font-bold text-panora-green">{task.createdBy.charAt(0)}</span>
+          </div>
+          <span className="text-[13px] text-panora-text-muted">{task.createdBy}</span>
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="flex-1 px-4 py-4">
+        <span className="text-[13px] text-panora-text-muted">{task.date}</span>
+      </div>
+
+      {/* Progress */}
+      <div className="flex-1 px-4 py-4">
+        {task.status === "in_progress" ? (
+          <div className="inline-flex items-center gap-1.5 h-[25px] px-2.5 rounded-full bg-panora-secondary">
+            <Loader2 className="w-3.5 h-3.5 text-panora-text-muted animate-spin" />
+            <span className="text-[12px] text-panora-text-muted">
+              En analyse <span className="font-medium">&lt; 1 min</span>
+            </span>
+          </div>
+        ) : (
+          <Link
+            href={`/quoting/comparison?id=${task.cotationId}`}
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green"
+          >
+            Voir le comparatif
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="w-10 shrink-0 flex items-center justify-center">
+        <button className="p-1 rounded hover:bg-panora-bg transition-colors">
+          <MoreVertical className="w-4 h-4 text-panora-text-muted" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Detail View ─────────────────────────────────────────────────────
+
+type AgentPhase =
+  | "idle"
+  | "reading_documents"
+  | "extracting_guarantees"
+  | "building_comparison"
+  | "ready";
+
+const PHASE_DURATIONS: Partial<Record<AgentPhase, number>> = {
+  reading_documents: 1800,
+  extracting_guarantees: 1400,
+  building_comparison: 800,
+};
+
+function getCellDetail(
+  cellId: CellIdentifier,
+  data: ComparisonData | undefined,
+  insurers: InsurerData[],
+): CellDetail | null {
+  if (cellId.type === "guarantee" && data) {
+    const section = data.sections[cellId.sectionIndex];
+    if (!section) return null;
+    const row = section.rows[cellId.rowIndex];
+    if (!row) return null;
+    const detail = row.details?.[cellId.insurerId];
+    if (detail) return detail;
+    // Fallback: build a minimal detail from cell value
+    const cell = row.values[cellId.insurerId];
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    return {
+      title: row.label,
+      covered: cell?.type !== "cross",
+      insurerId: cellId.insurerId,
+      insurerName: ins?.name ?? cellId.insurerId,
+      description: "",
+      cellType: "guarantee",
+      subLimits: [],
+      sources: [],
+    };
+  }
+  if (cellId.type === "price") {
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    if (!ins?.pricing) return null;
+    const formula = ins.pricing[cellId.formulaIndex];
+    if (!formula) return null;
+    return {
+      title: formula.formula,
+      covered: true,
+      insurerId: cellId.insurerId,
+      insurerName: ins.name,
+      description: `Formule ${formula.formula} — ${ins.name}`,
+      cellType: "price",
+      pricingRows: [
+        { id: "pr-annual", offerLabel: "Prime annuelle", price: formula.annual, conditions: "" },
+        { id: "pr-monthly", offerLabel: "Prime mensuelle", price: formula.monthly, conditions: "" },
+      ],
+      sources: [],
+    };
+  }
+  return null;
+}
+
+function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
+  const router = useRouter();
+  const followupData = getFollowupData(cotParamId);
+
+  // Check if this comparison is already done (persisted)
+  const task = comparisonTasks.find((t) => t.cotationId === cotParamId);
+  const alreadyDone = task?.status === "done";
+
+  const [agentPhase, setAgentPhase] = useState<AgentPhase>(alreadyDone ? "ready" : "idle");
+  const [comparisonResult, setComparisonResult] = useState<ComparisonData | undefined>(
+    alreadyDone ? getComparisonData(cotParamId) : undefined
+  );
+  const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
+  const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
+
+  const startAgent = useCallback(() => {
+    const phases: AgentPhase[] = ["reading_documents", "extracting_guarantees", "building_comparison", "ready"];
+    let i = 0;
+    const advance = () => {
+      if (i < phases.length) {
+        const phase = phases[i];
+        setAgentPhase(phase);
+        if (phase === "ready") {
+          setComparisonResult(getComparisonData(cotParamId));
+          return;
+        }
+        i++;
+        setTimeout(advance, PHASE_DURATIONS[phase] ?? 1000);
+      }
+    };
+    advance();
+  }, [cotParamId]);
+
+  useEffect(() => {
+    if (alreadyDone) return;
+    const timer = setTimeout(startAgent, 400);
+    return () => clearTimeout(timer);
+  }, [startAgent, alreadyDone]);
+
+  const handleCellUpdate = useCallback((cellId: CellIdentifier, updatedDetail: CellDetail) => {
+    if (cellId.type === "guarantee") {
+      setComparisonResult((prev) => {
+        if (!prev) return prev;
+        const sections = prev.sections.map((section, sIdx) => {
+          if (sIdx !== cellId.sectionIndex) return section;
+          const rows = section.rows.map((row, rIdx) => {
+            if (rIdx !== cellId.rowIndex) return row;
+            // Update the cell value based on covered toggle
+            const currentCell = row.values[cellId.insurerId];
+            let newCell = currentCell;
+            if (updatedDetail.covered && currentCell?.type === "cross") {
+              newCell = { type: "check" };
+            } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
+              newCell = { type: "cross" };
+            }
+            return {
+              ...row,
+              values: { ...row.values, [cellId.insurerId]: newCell },
+              details: { ...row.details, [cellId.insurerId]: updatedDetail },
+            };
+          });
+          return { ...section, rows };
+        });
+        return { ...prev, sections };
+      });
+    } else if (cellId.type === "price") {
+      // Update mutableInsurers pricing from detail
+      setMutableInsurers((prev) =>
+        prev.map((ins) => {
+          if (ins.id !== cellId.insurerId) return ins;
+          const pricing = [...(ins.pricing ?? [])];
+          if (pricing[cellId.formulaIndex] && updatedDetail.pricingRows) {
+            const annualRow = updatedDetail.pricingRows.find((r) => r.id === "pr-annual");
+            const monthlyRow = updatedDetail.pricingRows.find((r) => r.id === "pr-monthly");
+            pricing[cellId.formulaIndex] = {
+              ...pricing[cellId.formulaIndex],
+              annual: annualRow?.price ?? pricing[cellId.formulaIndex].annual,
+              monthly: monthlyRow?.price ?? pricing[cellId.formulaIndex].monthly,
+            };
+          }
+          return { ...ins, pricing };
+        })
+      );
+    }
+  }, []);
+
+  if (!followupData) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-[13px] text-panora-text-muted">Cotation introuvable.</p>
+      </div>
+    );
+  }
+
+  const { cotation } = followupData;
+  const clientName = cotation.client;
+  const totalDocs = mutableInsurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
+
+  const currentDetail = selectedCell ? getCellDetail(selectedCell, comparisonResult, mutableInsurers) : null;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
+      {/* Header */}
+      <div className="h-[52px] shrink-0 border-b border-panora-border flex items-center justify-between px-4 bg-white">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-panora-bg transition-colors text-panora-text-muted hover:text-panora-text"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <span className="text-[13px] text-panora-text-muted">Comparaisons</span>
+          <span className="text-[13px] text-panora-text-muted">/</span>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-panora-green/20 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-panora-green">{clientName.charAt(0)}</span>
+            </div>
+            <span className="text-[13px] font-medium text-panora-text">{clientName}</span>
+          </div>
+          <button className="text-[12px] font-medium text-panora-green ml-1">Voir profil client</button>
+          <div className="w-px h-4 bg-[#d9d9d9] ml-2" />
+          <Link
+            href={`/quoting/followup?id=${cotParamId}`}
+            className="flex items-center gap-1.5 text-[12px] text-panora-text-muted hover:text-panora-text transition-colors ml-1"
+          >
+            <span className="text-panora-text-secondary">{cotation.cotationId}</span>
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+        <button
+          onClick={() => console.log("TODO: Finaliser la proposition")}
+          className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
+        >
+          <FileSignature className="w-4 h-4" />
+          Finaliser la proposition
+        </button>
+      </div>
+
+      {agentPhase !== "ready" ? (
+        <AgentLoadingState phase={agentPhase} insurerCount={mutableInsurers.length} documentCount={totalDocs} />
+      ) : (
+        <div className="flex-1 flex min-h-0">
+          <div
+            className="flex-1 overflow-auto min-w-0"
+            onClick={() => setSelectedCell(null)}
+          >
+            <ComparisonTable
+              insurers={mutableInsurers}
+              comparisonData={comparisonResult}
+              cotParamId={cotParamId}
+              selectedCell={selectedCell}
+              onCellSelect={setSelectedCell}
+            />
+          </div>
+          {selectedCell && currentDetail && (
+            <DetailPanel
+              cellDetail={currentDetail}
+              onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+              onClose={() => setSelectedCell(null)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgentLoadingState({ phase, insurerCount, documentCount }: { phase: AgentPhase; insurerCount: number; documentCount: number }) {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-panora-bg">
+      <div className="max-w-md w-full mx-auto px-6">
+        <div className="bg-white border border-panora-border rounded-[10px] p-8 shadow-[0px_3px_6px_0px_rgba(0,0,0,0.02),0px_11px_11px_0px_rgba(0,0,0,0.02)]">
+          <div className="flex flex-col items-center text-center gap-5">
+            <div className="w-12 h-12 rounded-full bg-[#dbeee5] flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-panora-green" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-panora-text font-serif mb-1">Agent de comparaison</h3>
+              <p className="text-[13px] text-panora-text-muted leading-5">
+                Analyse de {documentCount} document{documentCount > 1 ? "s" : ""} reçus de {insurerCount} assureur{insurerCount > 1 ? "s" : ""}
+              </p>
+            </div>
+            <div className="w-full space-y-3 text-left">
+              <StepRow label="Lecture des documents" icon={<FileSearch className="w-4 h-4" />} status={phase === "reading_documents" ? "active" : phase === "idle" ? "pending" : "done"} />
+              <StepRow label="Extraction des garanties" icon={<FileSearch className="w-4 h-4" />} status={phase === "extracting_guarantees" ? "active" : (phase === "idle" || phase === "reading_documents") ? "pending" : "done"} />
+              <StepRow label="Construction du comparatif" icon={<Sparkles className="w-4 h-4" />} status={phase === "building_comparison" ? "active" : phase === "ready" ? "done" : "pending"} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRow({ label, icon, status }: { label: string; icon: React.ReactNode; status: "pending" | "active" | "done" }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${status === "done" ? "bg-[#dbeee5] text-panora-green" : status === "active" ? "bg-panora-green text-white" : "bg-panora-bg text-panora-text-muted"}`}>
+        {status === "done" ? <CheckCircle2 className="w-4 h-4" /> : status === "active" ? <Loader2 className="w-4 h-4 animate-spin" /> : icon}
+      </div>
+      <span className={`text-[13px] ${status === "done" ? "text-panora-green font-medium" : status === "active" ? "text-panora-text font-medium" : "text-panora-text-muted"}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ─── Router ──────────────────────────────────────────────────────────
+
+function ComparisonRouter() {
+  const searchParams = useSearchParams();
+  const cotParamId = searchParams.get("id");
+
+  if (cotParamId) {
+    return <ComparisonDetailView cotParamId={cotParamId} />;
+  }
+
+  return <ComparisonListView />;
+}
+
+export default function ComparisonPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <p className="text-[13px] text-panora-text-muted">Chargement...</p>
+        </div>
+      }
+    >
+      <ComparisonRouter />
+    </Suspense>
+  );
+}

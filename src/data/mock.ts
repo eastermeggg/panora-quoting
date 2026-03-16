@@ -40,57 +40,85 @@ SIREN: 00007U26464`,
 
 export const cotationId = "COT-2026-0142";
 
-export const insurers = [
+export type InsurerAction = {
+  date: string;
+  title: string;
+  description: string;
+  status: "success" | "error" | "in_progress" | "pending";
+};
+
+export type ActionType = "manual" | "2fa_otp" | "2fa_push" | "2fa_expired";
+
+export type TwoFaAction = {
+  type: ActionType;
+  title: string;
+  desc: string;
+  portalName: string;
+  /** OTP-specific */
+  channel?: "sms" | "email" | "totp";
+  codeLength?: number;
+  canResend?: boolean;
+  /** ISO timestamp for expiration (OTP & push) */
+  expiresAt?: string;
+  interruptId?: string;
+};
+
+export type InsurerData = {
+  id: string;
+  name: string;
+  logo: string;
+  logoColor: string;
+  hasCode: boolean;
+  status: "completed" | "action_required" | "in_progress";
+  reference: string;
+  documents?: string[];
+  pricing?: Array<{ formula: string; monthly: string; annual: string }>;
+  quoteInfo?: Array<{ label: string; value: string }>;
+  alertMessage?: string;
+  alertDescription?: string;
+  nextAction?: string;
+  allSteps: InsurerAction[];
+  initialVisibleSteps?: number;
+  /** 2FA action data — when present, the action_required state uses this */
+  twoFaAction?: TwoFaAction;
+};
+
+export const initialInsurers: InsurerData[] = [
   {
     id: "axa",
     name: "Axa",
     logo: "🔴",
     logoColor: "#FF1721",
     hasCode: true,
-    status: "completed" as const,
+    status: "completed",
     reference: "4RGWBWMKEB",
     documents: [
-      "Conditions_generales_Marble_Gr_core_assur_long_name.pdf",
-      "Tarifs_Axa_RC_Pro_2026.pdf",
-      "Attestation_RC_Pro_Marble_Tech.pdf",
+      "Devis_Axa_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_RC_Pro_Axa.pdf",
+      "Tableau_Garanties_Axa.pdf",
     ],
     pricing: [
-      { formula: "Essentielle", version: "8,01 €", annual: "810,32 €/an" },
-      { formula: "Equilibre", version: "12,50 €", annual: "1 250,00 €/an" },
-      { formula: "Étendue", version: "18,75 €", annual: "1 875,00 €/an" },
+      { formula: "Essentielle", monthly: "87,71 €", annual: "810,52 €/an" },
+      { formula: "Équilibre", monthly: "112,50 €", annual: "1 040,00 €/an" },
+      { formula: "Étendue", monthly: "145,83 €", annual: "1 350,00 €/an" },
     ],
-    quoteInfo: {
-      quoteId: "47500AAARBE",
-      vehicule: "TESLA MODEL 3 ANS",
-      usage: "Privé + Domicile travail",
-      objet: "AAA 05165043G",
-      dateEffet: "01/03/2026",
-      fractionnement: "CF-13b...7",
-      conducteur: "Régulatoire",
-      garantie: "CS Assure protections",
-      vadcp: "VADCP (3 ans)",
-    },
-    actions: [
-      { date: "28/05/25 - 18h32", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h30", title: "Action agent", description: "Référence: AXA-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h28", title: "Connexion à l'extranet", description: "Authentification réussie", status: "success" as const },
-      { date: "28/05/25 - 18h25", title: "Début", description: "Lancement de la cotation sur Axa", status: "success" as const },
+    quoteInfo: [
+      { label: "Référence devis", value: "4RGWBWMKEB" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "1 500 €" },
     ],
-  },
-  {
-    id: "allianz",
-    name: "Allianz",
-    logo: "🔵",
-    logoColor: "#003781",
-    hasCode: true,
-    status: "action_required" as const,
-    reference: "ALZ-2026-8841",
-    alertMessage: "Sélection des options requise sur l'extranet",
-    alertDescription: "Allianz propose 4 niveaux de franchise. L'agent ne sait pas encore lequel choisir et a mis en pause. Sélectionnez le niveau de franchise sur l'extranet pour que l'agent puisse continuer.",
-    actions: [
-      { date: "28/05/25 - 18h32", title: "Saisie des informations véhicule...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h30", title: "Action agent", description: "Référence: SEI-FR-90124", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Impossible de récupérer les documents", description: "Action courtier requise", status: "error" as const },
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Axa", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client Marble Tech SAS créé — Réf: AXA-CL-90124", status: "success" },
+      { date: "10/03/26 - 14h36", title: "Saisie des informations entreprise", description: "10 champs remplis — SIREN, activité, CA, effectif...", status: "success" },
+      { date: "10/03/26 - 14h38", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis avec coordonnées", status: "success" },
+      { date: "10/03/26 - 14h40", title: "Upload des documents", description: "Kbis, Bilan 2025, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "Demande de tarification", description: "3 formules demandées", status: "success" },
+      { date: "10/03/26 - 14h45", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
     ],
   },
   {
@@ -99,32 +127,72 @@ export const insurers = [
     logo: "🦁",
     logoColor: "#C8102E",
     hasCode: true,
-    status: "in_progress" as const,
+    status: "in_progress",
     reference: "GEN-2026-5523",
-    actions: [
-      { date: "28/05/25 - 18h35", title: "Saisie des informations...", description: "En cours, remplissage des champs sur l'extranet", status: "success" as const },
-      { date: "28/05/25 - 18h33", title: "Connexion à l'extranet", description: "Authentification réussie", status: "success" as const },
-      { date: "28/05/25 - 18h30", title: "Début", description: "Lancement de la cotation sur Generali", status: "success" as const },
+    initialVisibleSteps: 3,
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Generali", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client créé — Réf: GEN-RR-9072", status: "success" },
+      { date: "10/03/26 - 14h36", title: "Saisie des informations entreprise", description: "10 champs remplis — SIREN, activité, CA, effectif...", status: "success" },
+      { date: "10/03/26 - 14h38", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis avec coordonnées", status: "success" },
+      { date: "10/03/26 - 14h40", title: "Upload des documents justificatifs", description: "Kbis, Bilan, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "Demande de tarification", description: "Soumission du dossier complet", status: "success" },
+      { date: "10/03/26 - 14h45", title: "Tarifs reçus — Devis récupéré", description: "2 formules disponibles — Documents téléchargés", status: "success" },
+    ],
+    documents: [
+      "Devis_Generali_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_Generali.pdf",
+    ],
+    pricing: [
+      { formula: "Standard", monthly: "95,00 €", annual: "1 140,00 €/an" },
+      { formula: "Premium", monthly: "135,00 €", annual: "1 620,00 €/an" },
+    ],
+    quoteInfo: [
+      { label: "Référence devis", value: "GEN-2026-5523" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "2 000 €" },
     ],
   },
   {
-    id: "chubb",
-    name: "Chubb",
-    logo: "⬛",
-    logoColor: "#000000",
+    id: "allianz",
+    name: "Allianz",
+    logo: "🔵",
+    logoColor: "#003781",
     hasCode: true,
-    status: "error" as const,
-    reference: "CHB-2026-1190",
-    errorMessage: "L'agent a rencontré une erreur",
-    errorDescription: "Le serveur a été inaccessible en raison d'une maintenance programmée. Nous sommes désolés pour cet inconvénient.",
-    errorInfo: "Dernière tentative le : 09/03/26 à 14:04 - 3/3 tentatives",
-    actions: [
-      { date: "28/05/25 - 18h30", title: "Début", description: "Lancement de la cotation sur Chubb", status: "success" as const },
-      { date: "28/05/25 - 18h31", title: "Erreur de connexion", description: "Serveur inaccessible", status: "error" as const },
-      { date: "28/05/25 - 18h35", title: "Nouvelle tentative", description: "Tentative 2/3", status: "success" as const },
-      { date: "28/05/25 - 18h36", title: "Erreur de connexion", description: "Serveur inaccessible", status: "error" as const },
-      { date: "28/05/25 - 18h40", title: "Nouvelle tentative", description: "Tentative 3/3", status: "success" as const },
-      { date: "28/05/25 - 18h41", title: "Erreur de connexion", description: "Serveur inaccessible - Abandon", status: "error" as const },
+    status: "action_required",
+    reference: "ALZ-2026-8841",
+    alertMessage: "Sélection du niveau de franchise requise",
+    alertDescription: "Allianz propose 4 niveaux de franchise. L'agent ne peut pas choisir à votre place. Connectez-vous sur l'extranet Allianz, sélectionnez le niveau de franchise souhaité, puis cliquez sur \"J'ai validé\" ci-dessous.",
+    nextAction: "L'agent récupérera le tarif et les documents de devis.",
+    allSteps: [
+      { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: "Cotation RC Pro pour Marble Tech SAS", status: "success" },
+      { date: "10/03/26 - 14h33", title: "Connexion à l'extranet Allianz", description: "Authentification réussie", status: "success" },
+      { date: "10/03/26 - 14h35", title: "Création du dossier client", description: "Client créé — Réf: ALZ-CL-8841", status: "success" },
+      { date: "10/03/26 - 14h37", title: "Saisie des informations entreprise", description: "10 champs remplis", status: "success" },
+      { date: "10/03/26 - 14h39", title: "Saisie des informations dirigeants", description: "2 dirigeants saisis", status: "success" },
+      { date: "10/03/26 - 14h41", title: "Upload des documents", description: "Kbis, Bilan, RIB transmis", status: "success" },
+      { date: "10/03/26 - 14h42", title: "En attente — Action courtier requise", description: "Sélection du niveau de franchise nécessaire sur l'extranet", status: "error" },
+    ],
+    // These get used after validation
+    documents: [
+      "Devis_Allianz_RC_Pro_Marble_Tech.pdf",
+      "Conditions_Generales_Allianz.pdf",
+    ],
+    pricing: [
+      { formula: "Confort", monthly: "102,00 €", annual: "1 224,00 €/an" },
+      { formula: "Confort+", monthly: "128,50 €", annual: "1 542,00 €/an" },
+    ],
+    quoteInfo: [
+      { label: "Référence devis", value: "ALZ-2026-8841" },
+      { label: "Client", value: "Marble Tech SAS" },
+      { label: "Produit", value: "RC Professionnelle" },
+      { label: "Date d'effet", value: "01/04/2026" },
+      { label: "Plafond garanti", value: "1 000 000 €" },
+      { label: "Franchise", value: "1 000 €" },
     ],
   },
 ];
@@ -188,6 +256,797 @@ export const extractedData = {
     ],
   },
 };
+
+// Cotation statuses for the kanban/table view
+export type CotationStatus = "preparation" | "en_cours" | "terminee";
+
+export type CotationInsurerStatus = "completed" | "action_required" | "in_progress" | "pending";
+
+export type CotationInsurer = {
+  id: string;
+  name: string;
+  status: CotationInsurerStatus;
+  reference?: string;
+  bestPrice?: string;
+};
+
+export type Cotation = {
+  id: string;
+  cotationId: string;
+  client: string;
+  product: string;
+  productIcon: "car" | "shield" | "building";
+  createdAt: string;
+  createdVia: "email" | "manual";
+  insurers: CotationInsurer[];
+};
+
+export function getCotationStatus(cotation: Cotation): CotationStatus {
+  const statuses = cotation.insurers.map((i) => i.status);
+  if (statuses.every((s) => s === "pending")) return "preparation";
+  if (statuses.every((s) => s === "completed")) return "terminee";
+  return "en_cours";
+}
+
+export const cotationsList: Cotation[] = [
+  {
+    id: "cot-1",
+    cotationId: "COT-2026-0142",
+    client: "Marble Tech SAS",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "09/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "4RGWBWMKEB", bestPrice: "810,52 €/an" },
+      { id: "generali", name: "Generali", status: "in_progress", reference: "GEN-2026-5523" },
+      { id: "allianz", name: "Allianz", status: "action_required", reference: "ALZ-2026-8841" },
+    ],
+  },
+  {
+    id: "cot-2",
+    cotationId: "COT-2026-0139",
+    client: "Acme Corp",
+    product: "Flotte automobile",
+    productIcon: "car",
+    createdAt: "07/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-FL-2211", bestPrice: "4 200,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-FL-8877", bestPrice: "3 980,00 €/an" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-FL-1124", bestPrice: "4 450,00 €/an" },
+    ],
+  },
+  {
+    id: "cot-3",
+    cotationId: "COT-2026-0145",
+    client: "TechVision SAS",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "10/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "pending" },
+      { id: "chubb", name: "Chubb", status: "pending" },
+    ],
+  },
+  {
+    id: "cot-4",
+    cotationId: "COT-2026-0146",
+    client: "GreenWay Industries",
+    product: "Multirisque bureaux",
+    productIcon: "building",
+    createdAt: "10/03/2026",
+    createdVia: "manual",
+    insurers: [
+      { id: "axa", name: "Axa", status: "action_required", reference: "AXA-MR-0091" },
+      { id: "maif", name: "MAIF", status: "completed", reference: "MAIF-MR-4402", bestPrice: "1 850,00 €/an" },
+      { id: "generali", name: "Generali", status: "action_required", reference: "GEN-MR-2201" },
+    ],
+  },
+  {
+    id: "cot-5",
+    cotationId: "COT-2026-0135",
+    client: "Digital Solutions SARL",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "04/03/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-RC-7711", bestPrice: "920,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-RC-3302", bestPrice: "875,00 €/an" },
+    ],
+  },
+];
+
+// ─── Followup data per cotation ───────────────────────────────────────
+// Maps cotation IDs to their detailed insurer data for the followup page.
+
+export type FollowupData = {
+  cotation: Cotation;
+  projectName: string;
+  emailSubject: string;
+  insurers: InsurerData[];
+  scenarioId: string;
+  attachments: Array<{ name: string; size: string; fieldsExtracted: number }>;
+};
+
+function makeSteps(insurerName: string, count: number): InsurerAction[] {
+  const templates: InsurerAction[] = [
+    { date: "10/03/26 - 14h32", title: "Lancement de la cotation", description: `Cotation lancée`, status: "success" },
+    { date: "10/03/26 - 14h33", title: `Connexion à l'extranet ${insurerName}`, description: "Authentification réussie", status: "success" },
+    { date: "10/03/26 - 14h34", title: "Création du dossier client", description: "Client créé avec succès", status: "success" },
+    { date: "10/03/26 - 14h36", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+    { date: "10/03/26 - 14h38", title: "Upload des documents", description: "Documents transmis", status: "success" },
+    { date: "10/03/26 - 14h40", title: "Demande de tarification", description: "Soumission du dossier complet", status: "success" },
+    { date: "10/03/26 - 14h42", title: "Tarifs reçus — Devis récupéré", description: "Formules disponibles — Documents téléchargés", status: "success" },
+  ];
+  return templates.slice(0, count);
+}
+
+const cotationFollowupMap: Record<string, FollowupData> = {
+  "cot-1": {
+    cotation: cotationsList[0],
+    projectName: "RC Pro Marble Tech 2026",
+    emailSubject: "Cotation Panora RC Pro - Marble Tech SAS",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_Marble_Tech.pdf", size: "245 Ko", fieldsExtracted: 4 },
+      { name: "Bilan_2025_Marble_Tech.pdf", size: "1.2 Mo", fieldsExtracted: 3 },
+      { name: "RIB_Marble_Tech.pdf", size: "89 Ko", fieldsExtracted: 1 },
+    ],
+    insurers: initialInsurers,
+  },
+  "cot-2": {
+    cotation: cotationsList[1],
+    projectName: "Flotte Auto ACME 2026",
+    emailSubject: "Renouvellement flotte automobile 2026 - ACME Corp",
+    scenarioId: "flotte-auto",
+    attachments: [
+      { name: "Releve_Info_Flotte_ACME.pdf", size: "1.8 Mo", fieldsExtracted: 8 },
+      { name: "Cartes_Grises_Parc_2026.pdf", size: "3.4 Mo", fieldsExtracted: 5 },
+      { name: "Attestation_Sinistralite_3ans.pdf", size: "520 Ko", fieldsExtracted: 6 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-FL-2211",
+        documents: ["Devis_Axa_Flotte_ACME.pdf", "Conditions_Generales_Flotte_Axa.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", monthly: "295,00 €", annual: "3 540,00 €/an" },
+          { formula: "Tous risques", monthly: "350,00 €", annual: "4 200,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-FL-2211" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "500 € / sinistre" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-FL-8877",
+        documents: ["Devis_Allianz_Flotte_ACME.pdf", "Tableau_Garanties_Allianz.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", monthly: "275,00 €", annual: "3 300,00 €/an" },
+          { formula: "Tous risques", monthly: "331,67 €", annual: "3 980,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-FL-8877" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "750 € / sinistre" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-FL-1124",
+        documents: ["Devis_Generali_Flotte_ACME.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "320,00 €", annual: "3 840,00 €/an" },
+          { formula: "Premium", monthly: "370,83 €", annual: "4 450,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-FL-1124" },
+          { label: "Client", value: "ACME Corp SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Nb véhicules", value: "44" },
+          { label: "Franchise", value: "500 € / sinistre" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-3": {
+    cotation: cotationsList[2],
+    projectName: "RC Pro TechVision 2026",
+    emailSubject: "Devis RC Pro urgence - TechVision SAS",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_TechVision.pdf", size: "210 Ko", fieldsExtracted: 3 },
+      { name: "Bilan_2025_TechVision.pdf", size: "980 Ko", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-RC-9912",
+        documents: ["Devis_Axa_RC_Pro_TechVision.pdf", "Conditions_Generales_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "68,33 €", annual: "820,00 €/an" },
+          { formula: "Étendue", monthly: "98,33 €", annual: "1 180,00 €/an" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-RC-9912" },
+          { label: "Client", value: "TechVision SAS" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 000 €" },
+        ],
+      },
+      {
+        id: "chubb", name: "Chubb", logo: "⬛", logoColor: "#000", hasCode: true,
+        status: "completed", reference: "CHB-RC-4401",
+        documents: ["Devis_Chubb_RC_Pro_TechVision.pdf", "Tableau_Garanties_Chubb.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "85,00 €", annual: "1 020,00 €/an" },
+          { formula: "Premium", monthly: "120,83 €", annual: "1 450,00 €/an" },
+        ],
+        allSteps: makeSteps("Chubb", 7),
+        quoteInfo: [
+          { label: "Référence devis", value: "CHB-RC-4401" },
+          { label: "Client", value: "TechVision SAS" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 500 €" },
+        ],
+      },
+    ],
+  },
+  "cot-4": {
+    cotation: cotationsList[3],
+    projectName: "Multirisque GreenWay 2026",
+    emailSubject: "Demande de cotation multirisque bureaux - GreenWay",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Bail_Commercial_GreenWay.pdf", size: "1.5 Mo", fieldsExtracted: 5 },
+      { name: "Plan_Locaux_2026.pdf", size: "2.1 Mo", fieldsExtracted: 3 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "action_required", reference: "AXA-MR-0091",
+        twoFaAction: {
+          type: "2fa_otp",
+          title: "Code de vérification requis",
+          desc: "AXA demande un code à 6 chiffres envoyé par e-mail à d••••e@howden.fr.",
+          portalName: "AXA",
+          channel: "email",
+          codeLength: 6,
+          canResend: true,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          interruptId: "int-axa-otp-001",
+        },
+        documents: ["Devis_Axa_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "142,50 €", annual: "1 710,00 €/an" },
+          { formula: "Confort", monthly: "178,33 €", annual: "2 140,00 €/an" },
+          { formula: "Étendue", monthly: "215,00 €", annual: "2 580,00 €/an" },
+        ],
+        allSteps: [
+          { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification en cours", status: "success" },
+          { date: "13/03/26 - 09h15", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
+          { date: "13/03/26 - 09h16", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par e-mail à d••••e@howden.fr. L'agent ne peut pas continuer sans ce code.", status: "error" },
+          { date: "13/03/26 - 09h17", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
+          { date: "13/03/26 - 09h18", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
+          { date: "13/03/26 - 09h20", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+          { date: "13/03/26 - 09h22", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
+          { date: "13/03/26 - 09h24", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-MR-0091" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "500 €" },
+        ],
+      },
+      {
+        id: "maif", name: "MAIF", logo: "🟢", logoColor: "#00A651", hasCode: true,
+        status: "completed", reference: "MAIF-MR-4402",
+        documents: ["Devis_MAIF_Multirisque_GreenWay.pdf"],
+        pricing: [
+          { formula: "Confort", monthly: "154,17 €", annual: "1 850,00 €/an" },
+          { formula: "Sérénité", monthly: "195,00 €", annual: "2 340,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MAIF-MR-4402" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "300 €" },
+        ],
+        allSteps: makeSteps("MAIF", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "action_required", reference: "GEN-MR-2201",
+        twoFaAction: {
+          type: "2fa_otp",
+          title: "Code de vérification requis",
+          desc: "Generali demande un code à 6 chiffres envoyé par SMS au 06 •• •• 42.",
+          portalName: "Generali",
+          channel: "sms",
+          codeLength: 6,
+          canResend: false,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          interruptId: "int-gen-otp-001",
+        },
+        documents: ["Devis_Generali_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Generali.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "165,00 €", annual: "1 980,00 €/an" },
+          { formula: "Premium", monthly: "208,33 €", annual: "2 500,00 €/an" },
+        ],
+        allSteps: [
+          { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification en cours", status: "success" },
+          { date: "13/03/26 - 09h12", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
+          { date: "13/03/26 - 09h13", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par SMS au 06 •• •• 42. L'agent ne peut pas continuer sans ce code.", status: "error" },
+          { date: "13/03/26 - 09h14", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
+          { date: "13/03/26 - 09h15", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
+          { date: "13/03/26 - 09h17", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+          { date: "13/03/26 - 09h19", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
+          { date: "13/03/26 - 09h21", title: "Tarifs reçus — Devis récupéré", description: "2 formules disponibles — Documents téléchargés", status: "success" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-MR-2201" },
+          { label: "Client", value: "GreenWay Industries" },
+          { label: "Produit", value: "Multirisque bureaux" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Surface assurée", value: "450 m²" },
+          { label: "Franchise", value: "400 €" },
+        ],
+      },
+    ],
+  },
+  "cot-5": {
+    cotation: cotationsList[4],
+    projectName: "RC Pro Digital Solutions 2026",
+    emailSubject: "Cotation RC Pro - Digital Solutions SARL",
+    scenarioId: "rc-pro",
+    attachments: [
+      { name: "Kbis_Digital_Solutions.pdf", size: "195 Ko", fieldsExtracted: 3 },
+      { name: "Bilan_2025_Digital_Solutions.pdf", size: "1.1 Mo", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-RC-7711",
+        documents: ["Devis_Axa_RC_Pro_Digital_Solutions.pdf", "Conditions_Generales_Axa.pdf"],
+        pricing: [
+          { formula: "Essentielle", monthly: "76,67 €", annual: "920,00 €/an" },
+          { formula: "Étendue", monthly: "110,00 €", annual: "1 320,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-RC-7711" },
+          { label: "Client", value: "Digital Solutions SARL" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 000 €" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-RC-3302",
+        documents: ["Devis_Allianz_RC_Pro_Digital_Solutions.pdf"],
+        pricing: [
+          { formula: "Standard", monthly: "72,92 €", annual: "875,00 €/an" },
+          { formula: "Premium", monthly: "105,00 €", annual: "1 260,00 €/an" },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-RC-3302" },
+          { label: "Client", value: "Digital Solutions SARL" },
+          { label: "Produit", value: "RC Professionnelle" },
+          { label: "Date d'effet", value: "01/05/2026" },
+          { label: "Plafond garanti", value: "500 000 €" },
+          { label: "Franchise", value: "1 500 €" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+    ],
+  },
+};
+
+export function getFollowupData(cotationId: string): FollowupData | undefined {
+  return cotationFollowupMap[cotationId];
+}
+
+// ─── Comparison data ─────────────────────────────────────────────────
+// Structured guarantee/coverage data extracted by the comparison agent.
+
+export type CellValue =
+  | { type: "check" }
+  | { type: "cross" }
+  | { type: "text"; value: string }
+  | { type: "empty" };
+
+export type SubLimitRow = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type PricingCardRow = {
+  id: string;
+  offerLabel: string;
+  price: string;
+  conditions: string;
+};
+
+export type SourceRef = {
+  title: string;
+  description: string;
+  badge: string;
+  page?: string;
+};
+
+export type CellDetail = {
+  title: string;
+  covered: boolean;
+  insurerId: string;
+  insurerName: string;
+  description: string;
+  cellType: "guarantee" | "price";
+  subLimits?: SubLimitRow[];
+  pricingRows?: PricingCardRow[];
+  sources?: SourceRef[];
+};
+
+export type CellIdentifier =
+  | { type: "guarantee"; sectionIndex: number; rowIndex: number; insurerId: string }
+  | { type: "price"; insurerId: string; formulaIndex: number };
+
+export type GuaranteeRow = {
+  label: string;
+  /** keyed by insurer id */
+  values: Record<string, CellValue>;
+  /** keyed by insurer id */
+  details?: Record<string, CellDetail>;
+};
+
+export type GuaranteeSection = {
+  title: string;
+  rows: GuaranteeRow[];
+};
+
+export type ComparisonData = {
+  sections: GuaranteeSection[];
+};
+
+function makeDetail(
+  label: string,
+  insurerId: string,
+  insurerName: string,
+  covered: boolean,
+  description: string,
+  subLimits: SubLimitRow[] = [],
+  sources: SourceRef[] = [],
+): CellDetail {
+  return {
+    title: label,
+    covered,
+    insurerId,
+    insurerName,
+    description,
+    cellType: "guarantee",
+    subLimits,
+    sources,
+  };
+}
+
+const defaultSources: SourceRef[] = [
+  { title: "Conditions Générales", description: "Détail des garanties et limites applicables au contrat.", badge: "Contrat", page: "Page 12" },
+];
+
+/** Mock comparison data per cotation (keyed by cotation id) */
+const comparisonDataMap: Record<string, ComparisonData> = {
+  "cot-2": {
+    sections: [
+      {
+        title: "Couvertures véhicules",
+        rows: [
+          {
+            label: "Responsabilité civile",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Responsabilité civile", "axa", "Axa", true, "Couverture RC obligatoire pour tous les véhicules de la flotte.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources),
+              allianz: makeDetail("Responsabilité civile", "allianz", "Allianz", true, "RC automobile obligatoire conforme à la législation en vigueur.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources),
+              generali: makeDetail("Responsabilité civile", "generali", "Generali", true, "Garantie de base couvrant la responsabilité civile des conducteurs.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }], defaultSources),
+            },
+          },
+          {
+            label: "Dommages tous accidents",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Dommages tous accidents", "axa", "Axa", true, "Prise en charge des dommages au véhicule assuré, quelle que soit la responsabilité.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
+              allianz: makeDetail("Dommages tous accidents", "allianz", "Allianz", true, "Couverture complète des dommages au véhicule.", [{ id: "sl-1", label: "Franchise", value: "750 €" }], defaultSources),
+              generali: makeDetail("Dommages tous accidents", "generali", "Generali", false, "Non inclus dans la formule Standard. Disponible en option.", [], defaultSources),
+            },
+          },
+          {
+            label: "Vol et tentative de vol",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Vol et tentative de vol", "axa", "Axa", true, "Indemnisation en cas de vol ou tentative de vol du véhicule.", [{ id: "sl-1", label: "Plafond", value: "Valeur vénale" }], defaultSources),
+              allianz: makeDetail("Vol et tentative de vol", "allianz", "Allianz", true, "Couverture vol incluant les accessoires.", [{ id: "sl-1", label: "Plafond accessoires", value: "1 500 €" }], defaultSources),
+              generali: makeDetail("Vol et tentative de vol", "generali", "Generali", true, "Garantie vol de base.", [{ id: "sl-1", label: "Franchise", value: "10% valeur vénale" }], defaultSources),
+            },
+          },
+          {
+            label: "Bris de glace",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Bris de glace", "axa", "Axa", true, "Remplacement ou réparation de tous les vitrages du véhicule.", [{ id: "sl-1", label: "Franchise réparation", value: "0 €" }, { id: "sl-2", label: "Franchise remplacement", value: "50 €" }], defaultSources),
+              allianz: makeDetail("Bris de glace", "allianz", "Allianz", true, "Couverture bris de glace pare-brise, lunette arrière et vitres latérales.", [{ id: "sl-1", label: "Franchise", value: "75 €" }], defaultSources),
+              generali: makeDetail("Bris de glace", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
+            },
+          },
+          {
+            label: "Incendie, explosion, tempête",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Incendie, explosion, tempête", "axa", "Axa", true, "Protection contre incendie, explosion et événements climatiques.", [{ id: "sl-1", label: "Franchise tempête", value: "250 €" }], defaultSources),
+              allianz: makeDetail("Incendie, explosion, tempête", "allianz", "Allianz", true, "Garantie étendue incendie et événements naturels.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources),
+              generali: makeDetail("Incendie, explosion, tempête", "generali", "Generali", true, "Couverture de base incendie et tempête.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Catastrophes naturelles",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Garantie légale catastrophes naturelles.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+              allianz: makeDetail("Catastrophes naturelles", "allianz", "Allianz", true, "Conformément à la réglementation en vigueur.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+              generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Couverture obligatoire.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Protection juridique",
+            values: { axa: { type: "check" }, allianz: { type: "cross" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Protection juridique", "axa", "Axa", true, "Assistance juridique en cas de litige lié au véhicule.", [{ id: "sl-1", label: "Plafond honoraires", value: "15 000 €" }], defaultSources),
+              allianz: makeDetail("Protection juridique", "allianz", "Allianz", false, "Non incluse. Disponible en option.", [], defaultSources),
+              generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique incluse dans la formule.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Garanties conducteur",
+        rows: [
+          {
+            label: "Protection corporelle du conducteur",
+            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "750 000 €" } },
+            details: {
+              axa: makeDetail("Protection corporelle du conducteur", "axa", "Axa", true, "Indemnisation des dommages corporels subis par le conducteur.", [{ id: "sl-1", label: "Capital décès", value: "1 000 000 €" }, { id: "sl-2", label: "Frais de soins", value: "Illimité" }], defaultSources),
+              allianz: makeDetail("Protection corporelle du conducteur", "allianz", "Allianz", true, "Capital garanti en cas de blessure du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "500 000 €" }], defaultSources),
+              generali: makeDetail("Protection corporelle du conducteur", "generali", "Generali", true, "Protection intermédiaire du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "750 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Assistance 0 km",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Assistance 0 km", "axa", "Axa", true, "Dépannage et remorquage dès le domicile.", [], defaultSources),
+              allianz: makeDetail("Assistance 0 km", "allianz", "Allianz", true, "Assistance depuis le lieu de panne, y compris domicile.", [], defaultSources),
+              generali: makeDetail("Assistance 0 km", "generali", "Generali", false, "Assistance uniquement à partir de 25 km du domicile.", [], defaultSources),
+            },
+          },
+          {
+            label: "Véhicule de remplacement",
+            values: { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "15 jours" }, generali: { type: "text", value: "21 jours" } },
+            details: {
+              axa: makeDetail("Véhicule de remplacement", "axa", "Axa", true, "Mise à disposition d'un véhicule de remplacement.", [{ id: "sl-1", label: "Durée max", value: "30 jours" }, { id: "sl-2", label: "Catégorie", value: "Équivalente" }], defaultSources),
+              allianz: makeDetail("Véhicule de remplacement", "allianz", "Allianz", true, "Véhicule de remplacement en cas d'immobilisation.", [{ id: "sl-1", label: "Durée max", value: "15 jours" }], defaultSources),
+              generali: makeDetail("Véhicule de remplacement", "generali", "Generali", true, "Prêt de véhicule en cas de sinistre.", [{ id: "sl-1", label: "Durée max", value: "21 jours" }], defaultSources),
+            },
+          },
+          {
+            label: "Franchise sinistre responsable",
+            values: { axa: { type: "text", value: "500 €" }, allianz: { type: "text", value: "750 €" }, generali: { type: "text", value: "500 €" } },
+            details: {
+              axa: makeDetail("Franchise sinistre responsable", "axa", "Axa", true, "Montant restant à charge en cas de sinistre responsable.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
+              allianz: makeDetail("Franchise sinistre responsable", "allianz", "Allianz", true, "Franchise applicable aux sinistres dont l'assuré est responsable.", [{ id: "sl-1", label: "Franchise standard", value: "750 €" }], defaultSources),
+              generali: makeDetail("Franchise sinistre responsable", "generali", "Generali", true, "Franchise en cas de responsabilité.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Services inclus",
+        rows: [
+          {
+            label: "Gestion de flotte en ligne",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Gestion de flotte en ligne", "axa", "Axa", true, "Plateforme en ligne pour gérer l'ensemble de la flotte.", [], defaultSources),
+              allianz: makeDetail("Gestion de flotte en ligne", "allianz", "Allianz", true, "Espace client dédié à la gestion de flotte.", [], defaultSources),
+              generali: makeDetail("Gestion de flotte en ligne", "generali", "Generali", true, "Outil de suivi de flotte basique.", [], defaultSources),
+            },
+          },
+          {
+            label: "Carte verte dématérialisée",
+            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Carte verte dématérialisée", "axa", "Axa", true, "Cartes vertes disponibles au format numérique.", [], defaultSources),
+              allianz: makeDetail("Carte verte dématérialisée", "allianz", "Allianz", true, "Attestation d'assurance dématérialisée.", [], defaultSources),
+              generali: makeDetail("Carte verte dématérialisée", "generali", "Generali", false, "Uniquement en format papier.", [], defaultSources),
+            },
+          },
+          {
+            label: "Reporting sinistralité",
+            values: { axa: { type: "text", value: "Trimestriel" }, allianz: { type: "text", value: "Mensuel" }, generali: { type: "text", value: "Annuel" } },
+            details: {
+              axa: makeDetail("Reporting sinistralité", "axa", "Axa", true, "Rapports de sinistralité détaillés fournis trimestriellement.", [{ id: "sl-1", label: "Fréquence", value: "Trimestriel" }], defaultSources),
+              allianz: makeDetail("Reporting sinistralité", "allianz", "Allianz", true, "Suivi mensuel de la sinistralité de la flotte.", [{ id: "sl-1", label: "Fréquence", value: "Mensuel" }], defaultSources),
+              generali: makeDetail("Reporting sinistralité", "generali", "Generali", true, "Bilan annuel de sinistralité.", [{ id: "sl-1", label: "Fréquence", value: "Annuel" }], defaultSources),
+            },
+          },
+        ],
+      },
+    ],
+  },
+  "cot-5": {
+    sections: [
+      {
+        title: "Couvertures RC Professionnelle",
+        rows: [
+          {
+            label: "Fautes professionnelles",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Couverture des erreurs, omissions et fautes dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+              allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Protection contre les réclamations liées à des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Atteinte aux droits de propriété intellectuelle",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire ou atteinte aux droits d'auteur.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
+              allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI dans le cadre de l'activité professionnelle.", [{ id: "sl-1", label: "Sous-limite", value: "200 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Perte de données client",
+            values: { axa: { type: "check" }, allianz: { type: "cross" } },
+            details: {
+              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte, altération ou destruction de données confiées par les clients.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
+              allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert dans la formule Standard. Disponible en option Cyber.", [], defaultSources),
+            },
+          },
+          {
+            label: "Violation du RGPD",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation des données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+              allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture des conséquences financières d'une non-conformité RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Sous-traitance",
+            values: { axa: { type: "text", value: "Couverte" }, allianz: { type: "text", value: "Exclue" } },
+            details: {
+              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Les prestations réalisées par des sous-traitants sont couvertes.", [], defaultSources),
+              allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue de la garantie. Seules les prestations directes sont couvertes.", [], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Limites et franchises",
+        rows: [
+          {
+            label: "Plafond par sinistre",
+            values: { axa: { type: "text", value: "500 000 €" }, allianz: { type: "text", value: "500 000 €" } },
+            details: {
+              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation pour un sinistre unique.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+              allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite d'engagement par événement dommageable.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Plafond annuel",
+            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
+            details: {
+              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Montant maximum d'indemnisation sur une année d'assurance.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
+              allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement maximum annuel toutes garanties confondues.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Franchise",
+            values: { axa: { type: "text", value: "1 000 €" }, allianz: { type: "text", value: "1 500 €" } },
+            details: {
+              axa: makeDetail("Franchise", "axa", "Axa", true, "Montant restant à la charge de l'assuré par sinistre.", [{ id: "sl-1", label: "Franchise fixe", value: "1 000 €" }], defaultSources),
+              allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise applicable par sinistre déclaré.", [{ id: "sl-1", label: "Franchise fixe", value: "1 500 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Défense pénale",
+            values: { axa: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense en cas de poursuites pénales liées à l'activité.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }, { id: "sl-2", label: "Frais d'expert judiciaire", value: "5 000 €" }], defaultSources),
+              allianz: makeDetail("Défense pénale", "allianz", "Allianz", true, "Assistance juridique et prise en charge de la défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export function getComparisonData(cotationId: string): ComparisonData | undefined {
+  return comparisonDataMap[cotationId];
+}
+
+// ─── Comparison task list ────────────────────────────────────────────
+// Persisted comparison agent tasks shown on the /quoting/comparison list page.
+
+export type ComparisonTaskStatus = "in_progress" | "done";
+
+export type ComparisonTask = {
+  id: string;
+  cotationId: string;
+  client: string;
+  products: string[];
+  insurerIds: string[];
+  createdBy: string;
+  date: string;
+  status: ComparisonTaskStatus;
+};
+
+export const comparisonTasks: ComparisonTask[] = [
+  {
+    id: "cmp-1",
+    cotationId: "cot-1",
+    client: "Marble Tech SAS",
+    products: ["RC Pro"],
+    insurerIds: ["axa", "generali", "allianz"],
+    createdBy: "Delphine",
+    date: "10/03/2026",
+    status: "in_progress",
+  },
+  {
+    id: "cmp-2",
+    cotationId: "cot-2",
+    client: "Acme Corp",
+    products: ["Flotte automobile"],
+    insurerIds: ["axa", "allianz", "generali"],
+    createdBy: "Delphine",
+    date: "07/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-3",
+    cotationId: "cot-5",
+    client: "Digital Solutions SARL",
+    products: ["RC Pro"],
+    insurerIds: ["axa", "allianz"],
+    createdBy: "Delphine",
+    date: "04/03/2026",
+    status: "done",
+  },
+];
 
 export const emailInboxMock = [
   {
