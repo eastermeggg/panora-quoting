@@ -722,7 +722,7 @@ export type CellDetail = {
 
 export type CellIdentifier =
   | { type: "guarantee"; sectionIndex: number; rowIndex: number; insurerId: string }
-  | { type: "price"; insurerId: string; formulaIndex: number }
+  | { type: "price"; insurerId: string }
   | { type: "exclusion"; exclusionId: string; insurerId: string };
 
 export type GuaranteeRow = {

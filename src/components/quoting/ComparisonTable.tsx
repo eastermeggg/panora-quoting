@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
-import { parsePriceEuros } from "@/lib/utils";
 import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Sparkles, Eye, EyeOff, Info } from "lucide-react";
 import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow } from "@/data/mock";
 
@@ -22,7 +21,7 @@ interface ComparisonTableProps {
 
 function cellIdKey(c: CellIdentifier): string {
   if (c.type === "guarantee") return `g-${c.sectionIndex}-${c.rowIndex}-${c.insurerId}`;
-  if (c.type === "price") return `p-${c.insurerId}-${c.formulaIndex}`;
+  if (c.type === "price") return `p-${c.insurerId}`;
   return `e-${c.exclusionId}-${c.insurerId}`;
 }
 
@@ -53,12 +52,32 @@ function cellIdEquals(a: CellIdentifier | null | undefined, b: CellIdentifier): 
     return a.sectionIndex === b.sectionIndex && a.rowIndex === b.rowIndex && a.insurerId === b.insurerId;
   }
   if (a.type === "price" && b.type === "price") {
-    return a.insurerId === b.insurerId && a.formulaIndex === b.formulaIndex;
+    return a.insurerId === b.insurerId;
   }
   if (a.type === "exclusion" && b.type === "exclusion") {
     return a.exclusionId === b.exclusionId && a.insurerId === b.insurerId;
   }
   return false;
+}
+
+/** Splits "810,52 €/an" into { amount: "810,52 €", period: "/ an" } */
+function splitPrice(raw: string): { amount: string; period: string } {
+  const m = raw.match(/^(.+?)\s*\/\s*(.+)$/);
+  if (m) return { amount: m[1].trim(), period: `/ ${m[2].trim()}` };
+  return { amount: raw, period: "" };
+}
+
+function PriceLine({ label, value }: { label: string; value: string }) {
+  const { amount, period } = splitPrice(value);
+  return (
+    <div className="flex items-baseline justify-between">
+      <span className="text-[13px] leading-5 text-panora-text-muted">{label}</span>
+      <span className="whitespace-nowrap">
+        <span className="text-[15px] font-semibold leading-6 text-panora-text">{amount}</span>
+        {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
+      </span>
+    </div>
+  );
 }
 
 function CellBadge({ cell }: { cell: CellValue }) {
@@ -190,14 +209,6 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
 
   const isPriceRowActive = selectedCell?.type === "price";
 
-  // For each insurer, find cheapest annual price
-  const cheapestPerInsurer = insurers.map((ins) => {
-    const annuals = (ins.pricing ?? []).map((p) => parsePriceEuros(p.annual));
-    return annuals.length > 0 ? Math.min(...annuals) : Infinity;
-  });
-  const globalCheapestPrice = Math.min(...cheapestPerInsurer.filter((p) => p < Infinity));
-  const globalCheapestIdx = cheapestPerInsurer.indexOf(globalCheapestPrice);
-
   const colClass = "w-[300px]";
 
   // Group exclusions by origin
@@ -281,73 +292,56 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           {isPriceRowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
         </div>
 
-        {/* One cell per insurer with all sub-offers */}
-        {insurers.map((ins, iIdx) => {
+        {/* One cell per insurer — all sub-offers inside */}
+        {insurers.map((ins) => {
           const pricing = ins.pricing ?? [];
-          return (
-            <div
-              key={ins.id}
-              className={`${colClass} shrink-0 border-r border-panora-border`}
-            >
-              {pricing.map((formula, fIdx) => {
-                const key = `${ins.id}-${fIdx}`;
-                const isOpen = expanded[key] ?? (fIdx === 0);
-                const price = parsePriceEuros(formula.annual);
-                const isCheapest = price === cheapestPerInsurer[iIdx];
-                const cellId: CellIdentifier = { type: "price", insurerId: ins.id, formulaIndex: fIdx };
-                const isSelected = cellIdEquals(selectedCell, cellId);
-                const showPriceDetail = cellDisplayModes?.[cellIdKey(cellId)];
-                const priceDetailText = showPriceDetail && !isOpen ? formula.annual : null;
+          const cellId: CellIdentifier = { type: "price", insurerId: ins.id };
+          const isSelected = cellIdEquals(selectedCell, cellId);
 
-                return (
-                  <ComparisonCell
-                    key={fIdx}
-                    isSelected={isSelected}
-                    onClick={() => onCellSelect?.(cellId)}
-                    className={`px-3 py-3 ${fIdx > 0 ? "border-t border-panora-border/50" : ""}`}
-                  >
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggle(key);
-                      }}
-                      className={`flex items-center gap-1.5 text-[12px] font-medium ${isOpen ? "text-panora-green" : "text-panora-text-muted"}`}
-                    >
-                      {isOpen ? (
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      ) : (
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      )}
-                      {formula.formula}
-                    </button>
-                    {priceDetailText && (
-                      <span className="text-[13px] font-medium text-panora-text truncate max-w-[180px] pl-5">{priceDetailText}</span>
-                    )}
-                    {isOpen && (
-                      <div className="mt-1.5 space-y-1 pl-5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[12px] text-panora-text-muted">{ins.name} net</span>
-                          <span className={`text-[13px] font-medium ${isCheapest ? "text-panora-green" : "text-panora-text"}`}>
-                            {formula.annual}
-                          </span>
-                        </div>
-                        {formula.monthly && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[12px] text-panora-text-muted">Mensuel</span>
-                            <span className="text-[13px] text-panora-text">{formula.monthly}</span>
+          return (
+            <ComparisonCell
+              key={ins.id}
+              isSelected={isSelected}
+              onClick={() => onCellSelect?.(cellId)}
+              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+            >
+              {pricing.length === 0 ? (
+                <span className="text-[13px] text-panora-text-muted">—</span>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {pricing.map((formula, fIdx) => {
+                    const key = `${ins.id}-${fIdx}`;
+                    const isOpen = expanded[key] ?? (fIdx === 0);
+                    return (
+                      <div key={fIdx} className="flex flex-col gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggle(key);
+                          }}
+                          className="flex items-center gap-[5px] text-[12px] font-medium text-panora-green tracking-[0.12px] leading-6"
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                          )}
+                          <span className="truncate">{formula.formula}</span>
+                        </button>
+                        {isOpen && (
+                          <div className="space-y-0.5">
+                            <PriceLine label={`${ins.name} net`} value={formula.annual} />
+                            {formula.monthly && (
+                              <PriceLine label="Mensuel" value={formula.monthly} />
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </ComparisonCell>
-                );
-              })}
-              {pricing.length === 0 && (
-                <div className="px-3 py-3">
-                  <span className="text-[13px] text-panora-text-muted">—</span>
+                    );
+                  })}
                 </div>
               )}
-            </div>
+            </ComparisonCell>
           );
         })}
       </div>

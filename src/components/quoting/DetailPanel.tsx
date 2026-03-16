@@ -77,6 +77,19 @@ function InlineValue({
   );
 }
 
+/** Splits "810,52 €/an" into amount + period for display */
+function PanelPriceLine({ value }: { value: string }) {
+  const m = value.match(/^(.+?)\s*\/\s*(.+)$/);
+  const amount = m ? m[1].trim() : value;
+  const period = m ? `/ ${m[2].trim()}` : "";
+  return (
+    <span className="whitespace-nowrap">
+      <span className="text-[15px] font-semibold leading-6 text-panora-text">{amount}</span>
+      {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
+    </span>
+  );
+}
+
 export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDetail, onToggleDisplayMode }: DetailPanelProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(cellDetail.title);
@@ -139,7 +152,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
       {/* Header */}
       <div className="h-[52px] shrink-0 border-b border-[#e3e3e3] flex items-center justify-between px-4">
         <span className="text-[13px] text-panora-text-muted">
-          {isExclusion ? "D\u00e9tail de l\u2019exclusion" : "D\u00e9tail de la garantie"}
+          {isExclusion ? "D\u00e9tail de l\u2019exclusion" : cellDetail.cellType === "price" ? "D\u00e9tail des tarifs" : "D\u00e9tail de la garantie"}
         </span>
         <div className="flex items-center gap-2">
           <span
@@ -162,7 +175,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-      {/* Title + insurer badge + toggles + main limits + description */}
+      {/* Title + insurer badge */}
       <div className="border-b border-[#e3e3e3] p-4 flex flex-col gap-3">
         {/* Editable title */}
         <div className="flex items-center gap-2">
@@ -216,7 +229,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
           </div>
         </div>
 
-        {/* Covered / Non couvert toggle — guarantee */}
+        {/* Covered / Non couvert toggle — guarantee only */}
         {cellDetail.cellType === "guarantee" && (
           <div className="inline-flex self-start gap-2">
             <button
@@ -296,7 +309,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
           </div>
         )}
 
-        {/* Main limit & deductible card */}
+        {/* Main limit & deductible card — guarantee only */}
         {cellDetail.cellType === "guarantee" && (cellDetail.mainLimit || cellDetail.mainDeductible) && (
           <div className="border border-panora-border rounded-[10px] overflow-clip">
             {cellDetail.mainLimit && (
@@ -322,49 +335,51 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
           </div>
         )}
 
-        {/* Description + Modifier button */}
-        <div className="flex flex-col gap-1.5">
-          {descOverridden && (
-            <div className="flex items-center gap-1.5">
-              <OverrideDot />
-            </div>
-          )}
-          {editingDesc ? (
-            <textarea
-              autoFocus
-              value={localDesc}
-              onChange={(e) => setLocalDesc(e.target.value)}
-              onBlur={() => {
-                update({ description: localDesc });
-                setEditingDesc(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setLocalDesc(cellDetail.description);
+        {/* Description + Modifier button — guarantee & exclusion only */}
+        {cellDetail.cellType !== "price" && (
+          <div className="flex flex-col gap-1.5">
+            {descOverridden && (
+              <div className="flex items-center gap-1.5">
+                <OverrideDot />
+              </div>
+            )}
+            {editingDesc ? (
+              <textarea
+                autoFocus
+                value={localDesc}
+                onChange={(e) => setLocalDesc(e.target.value)}
+                onBlur={() => {
+                  update({ description: localDesc });
                   setEditingDesc(false);
-                }
-              }}
-              rows={4}
-              className="text-[13px] leading-5 text-panora-text bg-white border border-panora-green rounded-lg px-3 py-2.5 outline-none ring-2 ring-panora-green/20 resize-none"
-            />
-          ) : (
-            <>
-              <p className="text-[13px] leading-5 text-panora-text">
-                {cellDetail.description || <span className="text-panora-text-muted">Aucune description.</span>}
-              </p>
-              <button
-                onClick={() => {
-                  setLocalDesc(cellDetail.description);
-                  setEditingDesc(true);
                 }}
-                className="inline-flex items-center gap-1.5 text-[13px] text-panora-green hover:text-panora-green/80 transition-colors self-start"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Modifier
-              </button>
-            </>
-          )}
-        </div>
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setLocalDesc(cellDetail.description);
+                    setEditingDesc(false);
+                  }
+                }}
+                rows={4}
+                className="text-[13px] leading-5 text-panora-text bg-white border border-panora-green rounded-lg px-3 py-2.5 outline-none ring-2 ring-panora-green/20 resize-none"
+              />
+            ) : (
+              <>
+                <p className="text-[13px] leading-5 text-panora-text">
+                  {cellDetail.description || <span className="text-panora-text-muted">Aucune description.</span>}
+                </p>
+                <button
+                  onClick={() => {
+                    setLocalDesc(cellDetail.description);
+                    setEditingDesc(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-[13px] text-panora-green hover:text-panora-green/80 transition-colors self-start"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Modifier
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Cards section — guarantee: "Sous limites" */}
@@ -379,19 +394,33 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
         </div>
       )}
 
-      {cellDetail.cellType === "price" && (
-        <div className="border-b border-[#e3e3e3] p-4 pb-5 flex flex-col gap-3">
-          <h3 className="text-[15px] font-semibold text-panora-text">Tarification</h3>
-          <PanelCardB
-            rows={cellDetail.pricingRows ?? []}
-            originalRows={originals.pricingRows}
-            onChange={(rows: PricingCardRow[]) => update({ pricingRows: rows })}
-          />
+      {/* Tarification section — one card per sub-offer */}
+      {cellDetail.cellType === "price" && (cellDetail.pricingRows ?? []).length > 0 && (
+        <div className="border-b border-[#e3e3e3] p-4 pb-5 flex flex-col gap-4">
+          {(cellDetail.pricingRows ?? []).map((row) => (
+            <div key={row.id} className="border border-panora-border rounded-[10px] overflow-clip">
+              {/* Card title */}
+              <div className="h-[44px] flex items-center px-3 border-b border-panora-border">
+                <span className="text-[13px] leading-5 text-panora-text font-medium">{row.offerLabel}</span>
+              </div>
+              {/* Price lines — same format as cell */}
+              <div className="h-[44px] flex items-baseline justify-between px-3 py-3">
+                <span className="text-[13px] leading-5 text-panora-text-muted">{cellDetail.insurerName} net</span>
+                <PanelPriceLine value={row.price} />
+              </div>
+              {row.conditions && (
+                <div className="h-[44px] flex items-baseline justify-between px-3 py-3 border-t border-panora-border">
+                  <span className="text-[13px] leading-5 text-panora-text-muted">Mensuel</span>
+                  <PanelPriceLine value={row.conditions} />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Sources (read-only) — hidden for manual exclusions */}
-      {cellDetail.sources && cellDetail.sources.length > 0 && !isManualExclusion && (
+      {/* Sources (read-only) — hidden for manual exclusions and price */}
+      {cellDetail.cellType !== "price" && cellDetail.sources && cellDetail.sources.length > 0 && !isManualExclusion && (
         <div className="p-4 flex flex-col gap-3">
           <h3 className="text-[15px] font-semibold text-panora-text">Sources</h3>
           {cellDetail.sources.map((source: SourceRef, idx: number) => (
@@ -418,8 +447,8 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
       )}
       </div>{/* end scrollable content */}
 
-      {/* Display mode footer — guarantee & price only */}
-      {(cellDetail.cellType === "guarantee" || cellDetail.cellType === "price") && onToggleDisplayMode && (
+      {/* Display mode footer — guarantee only */}
+      {cellDetail.cellType === "guarantee" && onToggleDisplayMode && (
         <div className="shrink-0 border-t border-[#e3e3e3] bg-[#faf8f5] px-4 py-3 flex items-center justify-between">
           <span className="text-[12px] text-panora-text-muted">Affichage dans la grille</span>
           <div className="flex items-center gap-2">

@@ -236,20 +236,20 @@ function getCellDetail(
   }
   if (cellId.type === "price") {
     const ins = insurers.find((i) => i.id === cellId.insurerId);
-    if (!ins?.pricing) return null;
-    const formula = ins.pricing[cellId.formulaIndex];
-    if (!formula) return null;
+    if (!ins?.pricing || ins.pricing.length === 0) return null;
     return {
-      title: formula.formula,
+      title: "Tarification",
       covered: true,
       insurerId: cellId.insurerId,
       insurerName: ins.name,
-      description: `Formule ${formula.formula} — ${ins.name}`,
+      description: "",
       cellType: "price",
-      pricingRows: [
-        { id: "pr-annual", offerLabel: "Prime annuelle", price: formula.annual, conditions: "" },
-        { id: "pr-monthly", offerLabel: "Prime mensuelle", price: formula.monthly, conditions: "" },
-      ],
+      pricingRows: ins.pricing.map((formula, idx) => ({
+        id: `pr-${idx}`,
+        offerLabel: formula.formula,
+        price: formula.annual,
+        conditions: formula.monthly,
+      })),
       sources: [],
     };
   }
@@ -278,7 +278,7 @@ function getCellDetail(
 
 function cellIdKey(c: CellIdentifier): string {
   if (c.type === "guarantee") return `g-${c.sectionIndex}-${c.rowIndex}-${c.insurerId}`;
-  if (c.type === "price") return `p-${c.insurerId}-${c.formulaIndex}`;
+  if (c.type === "price") return `p-${c.insurerId}`;
   return `e-${c.exclusionId}-${c.insurerId}`;
 }
 
@@ -349,20 +349,16 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         return { ...prev, sections };
       });
     } else if (cellId.type === "price") {
-      // Update mutableInsurers pricing from detail
+      // Update mutableInsurers pricing from all pricingRows
       setMutableInsurers((prev) =>
         prev.map((ins) => {
           if (ins.id !== cellId.insurerId) return ins;
-          const pricing = [...(ins.pricing ?? [])];
-          if (pricing[cellId.formulaIndex] && updatedDetail.pricingRows) {
-            const annualRow = updatedDetail.pricingRows.find((r) => r.id === "pr-annual");
-            const monthlyRow = updatedDetail.pricingRows.find((r) => r.id === "pr-monthly");
-            pricing[cellId.formulaIndex] = {
-              ...pricing[cellId.formulaIndex],
-              annual: annualRow?.price ?? pricing[cellId.formulaIndex].annual,
-              monthly: monthlyRow?.price ?? pricing[cellId.formulaIndex].monthly,
-            };
-          }
+          if (!updatedDetail.pricingRows) return ins;
+          const pricing = updatedDetail.pricingRows.map((row, idx) => ({
+            formula: row.offerLabel,
+            annual: row.price,
+            monthly: row.conditions,
+          }));
           return { ...ins, pricing };
         })
       );
