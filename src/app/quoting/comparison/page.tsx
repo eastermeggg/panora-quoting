@@ -274,6 +274,12 @@ function getCellDetail(
   return null;
 }
 
+function cellIdKey(c: CellIdentifier): string {
+  if (c.type === "guarantee") return `g-${c.sectionIndex}-${c.rowIndex}-${c.insurerId}`;
+  if (c.type === "price") return `p-${c.insurerId}-${c.formulaIndex}`;
+  return `e-${c.exclusionId}-${c.insurerId}`;
+}
+
 function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const router = useRouter();
   const followupData = getFollowupData(cotParamId);
@@ -287,6 +293,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     alreadyDone ? getComparisonData(cotParamId) : undefined
   );
   const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
+  const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
 
   const startAgent = useCallback(() => {
@@ -428,6 +435,11 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     setSelectedCell(null);
   }, []);
 
+  const handleToggleCellDisplayMode = useCallback((cellId: CellIdentifier) => {
+    const key = cellIdKey(cellId);
+    setCellDisplayModes((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
   if (!followupData) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -497,6 +509,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               onAddExclusion={handleAddManualExclusion}
               onUpdateExclusionLabel={handleUpdateExclusionLabel}
               onDiscardExclusion={handleDiscardExclusion}
+              cellDisplayModes={cellDisplayModes}
             />
           </div>
           {selectedCell && currentDetail && (
@@ -509,6 +522,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   ? () => handleDeleteExclusion(selectedCell.exclusionId)
                   : undefined
               }
+              showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
+              onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
             />
           )}
         </div>

@@ -12,6 +12,8 @@ interface DetailPanelProps {
   onUpdate: (updated: CellDetail) => void;
   onClose: () => void;
   onDelete?: () => void;
+  showKeyDetail?: boolean;
+  onToggleDisplayMode?: () => void;
 }
 
 function OverrideDot() {
@@ -23,7 +25,7 @@ function OverrideDot() {
   );
 }
 
-export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete }: DetailPanelProps) {
+export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDetail, onToggleDisplayMode }: DetailPanelProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [localTitle, setLocalTitle] = useState(cellDetail.title);
   const [editingDesc, setEditingDesc] = useState(false);
@@ -73,7 +75,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete }: DetailP
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="w-[420px] shrink-0 border-l border-panora-border bg-white overflow-y-auto flex flex-col"
+      className="w-[420px] shrink-0 border-l border-panora-border bg-white flex flex-col"
     >
       {/* Header */}
       <div className="h-[52px] shrink-0 border-b border-[#e3e3e3] flex items-center justify-between px-4">
@@ -99,6 +101,8 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete }: DetailP
         </div>
       </div>
 
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
       {/* Title + insurer badge + description */}
       <div className="border-b border-[#e3e3e3] p-4 flex flex-col gap-3">
         {/* Editable title */}
@@ -314,6 +318,23 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete }: DetailP
             <Trash2 className="w-3.5 h-3.5" />
             Supprimer l&apos;exclusion
           </button>
+        </div>
+      )}
+      </div>{/* end scrollable content */}
+
+      {/* Display mode footer — guarantee & price only */}
+      {(cellDetail.cellType === "guarantee" || cellDetail.cellType === "price") && onToggleDisplayMode && (
+        <div className="shrink-0 border-t border-[#e3e3e3] bg-[#faf8f5] px-4 py-3 flex items-center justify-between">
+          <span className="text-[12px] text-panora-text-muted">Affichage dans la grille</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-panora-text-muted">Afficher détail clé en plus</span>
+            <button
+              onClick={onToggleDisplayMode}
+              className={`relative w-[28px] h-[16px] rounded-full transition-colors ${showKeyDetail ? "bg-panora-green" : "bg-[#d1d1d1]"}`}
+            >
+              <span className={`absolute top-[2px] w-[12px] h-[12px] rounded-full bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)] transition-transform ${showKeyDetail ? "left-[14px]" : "left-[2px]"}`} />
+            </button>
+          </div>
         </div>
       )}
     </div>

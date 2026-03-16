@@ -5,7 +5,7 @@ import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { parsePriceEuros } from "@/lib/utils";
 import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Lock, Sparkles, PenLine, Eye, EyeOff, Info } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, ExclusionCellValue, ExclusionOrigin } from "@/data/mock";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -17,6 +17,28 @@ interface ComparisonTableProps {
   onAddExclusion?: () => string;
   onUpdateExclusionLabel?: (exclusionId: string, label: string) => void;
   onDiscardExclusion?: (exclusionId: string) => void;
+  cellDisplayModes?: Record<string, boolean>;
+}
+
+function cellIdKey(c: CellIdentifier): string {
+  if (c.type === "guarantee") return `g-${c.sectionIndex}-${c.rowIndex}-${c.insurerId}`;
+  if (c.type === "price") return `p-${c.insurerId}-${c.formulaIndex}`;
+  return `e-${c.exclusionId}-${c.insurerId}`;
+}
+
+function deriveKeyDetail(
+  cellValue: { type: string; value?: string } | null | undefined,
+  detail: CellDetail | null | undefined,
+): { text: string; isPrice: boolean } | null {
+  if (cellValue?.type === "text" && cellValue.value) return null;
+  if (detail?.subLimits?.[0]) {
+    const sl = detail.subLimits[0];
+    return { text: `${sl.label} : ${sl.value}`, isPrice: false };
+  }
+  if (detail?.pricingRows?.[0]) {
+    return { text: detail.pricingRows[0].price, isPrice: true };
+  }
+  return null;
 }
 
 function cellIdEquals(a: CellIdentifier | null | undefined, b: CellIdentifier): boolean {
@@ -169,7 +191,7 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
@@ -302,6 +324,8 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                 const isCheapest = price === cheapestPerInsurer[iIdx];
                 const cellId: CellIdentifier = { type: "price", insurerId: ins.id, formulaIndex: fIdx };
                 const isSelected = cellIdEquals(selectedCell, cellId);
+                const showPriceDetail = cellDisplayModes?.[cellIdKey(cellId)];
+                const priceDetailText = showPriceDetail && !isOpen ? formula.annual : null;
 
                 return (
                   <ComparisonCell
@@ -324,6 +348,9 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                       )}
                       {formula.formula}
                     </button>
+                    {priceDetailText && (
+                      <span className="text-[13px] font-medium text-panora-text truncate max-w-[180px] pl-5">{priceDetailText}</span>
+                    )}
                     {isOpen && (
                       <div className="mt-1.5 space-y-1 pl-5">
                         <div className="flex items-center justify-between">
@@ -375,6 +402,8 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                 const cell = row.values[ins.id] ?? { type: "empty" as const };
                 const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
                 const isSelected = cellIdEquals(selectedCell, cellId);
+                const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
+                const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
 
                 return (
                   <ComparisonCell
@@ -383,7 +412,14 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                     onClick={() => onCellSelect?.(cellId)}
                     className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
                   >
-                    <CellBadge cell={cell} />
+                    {keyDetail ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <CellBadge cell={cell} />
+                        <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice ? "font-medium" : ""}`}>{keyDetail.text}</span>
+                      </span>
+                    ) : (
+                      <CellBadge cell={cell} />
+                    )}
                   </ComparisonCell>
                 );
               })}
