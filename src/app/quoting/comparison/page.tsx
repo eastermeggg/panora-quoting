@@ -8,7 +8,8 @@ import {
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
-import type { ComparisonData, ComparisonTask } from "@/data/mock";
+import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData } from "@/data/mock";
+import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import Link from "next/link";
@@ -205,6 +206,54 @@ const PHASE_DURATIONS: Partial<Record<AgentPhase, number>> = {
   building_comparison: 800,
 };
 
+function getCellDetail(
+  cellId: CellIdentifier,
+  data: ComparisonData | undefined,
+  insurers: InsurerData[],
+): CellDetail | null {
+  if (cellId.type === "guarantee" && data) {
+    const section = data.sections[cellId.sectionIndex];
+    if (!section) return null;
+    const row = section.rows[cellId.rowIndex];
+    if (!row) return null;
+    const detail = row.details?.[cellId.insurerId];
+    if (detail) return detail;
+    // Fallback: build a minimal detail from cell value
+    const cell = row.values[cellId.insurerId];
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    return {
+      title: row.label,
+      covered: cell?.type !== "cross",
+      insurerId: cellId.insurerId,
+      insurerName: ins?.name ?? cellId.insurerId,
+      description: "",
+      cellType: "guarantee",
+      subLimits: [],
+      sources: [],
+    };
+  }
+  if (cellId.type === "price") {
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    if (!ins?.pricing) return null;
+    const formula = ins.pricing[cellId.formulaIndex];
+    if (!formula) return null;
+    return {
+      title: formula.formula,
+      covered: true,
+      insurerId: cellId.insurerId,
+      insurerName: ins.name,
+      description: `Formule ${formula.formula} — ${ins.name}`,
+      cellType: "price",
+      pricingRows: [
+        { id: "pr-annual", offerLabel: "Prime annuelle", price: formula.annual, conditions: "" },
+        { id: "pr-monthly", offerLabel: "Prime mensuelle", price: formula.monthly, conditions: "" },
+      ],
+      sources: [],
+    };
+  }
+  return null;
+}
+
 function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const router = useRouter();
   const followupData = getFollowupData(cotParamId);
@@ -217,6 +266,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [comparisonResult, setComparisonResult] = useState<ComparisonData | undefined>(
     alreadyDone ? getComparisonData(cotParamId) : undefined
   );
+  const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
+  const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
 
   const startAgent = useCallback(() => {
     const phases: AgentPhase[] = ["reading_documents", "extracting_guarantees", "building_comparison", "ready"];
@@ -242,6 +293,53 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     return () => clearTimeout(timer);
   }, [startAgent, alreadyDone]);
 
+  const handleCellUpdate = useCallback((cellId: CellIdentifier, updatedDetail: CellDetail) => {
+    if (cellId.type === "guarantee") {
+      setComparisonResult((prev) => {
+        if (!prev) return prev;
+        const sections = prev.sections.map((section, sIdx) => {
+          if (sIdx !== cellId.sectionIndex) return section;
+          const rows = section.rows.map((row, rIdx) => {
+            if (rIdx !== cellId.rowIndex) return row;
+            // Update the cell value based on covered toggle
+            const currentCell = row.values[cellId.insurerId];
+            let newCell = currentCell;
+            if (updatedDetail.covered && currentCell?.type === "cross") {
+              newCell = { type: "check" };
+            } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
+              newCell = { type: "cross" };
+            }
+            return {
+              ...row,
+              values: { ...row.values, [cellId.insurerId]: newCell },
+              details: { ...row.details, [cellId.insurerId]: updatedDetail },
+            };
+          });
+          return { ...section, rows };
+        });
+        return { ...prev, sections };
+      });
+    } else if (cellId.type === "price") {
+      // Update mutableInsurers pricing from detail
+      setMutableInsurers((prev) =>
+        prev.map((ins) => {
+          if (ins.id !== cellId.insurerId) return ins;
+          const pricing = [...(ins.pricing ?? [])];
+          if (pricing[cellId.formulaIndex] && updatedDetail.pricingRows) {
+            const annualRow = updatedDetail.pricingRows.find((r) => r.id === "pr-annual");
+            const monthlyRow = updatedDetail.pricingRows.find((r) => r.id === "pr-monthly");
+            pricing[cellId.formulaIndex] = {
+              ...pricing[cellId.formulaIndex],
+              annual: annualRow?.price ?? pricing[cellId.formulaIndex].annual,
+              monthly: monthlyRow?.price ?? pricing[cellId.formulaIndex].monthly,
+            };
+          }
+          return { ...ins, pricing };
+        })
+      );
+    }
+  }, []);
+
   if (!followupData) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -250,9 +348,11 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     );
   }
 
-  const { cotation, insurers } = followupData;
+  const { cotation } = followupData;
   const clientName = cotation.client;
-  const totalDocs = insurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
+  const totalDocs = mutableInsurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
+
+  const currentDetail = selectedCell ? getCellDetail(selectedCell, comparisonResult, mutableInsurers) : null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -293,10 +393,28 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
       </div>
 
       {agentPhase !== "ready" ? (
-        <AgentLoadingState phase={agentPhase} insurerCount={insurers.length} documentCount={totalDocs} />
+        <AgentLoadingState phase={agentPhase} insurerCount={mutableInsurers.length} documentCount={totalDocs} />
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <ComparisonTable insurers={insurers} comparisonData={comparisonResult} cotParamId={cotParamId} />
+        <div className="flex-1 flex min-h-0">
+          <div
+            className="flex-1 overflow-auto min-w-0"
+            onClick={() => setSelectedCell(null)}
+          >
+            <ComparisonTable
+              insurers={mutableInsurers}
+              comparisonData={comparisonResult}
+              cotParamId={cotParamId}
+              selectedCell={selectedCell}
+              onCellSelect={setSelectedCell}
+            />
+          </div>
+          {selectedCell && currentDetail && (
+            <DetailPanel
+              cellDetail={currentDetail}
+              onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+              onClose={() => setSelectedCell(null)}
+            />
+          )}
         </div>
       )}
     </div>

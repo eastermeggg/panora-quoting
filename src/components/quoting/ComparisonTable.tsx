@@ -2,15 +2,30 @@
 
 import { useState } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { parsePriceEuros } from "@/lib/utils";
 import { Check, X as XIcon, ChevronDown, ChevronRight, FileText } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue } from "@/data/mock";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
   comparisonData?: ComparisonData;
   /** Associated cotation param id — for linking back to quote flow */
   cotParamId?: string;
+  selectedCell?: CellIdentifier | null;
+  onCellSelect?: (cell: CellIdentifier) => void;
+}
+
+function cellIdEquals(a: CellIdentifier | null | undefined, b: CellIdentifier): boolean {
+  if (!a) return false;
+  if (a.type !== b.type) return false;
+  if (a.type === "guarantee" && b.type === "guarantee") {
+    return a.sectionIndex === b.sectionIndex && a.rowIndex === b.rowIndex && a.insurerId === b.insurerId;
+  }
+  if (a.type === "price" && b.type === "price") {
+    return a.insurerId === b.insurerId && a.formulaIndex === b.formulaIndex;
+  }
+  return false;
 }
 
 function CellBadge({ cell }: { cell: CellValue }) {
@@ -41,7 +56,7 @@ function CellBadge({ cell }: { cell: CellValue }) {
   return <span className="text-[13px] text-panora-text-muted">—</span>;
 }
 
-export function ComparisonTable({ insurers, comparisonData }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggle = (key: string) =>
@@ -55,19 +70,19 @@ export function ComparisonTable({ insurers, comparisonData }: ComparisonTablePro
   const globalCheapestPrice = Math.min(...cheapestPerInsurer.filter((p) => p < Infinity));
   const globalCheapestIdx = cheapestPerInsurer.indexOf(globalCheapestPrice);
 
-  const colClass = insurers.length <= 2 ? "w-[380px]" : "flex-1 min-w-[280px]";
+  const colClass = "w-[300px]";
 
   return (
     <div className="bg-white border-b border-panora-border">
       {/* Sticky insurer header row */}
       <div className="flex border-b border-panora-border sticky top-0 z-10 bg-white">
         <div className="w-[250px] shrink-0 border-r border-panora-border" />
-        {insurers.map((ins, idx) => {
+        {insurers.map((ins) => {
           const offerCount = ins.pricing?.length ?? 0;
           return (
             <div
               key={ins.id}
-              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border ${idx === globalCheapestIdx ? "bg-[#dbeee5]/40" : ""}`}
+              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -107,18 +122,28 @@ export function ComparisonTable({ insurers, comparisonData }: ComparisonTablePro
           return (
             <div
               key={ins.id}
-              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border ${iIdx === globalCheapestIdx ? "bg-[#dbeee5]/40" : ""}`}
+              className={`${colClass} shrink-0 border-r border-panora-border`}
             >
               {pricing.map((formula, fIdx) => {
                 const key = `${ins.id}-${fIdx}`;
                 const isOpen = expanded[key] ?? (fIdx === 0);
                 const price = parsePriceEuros(formula.annual);
                 const isCheapest = price === cheapestPerInsurer[iIdx];
+                const cellId: CellIdentifier = { type: "price", insurerId: ins.id, formulaIndex: fIdx };
+                const isSelected = cellIdEquals(selectedCell, cellId);
 
                 return (
-                  <div key={fIdx} className={fIdx > 0 ? "mt-2 pt-2 border-t border-panora-border/50" : ""}>
+                  <ComparisonCell
+                    key={fIdx}
+                    isSelected={isSelected}
+                    onClick={() => onCellSelect?.(cellId)}
+                    className={`px-3 py-3 ${fIdx > 0 ? "border-t border-panora-border/50" : ""}`}
+                  >
                     <button
-                      onClick={() => toggle(key)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(key);
+                      }}
                       className={`flex items-center gap-1.5 text-[12px] font-medium ${isOpen ? "text-panora-green" : "text-panora-text-muted"}`}
                     >
                       {isOpen ? (
@@ -144,11 +169,13 @@ export function ComparisonTable({ insurers, comparisonData }: ComparisonTablePro
                         )}
                       </div>
                     )}
-                  </div>
+                  </ComparisonCell>
                 );
               })}
               {pricing.length === 0 && (
-                <span className="text-[13px] text-panora-text-muted">—</span>
+                <div className="px-3 py-3">
+                  <span className="text-[13px] text-panora-text-muted">—</span>
+                </div>
               )}
             </div>
           );
@@ -167,15 +194,20 @@ export function ComparisonTable({ insurers, comparisonData }: ComparisonTablePro
               <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border">
                 <span className="text-[13px] text-panora-text leading-[18px]">{row.label}</span>
               </div>
-              {insurers.map((ins, idx) => {
+              {insurers.map((ins) => {
                 const cell = row.values[ins.id] ?? { type: "empty" as const };
+                const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
+                const isSelected = cellIdEquals(selectedCell, cellId);
+
                 return (
-                  <div
+                  <ComparisonCell
                     key={ins.id}
-                    className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center ${idx === globalCheapestIdx ? "bg-[#dbeee5]/40" : ""}`}
+                    isSelected={isSelected}
+                    onClick={() => onCellSelect?.(cellId)}
+                    className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
                   >
                     <CellBadge cell={cell} />
-                  </div>
+                  </ComparisonCell>
                 );
               })}
             </div>
@@ -190,12 +222,12 @@ export function ComparisonTable({ insurers, comparisonData }: ComparisonTablePro
         <div className="w-[250px] shrink-0 px-4 py-3 border-r border-panora-border">
           <span className="text-[13px] text-panora-text-muted">Fichiers reçus</span>
         </div>
-        {insurers.map((ins, idx) => {
+        {insurers.map((ins) => {
           const count = ins.documents?.length ?? 0;
           return (
             <div
               key={ins.id}
-              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border ${idx === globalCheapestIdx ? "bg-[#dbeee5]/40" : ""}`}
+              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
             >
               <div className="flex items-center gap-1.5 text-[13px] text-panora-text">
                 <FileText className="w-3.5 h-3.5 text-panora-text-muted" />
