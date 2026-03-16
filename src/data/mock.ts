@@ -1137,6 +1137,450 @@ const comparisonDataMap: Record<string, ComparisonData> = {
       },
     ],
   },
+  "cot-1": {
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle ou dolosive",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, generali: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle ou dolosive", "axa", "Axa", false, "deterministic", "excl-d1", "Exclusion légale des actes volontaires de l'assuré.", [], defaultSources),
+          generali: makeExclusionDetail("Faute intentionnelle ou dolosive", "generali", "Generali", false, "deterministic", "excl-d1", "Conformément au Code des assurances, art. L113-1.", [], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle ou dolosive", "allianz", "Allianz", false, "deterministic", "excl-d1", "Exclusion des fautes intentionnelles.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Amendes et pénalités",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, generali: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Amendes et pénalités", "axa", "Axa", false, "deterministic", "excl-d2", "Les amendes et pénalités ne sont pas assurables.", [], defaultSources),
+          generali: makeExclusionDetail("Amendes et pénalités", "generali", "Generali", false, "deterministic", "excl-d2", "Caractère inassurable des amendes et sanctions.", [], defaultSources),
+          allianz: makeExclusionDetail("Amendes et pénalités", "allianz", "Allianz", false, "deterministic", "excl-d2", "Amendes et sanctions pécuniaires exclues.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d3",
+        label: "Dommages aux biens confiés",
+        origin: "deterministic",
+        values: { axa: { type: "inclus" }, generali: { type: "exclu" }, allianz: { type: "exclu-text", value: "Option" } },
+        details: {
+          axa: makeExclusionDetail("Dommages aux biens confiés", "axa", "Axa", true, "deterministic", "excl-d3", "Les biens confiés par les clients sont couverts dans la formule Étendue.", [], defaultSources),
+          generali: makeExclusionDetail("Dommages aux biens confiés", "generali", "Generali", false, "deterministic", "excl-d3", "Exclusion standard des biens confiés.", [], defaultSources),
+          allianz: makeExclusionDetail("Dommages aux biens confiés", "allianz", "Allianz", false, "deterministic", "excl-d3", "Disponible en option avec avenant spécifique.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Activités SaaS hors périmètre déclaré",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, generali: { type: "inclus" }, allianz: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Activités SaaS hors périmètre déclaré", "axa", "Axa", false, "ai", "excl-a1", "Seules les activités déclarées au contrat sont couvertes. Tout nouveau service SaaS doit être notifié.", [{ id: "sl-1", label: "Délai de déclaration", value: "30 jours" }], defaultSources),
+          generali: makeExclusionDetail("Activités SaaS hors périmètre déclaré", "generali", "Generali", true, "ai", "excl-a1", "Extension automatique aux nouvelles activités dans le même secteur.", [], defaultSources),
+          allianz: makeExclusionDetail("Activités SaaS hors périmètre déclaré", "allianz", "Allianz", false, "ai", "excl-a1", "Activités hors périmètre exclues. Avenant nécessaire.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a2",
+        label: "Cyber-attaque et rançongiciel",
+        origin: "ai",
+        values: { axa: { type: "exclu-text", value: "Sous-limite" }, generali: { type: "exclu" }, allianz: { type: "inclus" } },
+        details: {
+          axa: makeExclusionDetail("Cyber-attaque et rançongiciel", "axa", "Axa", false, "ai", "excl-a2", "Couverture partielle avec sous-limite dédiée. Ne couvre pas le paiement de rançon.", [{ id: "sl-1", label: "Sous-limite cyber", value: "200 000 €" }], defaultSources),
+          generali: makeExclusionDetail("Cyber-attaque et rançongiciel", "generali", "Generali", false, "ai", "excl-a2", "Risque cyber exclu de la RC Pro. Contrat Cyber dédié proposé séparément.", [], defaultSources),
+          allianz: makeExclusionDetail("Cyber-attaque et rançongiciel", "allianz", "Allianz", true, "ai", "excl-a2", "Garantie cyber intégrée dans la formule Confort+.", [{ id: "sl-1", label: "Plafond cyber", value: "300 000 €" }], defaultSources),
+        },
+      },
+    ],
+    sections: [
+      {
+        title: "Couvertures RC Professionnelle",
+        rows: [
+          {
+            label: "Fautes professionnelles",
+            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs, omissions et manquements dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+              generali: makeDetail("Fautes professionnelles", "generali", "Generali", true, "Protection contre les réclamations clients.", [{ id: "sl-1", label: "Plafond par sinistre", value: "400 000 €" }], defaultSources),
+              allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Couverture des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Atteinte aux droits de propriété intellectuelle",
+            values: { axa: { type: "check" }, generali: { type: "cross" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire.", [{ id: "sl-1", label: "Sous-limite PI", value: "250 000 €" }], defaultSources),
+              generali: makeDetail("Atteinte aux droits de propriété intellectuelle", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
+              allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI intégrée.", [{ id: "sl-1", label: "Sous-limite PI", value: "200 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Perte de données client",
+            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
+            details: {
+              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte ou destruction de données.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
+              generali: makeDetail("Perte de données client", "generali", "Generali", true, "Couverture des données client incluant les frais de reconstitution.", [{ id: "sl-1", label: "Sous-limite", value: "100 000 €" }], defaultSources),
+              allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert. Option Cyber disponible.", [], defaultSources),
+            },
+          },
+          {
+            label: "Violation du RGPD",
+            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
+            details: {
+              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation de données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+              generali: makeDetail("Violation du RGPD", "generali", "Generali", true, "Accompagnement juridique et frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "80 000 €" }], defaultSources),
+              allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture RGPD standard.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Sous-traitance",
+            values: { axa: { type: "text", value: "Couverte" }, generali: { type: "text", value: "Limitée" }, allianz: { type: "text", value: "Exclue" } },
+            details: {
+              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Prestations réalisées par des sous-traitants couvertes sans restriction.", [], defaultSources),
+              generali: makeDetail("Sous-traitance", "generali", "Generali", true, "Sous-traitance couverte jusqu'à 30% du CA.", [{ id: "sl-1", label: "Limite sous-traitance", value: "30% du CA" }], defaultSources),
+              allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue.", [], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Limites et franchises",
+        rows: [
+          {
+            label: "Plafond par sinistre",
+            values: { axa: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "400 000 €" }, allianz: { type: "text", value: "500 000 €" } },
+            details: {
+              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+              generali: makeDetail("Plafond par sinistre", "generali", "Generali", true, "Plafond standard par événement.", [{ id: "sl-1", label: "Plafond", value: "400 000 €" }], defaultSources),
+              allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Plafond annuel",
+            values: { axa: { type: "text", value: "1 500 000 €" }, generali: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
+            details: {
+              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Engagement maximum annuel toutes garanties.", [{ id: "sl-1", label: "Plafond annuel", value: "1 500 000 €" }], defaultSources),
+              generali: makeDetail("Plafond annuel", "generali", "Generali", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+              allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement annuel.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Franchise",
+            values: { axa: { type: "text", value: "1 000 €" }, generali: { type: "text", value: "1 500 €" }, allianz: { type: "text", value: "1 200 €" } },
+            details: {
+              axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
+              generali: makeDetail("Franchise", "generali", "Generali", true, "Franchise applicable.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
+              allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 200 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Défense pénale",
+            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
+            details: {
+              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }], defaultSources),
+              generali: makeDetail("Défense pénale", "generali", "Generali", true, "Assistance juridique pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
+              allianz: makeDetail("Défense pénale", "allianz", "Allianz", false, "Non inclus. Option disponible.", [], defaultSources),
+            },
+          },
+        ],
+      },
+    ],
+  },
+  "cot-3": {
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle ou dolosive",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, chubb: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle ou dolosive", "axa", "Axa", false, "deterministic", "excl-d1", "Exclusion légale des actes volontaires.", [], defaultSources),
+          chubb: makeExclusionDetail("Faute intentionnelle ou dolosive", "chubb", "Chubb", false, "deterministic", "excl-d1", "Exclusion conforme aux standards internationaux.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Amendes et sanctions réglementaires",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, chubb: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Amendes et sanctions réglementaires", "axa", "Axa", false, "deterministic", "excl-d2", "Caractère inassurable des amendes.", [], defaultSources),
+          chubb: makeExclusionDetail("Amendes et sanctions réglementaires", "chubb", "Chubb", false, "deterministic", "excl-d2", "Amendes et pénalités de toute nature exclues.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Prestations hors territoire couvert",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, chubb: { type: "inclus" } },
+        details: {
+          axa: makeExclusionDetail("Prestations hors territoire couvert", "axa", "Axa", false, "ai", "excl-a1", "Couverture limitée à la France et DOM-TOM.", [], defaultSources),
+          chubb: makeExclusionDetail("Prestations hors territoire couvert", "chubb", "Chubb", true, "ai", "excl-a1", "Couverture mondiale incluant les USA/Canada dans la formule Premium.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a2",
+        label: "Retard de livraison de projet",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, chubb: { type: "exclu-text", value: "Limité" } },
+        details: {
+          axa: makeExclusionDetail("Retard de livraison de projet", "axa", "Axa", false, "ai", "excl-a2", "Les dommages immatériels consécutifs à un retard sont exclus.", [], defaultSources),
+          chubb: makeExclusionDetail("Retard de livraison de projet", "chubb", "Chubb", false, "ai", "excl-a2", "Couverture partielle des préjudices liés aux retards.", [{ id: "sl-1", label: "Sous-limite retard", value: "50 000 €" }], defaultSources),
+        },
+      },
+    ],
+    sections: [
+      {
+        title: "Couvertures RC Professionnelle",
+        rows: [
+          {
+            label: "Fautes professionnelles",
+            values: { axa: { type: "check" }, chubb: { type: "check" } },
+            details: {
+              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs et omissions couvertes.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+              chubb: makeDetail("Fautes professionnelles", "chubb", "Chubb", true, "Couverture large des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "750 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Atteinte à la propriété intellectuelle",
+            values: { axa: { type: "check" }, chubb: { type: "check" } },
+            details: {
+              axa: makeDetail("Atteinte à la propriété intellectuelle", "axa", "Axa", true, "Contrefaçon involontaire couverte.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
+              chubb: makeDetail("Atteinte à la propriété intellectuelle", "chubb", "Chubb", true, "Protection étendue de la PI.", [{ id: "sl-1", label: "Sous-limite", value: "500 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Perte de données client",
+            values: { axa: { type: "check" }, chubb: { type: "check" } },
+            details: {
+              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Couverture des données avec frais de notification.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }], defaultSources),
+              chubb: makeDetail("Perte de données client", "chubb", "Chubb", true, "Protection complète incluant reconstitution et notification.", [{ id: "sl-1", label: "Sous-limite", value: "300 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Violation du RGPD",
+            values: { axa: { type: "check" }, chubb: { type: "check" } },
+            details: {
+              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Frais de défense RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+              chubb: makeDetail("Violation du RGPD", "chubb", "Chubb", true, "Couverture RGPD étendue incluant frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "150 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Sous-traitance",
+            values: { axa: { type: "text", value: "Couverte" }, chubb: { type: "text", value: "Couverte" } },
+            details: {
+              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Sous-traitants couverts.", [], defaultSources),
+              chubb: makeDetail("Sous-traitance", "chubb", "Chubb", true, "Sous-traitance couverte y compris offshore.", [], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Limites et franchises",
+        rows: [
+          {
+            label: "Plafond par sinistre",
+            values: { axa: { type: "text", value: "500 000 €" }, chubb: { type: "text", value: "750 000 €" } },
+            details: {
+              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Plafond standard.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+              chubb: makeDetail("Plafond par sinistre", "chubb", "Chubb", true, "Plafond élevé Premium.", [{ id: "sl-1", label: "Plafond", value: "750 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Plafond annuel",
+            values: { axa: { type: "text", value: "1 000 000 €" }, chubb: { type: "text", value: "2 000 000 €" } },
+            details: {
+              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+              chubb: makeDetail("Plafond annuel", "chubb", "Chubb", true, "Plafond annuel élevé.", [{ id: "sl-1", label: "Plafond annuel", value: "2 000 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Franchise",
+            values: { axa: { type: "text", value: "1 000 €" }, chubb: { type: "text", value: "1 500 €" } },
+            details: {
+              axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
+              chubb: makeDetail("Franchise", "chubb", "Chubb", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Défense pénale",
+            values: { axa: { type: "check" }, chubb: { type: "check" } },
+            details: {
+              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Frais de défense pénale couverts.", [{ id: "sl-1", label: "Plafond", value: "75 000 €" }], defaultSources),
+              chubb: makeDetail("Défense pénale", "chubb", "Chubb", true, "Défense pénale étendue.", [{ id: "sl-1", label: "Plafond", value: "150 000 €" }], defaultSources),
+            },
+          },
+        ],
+      },
+    ],
+  },
+  "cot-4": {
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Vétusté et défaut d'entretien",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, maif: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Vétusté et défaut d'entretien", "axa", "Axa", false, "deterministic", "excl-d1", "Dommages résultant d'un défaut d'entretien du bâtiment.", [], defaultSources),
+          maif: makeExclusionDetail("Vétusté et défaut d'entretien", "maif", "MAIF", false, "deterministic", "excl-d1", "Exclusion des dommages liés à la vétusté.", [], defaultSources),
+          generali: makeExclusionDetail("Vétusté et défaut d'entretien", "generali", "Generali", false, "deterministic", "excl-d1", "La vétusté n'est pas couverte.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Guerre et actes de terrorisme",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, maif: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Guerre et actes de terrorisme", "axa", "Axa", false, "deterministic", "excl-d2", "Exclusion standard GAREAT hors contribution.", [], defaultSources),
+          maif: makeExclusionDetail("Guerre et actes de terrorisme", "maif", "MAIF", false, "deterministic", "excl-d2", "Faits de guerre et terrorisme exclus.", [], defaultSources),
+          generali: makeExclusionDetail("Guerre et actes de terrorisme", "generali", "Generali", false, "deterministic", "excl-d2", "Exclusion légale des risques de guerre.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Dommages aux installations informatiques",
+        origin: "ai",
+        values: { axa: { type: "exclu-text", value: "Sous-limite" }, maif: { type: "inclus" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Dommages aux installations informatiques", "axa", "Axa", false, "ai", "excl-a1", "Matériel informatique couvert avec sous-limite spécifique.", [{ id: "sl-1", label: "Sous-limite", value: "30 000 €" }], defaultSources),
+          maif: makeExclusionDetail("Dommages aux installations informatiques", "maif", "MAIF", true, "ai", "excl-a1", "Couverture complète du matériel informatique et bureautique.", [], defaultSources),
+          generali: makeExclusionDetail("Dommages aux installations informatiques", "generali", "Generali", false, "ai", "excl-a1", "Matériel informatique exclu. Contrat spécifique requis.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a2",
+        label: "Perte de loyers suite sinistre",
+        origin: "ai",
+        values: { axa: { type: "inclus" }, maif: { type: "inclus" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Perte de loyers suite sinistre", "axa", "Axa", true, "ai", "excl-a2", "Indemnisation de la perte de loyers en cas d'immobilisation.", [{ id: "sl-1", label: "Durée max", value: "12 mois" }], defaultSources),
+          maif: makeExclusionDetail("Perte de loyers suite sinistre", "maif", "MAIF", true, "ai", "excl-a2", "Perte de loyers couverte pendant la remise en état.", [{ id: "sl-1", label: "Durée max", value: "24 mois" }], defaultSources),
+          generali: makeExclusionDetail("Perte de loyers suite sinistre", "generali", "Generali", false, "ai", "excl-a2", "Non couvert dans la formule Standard.", [], defaultSources),
+        },
+      },
+    ],
+    sections: [
+      {
+        title: "Couverture des locaux",
+        rows: [
+          {
+            label: "Incendie et explosion",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Incendie et explosion", "axa", "Axa", true, "Couverture complète incendie, explosion, implosion.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
+              maif: makeDetail("Incendie et explosion", "maif", "MAIF", true, "Protection incendie avec remplacement à neuf.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
+              generali: makeDetail("Incendie et explosion", "generali", "Generali", true, "Garantie incendie standard.", [{ id: "sl-1", label: "Valeur à neuf", value: "Non — vétusté déduite" }], defaultSources),
+            },
+          },
+          {
+            label: "Dégâts des eaux",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Dégâts des eaux", "axa", "Axa", true, "Fuites, débordements, infiltrations couverts.", [], defaultSources),
+              maif: makeDetail("Dégâts des eaux", "maif", "MAIF", true, "Couverture étendue incluant recherche de fuite.", [], defaultSources),
+              generali: makeDetail("Dégâts des eaux", "generali", "Generali", true, "Dégâts des eaux courants.", [], defaultSources),
+            },
+          },
+          {
+            label: "Vol et vandalisme",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Vol et vandalisme", "axa", "Axa", true, "Vol par effraction et vandalisme couverts.", [{ id: "sl-1", label: "Plafond contenu", value: "50 000 €" }], defaultSources),
+              maif: makeDetail("Vol et vandalisme", "maif", "MAIF", true, "Protection vol avec revalorisation annuelle.", [{ id: "sl-1", label: "Plafond contenu", value: "75 000 €" }], defaultSources),
+              generali: makeDetail("Vol et vandalisme", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
+            },
+          },
+          {
+            label: "Catastrophes naturelles",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Régime CatNat obligatoire.", [], defaultSources),
+              maif: makeDetail("Catastrophes naturelles", "maif", "MAIF", true, "Régime CatNat avec accompagnement dédié.", [], defaultSources),
+              generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Régime CatNat obligatoire.", [], defaultSources),
+            },
+          },
+          {
+            label: "Bris de glace",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "text", value: "Option" } },
+            details: {
+              axa: makeDetail("Bris de glace", "axa", "Axa", true, "Vitrines, enseignes et glaces incluses.", [], defaultSources),
+              maif: makeDetail("Bris de glace", "maif", "MAIF", true, "Bris de glace étendu aux enseignes lumineuses.", [], defaultSources),
+              generali: makeDetail("Bris de glace", "generali", "Generali", true, "Disponible en option.", [], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Responsabilité civile",
+        rows: [
+          {
+            label: "RC exploitation",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("RC exploitation", "axa", "Axa", true, "Responsabilité civile dans le cadre de l'activité.", [{ id: "sl-1", label: "Plafond RC", value: "3 000 000 €" }], defaultSources),
+              maif: makeDetail("RC exploitation", "maif", "MAIF", true, "RC professionnelle et exploitation.", [{ id: "sl-1", label: "Plafond RC", value: "5 000 000 €" }], defaultSources),
+              generali: makeDetail("RC exploitation", "generali", "Generali", true, "RC exploitation standard.", [{ id: "sl-1", label: "Plafond RC", value: "2 000 000 €" }], defaultSources),
+            },
+          },
+          {
+            label: "RC après livraison",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("RC après livraison", "axa", "Axa", true, "Couverture des dommages après travaux.", [], defaultSources),
+              maif: makeDetail("RC après livraison", "maif", "MAIF", true, "Garantie post-intervention.", [], defaultSources),
+              generali: makeDetail("RC après livraison", "generali", "Generali", false, "Non inclus. Avenant disponible.", [], defaultSources),
+            },
+          },
+          {
+            label: "Protection juridique",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+            details: {
+              axa: makeDetail("Protection juridique", "axa", "Axa", true, "Accompagnement juridique et prise en charge des frais.", [{ id: "sl-1", label: "Plafond", value: "15 000 €" }], defaultSources),
+              maif: makeDetail("Protection juridique", "maif", "MAIF", true, "Protection juridique étendue.", [{ id: "sl-1", label: "Plafond", value: "25 000 €" }], defaultSources),
+              generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique de base.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
+            },
+          },
+        ],
+      },
+      {
+        title: "Services et franchises",
+        rows: [
+          {
+            label: "Franchise générale",
+            values: { axa: { type: "text", value: "500 €" }, maif: { type: "text", value: "300 €" }, generali: { type: "text", value: "400 €" } },
+            details: {
+              axa: makeDetail("Franchise générale", "axa", "Axa", true, "Franchise applicable par sinistre.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
+              maif: makeDetail("Franchise générale", "maif", "MAIF", true, "Franchise basse.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources),
+              generali: makeDetail("Franchise générale", "generali", "Generali", true, "Franchise standard.", [{ id: "sl-1", label: "Franchise", value: "400 €" }], defaultSources),
+            },
+          },
+          {
+            label: "Assistance 24h/24",
+            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+            details: {
+              axa: makeDetail("Assistance 24h/24", "axa", "Axa", true, "Numéro d'urgence et intervention rapide.", [], defaultSources),
+              maif: makeDetail("Assistance 24h/24", "maif", "MAIF", true, "Service d'urgence avec intervention sous 2h.", [], defaultSources),
+              generali: makeDetail("Assistance 24h/24", "generali", "Generali", false, "Non inclus dans cette formule.", [], defaultSources),
+            },
+          },
+          {
+            label: "Valeur à neuf",
+            values: { axa: { type: "text", value: "25 ans" }, maif: { type: "text", value: "Illimitée" }, generali: { type: "text", value: "10 ans" } },
+            details: {
+              axa: makeDetail("Valeur à neuf", "axa", "Axa", true, "Remplacement valeur à neuf si bien < 25 ans.", [], defaultSources),
+              maif: makeDetail("Valeur à neuf", "maif", "MAIF", true, "Remplacement à neuf sans limite d'ancienneté.", [], defaultSources),
+              generali: makeDetail("Valeur à neuf", "generali", "Generali", true, "Remplacement à neuf limité à 10 ans.", [], defaultSources),
+            },
+          },
+        ],
+      },
+    ],
+  },
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -1168,7 +1612,7 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "generali", "allianz"],
     createdBy: "Delphine",
     date: "10/03/2026",
-    status: "in_progress",
+    status: "done",
   },
   {
     id: "cmp-2",
@@ -1188,6 +1632,26 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "allianz"],
     createdBy: "Delphine",
     date: "04/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-4",
+    cotationId: "cot-3",
+    client: "TechVision SAS",
+    products: ["RC Pro"],
+    insurerIds: ["axa", "chubb"],
+    createdBy: "Delphine",
+    date: "10/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-5",
+    cotationId: "cot-4",
+    client: "GreenWay Industries",
+    products: ["Multirisque bureaux"],
+    insurerIds: ["axa", "maif", "generali"],
+    createdBy: "Delphine",
+    date: "10/03/2026",
     status: "done",
   },
 ];
