@@ -504,12 +504,14 @@ function Step3Profile({
 
       {/* Besoins client */}
       <div>
-        <label className="text-[13px] font-medium text-panora-text mb-1 block">
-          Analysez les offres au regard du besoin client
-        </label>
-        <p className="text-[12px] text-panora-text-muted mb-3 leading-4">
-          Rapportez les elements cles du besoin client pour orienter
-          l&apos;analyse comparative.
+        <div className="flex items-center gap-1.5 mb-1">
+          <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
+          <label className="text-[13px] font-medium text-panora-text">
+            Synthese &amp; analyse IA — besoins client
+          </label>
+        </div>
+        <p className="text-[12px] text-panora-text-muted mb-3 leading-[18px]">
+          Chaque offre sera evaluee au regard de ces criteres pour generer votre synthese comparative.
         </p>
 
         <div className="space-y-2">
