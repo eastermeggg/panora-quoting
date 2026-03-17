@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
-import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Sparkles, Eye, EyeOff, Info } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow } from "@/data/mock";
+import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Sparkles, Eye, EyeOff, Info, ArrowRight } from "lucide-react";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -17,6 +17,12 @@ interface ComparisonTableProps {
   onUpdateExclusionLabel?: (exclusionId: string, label: string) => void;
   onDiscardExclusion?: (exclusionId: string) => void;
   cellDisplayModes?: Record<string, boolean>;
+  syntheseData?: AnalysisSyntheseItem[];
+  onUpdateSynthese?: (updated: AnalysisSyntheseItem[]) => void;
+  onViewAnalysis?: () => void;
+  onOpenProfile?: () => void;
+  isStreaming?: boolean;
+  onStreamingDone?: () => void;
 }
 
 function cellIdKey(c: CellIdentifier): string {
@@ -182,12 +188,13 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
   const [pricingMode, setPricingMode] = useState<"ht" | "ttc">("ttc");
   const [showAnnual, setShowAnnual] = useState(true);
+  const [syntheseCollapsed, setSyntheseCollapsed] = useState(false);
 
   const toggleRowVisibility = (rowKey: string) => {
     setShownRows((prev) => {
@@ -243,6 +250,63 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           );
         })}
       </div>
+
+      {/* Section: Synthese IA */}
+      {syntheseData && syntheseData.length > 0 && (
+        <div>
+          <div className="flex bg-[#f3f0ff] border-b border-panora-border h-[44px]">
+            <div className="w-[250px] shrink-0 px-4 flex items-center gap-2 border-r border-panora-border">
+              <button
+                onClick={() => setSyntheseCollapsed(!syntheseCollapsed)}
+                className="flex items-center justify-center p-1 rounded-[4px] bg-[#e8e4f3] shrink-0"
+              >
+                {syntheseCollapsed ? (
+                  <ChevronRight className="w-3.5 h-3.5 text-[#8b5cf6]" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-[#8b5cf6]" />
+                )}
+              </button>
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#8b5cf6]" />
+              <span className="text-[15px] font-semibold font-display text-[#22201a]">Synthese IA</span>
+            </div>
+            <div className="flex-1" />
+          </div>
+          {!syntheseCollapsed && (
+            <div className="flex border-b border-panora-border">
+              <div className="w-[250px] shrink-0 px-4 py-4 border-r border-panora-border">
+                <p className="text-[12px] text-panora-text-muted leading-[18px]">
+                  La synthese est generee a partir des devis et du{" "}
+                  <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">profil client</button>{" "}
+                  que vous pouvez modifier.
+                </p>
+              </div>
+              {insurers.map((ins, insIdx) => {
+                const item = syntheseData.find((s) => s.insurerId === ins.id);
+                return (
+                  <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                    {item ? (
+                      <SyntheseCell
+                        item={item}
+                        onUpdate={(updated) => {
+                          const next = syntheseData.map((s) => s.insurerId === ins.id ? updated : s);
+                          onUpdateSynthese?.(next);
+                        }}
+                        onViewAnalysis={onViewAnalysis}
+                        isStreaming={isStreaming}
+                        streamDelay={insIdx * 400}
+                        onStreamingDone={insIdx === insurers.length - 1 ? onStreamingDone : undefined}
+                      />
+                    ) : (
+                      <span className="text-[13px] text-panora-text-muted">—</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <SectionDivider />
+        </div>
+      )}
 
       {/* Section: Conditions générales — single Prix row, sub-offers inside cells */}
       <SectionHeader title="Conditions générales" />
@@ -574,6 +638,193 @@ function InlineExclusionInput({
         }
       }}
     />
+  );
+}
+
+function parseContentEditable(el: HTMLElement): string[] {
+  return (el.innerText ?? "").split("\n").map((l) => l.replace(/^[\s•\-–+]\s*/, "").trim()).filter(Boolean);
+}
+
+function StreamingText({
+  text,
+  active,
+  delay = 0,
+  speed = 18,
+  onDone,
+  className,
+}: {
+  text: string;
+  active: boolean;
+  delay?: number;
+  speed?: number;
+  onDone?: () => void;
+  className?: string;
+}) {
+  const [charCount, setCharCount] = useState(text.length);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setCharCount(text.length);
+      setStarted(false);
+      return;
+    }
+    setCharCount(0);
+    setStarted(false);
+    const delayTimer = setTimeout(() => {
+      setStarted(true);
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setCharCount(i);
+        if (i >= text.length) {
+          clearInterval(interval);
+          onDone?.();
+        }
+      }, speed);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(delayTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  if (active && !started) {
+    return <span className={className} />;
+  }
+
+  const displayed = active ? text.slice(0, charCount) : text;
+  const showCursor = active && charCount < text.length;
+
+  return (
+    <span className={className}>
+      {displayed}
+      {showCursor && <span className="inline-block w-[5px] h-[12px] bg-[#8b5cf6]/60 ml-[1px] animate-pulse rounded-sm align-middle" />}
+    </span>
+  );
+}
+
+function SyntheseCell({
+  item,
+  onUpdate,
+  onViewAnalysis,
+  isStreaming,
+  streamDelay = 0,
+  onStreamingDone,
+}: {
+  item: AnalysisSyntheseItem;
+  onUpdate: (updated: AnalysisSyntheseItem) => void;
+  onViewAnalysis?: () => void;
+  isStreaming?: boolean;
+  streamDelay?: number;
+  onStreamingDone?: () => void;
+}) {
+  const fortsRef = useRef<HTMLDivElement>(null);
+  const faiblesRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const fortsText = item.pointsForts.join("\n");
+  const faiblesText = item.pointsFaibles.join("\n");
+
+  // Track which sections have finished streaming
+  const [fortsDone, setFortsDone] = useState(false);
+  const [faiblesDone, setFaiblesDone] = useState(false);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setFortsDone(false);
+      setFaiblesDone(false);
+    }
+  }, [isStreaming]);
+
+  useEffect(() => {
+    if (isStreaming && fortsDone && faiblesDone) {
+      onStreamingDone?.();
+    }
+  }, [isStreaming, fortsDone, faiblesDone, onStreamingDone]);
+
+  const commitForts = () => {
+    if (!fortsRef.current) return;
+    const lines = parseContentEditable(fortsRef.current);
+    if (lines.join("|") !== item.pointsForts.join("|")) {
+      onUpdate({ ...item, pointsForts: lines });
+    }
+  };
+
+  const commitFaibles = () => {
+    if (!faiblesRef.current) return;
+    const lines = parseContentEditable(faiblesRef.current);
+    if (lines.join("|") !== item.pointsFaibles.join("|")) {
+      onUpdate({ ...item, pointsFaibles: lines });
+    }
+  };
+
+  if (isStreaming) {
+    return (
+      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div>
+          <p className="text-[12px] font-medium text-panora-green mb-1">Points forts :</p>
+          <div className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap">
+            <StreamingText
+              text={fortsText}
+              active
+              delay={streamDelay}
+              speed={15}
+              onDone={() => setFortsDone(true)}
+            />
+          </div>
+        </div>
+        <div>
+          <p className="text-[12px] font-medium text-[#952617] mb-1">Points faibles :</p>
+          <div className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap">
+            <StreamingText
+              text={faiblesText}
+              active
+              delay={streamDelay + fortsText.length * 15 + 200}
+              speed={15}
+              onDone={() => setFaiblesDone(true)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div>
+        <p className="text-[12px] font-medium text-panora-green mb-1">Points forts :</p>
+        <div
+          ref={fortsRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap outline-none"
+          onBlur={commitForts}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {item.pointsForts.join("\n")}
+        </div>
+      </div>
+      <div>
+        <p className="text-[12px] font-medium text-[#952617] mb-1">Points faibles :</p>
+        <div
+          ref={faiblesRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap outline-none"
+          onBlur={commitFaibles}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {item.pointsFaibles.join("\n")}
+        </div>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onViewAnalysis?.(); }}
+        className="flex items-center gap-1 text-[12px] font-medium text-panora-green hover:underline"
+      >
+        Voir analyse
+        <ArrowRight className="w-3 h-3" />
+      </button>
+    </div>
   );
 }
 

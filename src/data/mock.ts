@@ -1593,6 +1593,249 @@ export function getComparisonData(cotationId: string): ComparisonData | undefine
   return comparisonDataMap[cotationId];
 }
 
+// ─── Analysis data ──────────────────────────────────────────────────
+
+export type ContextPill = {
+  id: string;
+  label: string;
+  source: "extracted" | "manual" | "missing";
+};
+
+export type AnalysisSyntheseItem = {
+  insurerId: string;
+  pointsForts: string[];
+  pointsFaibles: string[];
+};
+
+export type AnalysisData = {
+  synthese: AnalysisSyntheseItem[];
+  contextPills: ContextPill[];
+  hasFullContext: boolean;
+  resumeExecutif: string;
+  conditionsFinancieres: { analysisBefore: string; analysisAfter: string };
+  analyseParOffre: Array<{ insurerId: string; insurerName: string; pointsForts: string[]; pointsFaibles: string[] }>;
+  garantiesCles: Array<{ label: string; values: Record<string, { status: "covered" | "not_covered"; keyInfo?: string }> }>;
+};
+
+const analysisDataMap: Record<string, AnalysisData> = {
+  "cot-2": {
+    synthese: [
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Couverture dommages tous accidents incluse",
+          "Assistance 0 km disponible",
+          "Franchise compétitive à 500 €/sinistre",
+        ],
+        pointsFaibles: [
+          "Tarif le plus élevé sur le tous risques",
+          "Pas de garantie valeur à neuf au-delà de 12 mois",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Meilleur tarif global sur le tiers étendu",
+          "Bris de glace sans franchise",
+          "Garantie conducteur étendue à 2 000 000 €",
+        ],
+        pointsFaibles: [
+          "Franchise plus élevée à 750 €/sinistre",
+          "Pas de couverture des accessoires hors série",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Prise en charge partielle de l'usure véhicule",
+          "Garantie perte financière incluse en Premium",
+        ],
+        pointsFaibles: [
+          "Dommages tous accidents non inclus en Standard",
+          "Tarif le plus élevé sur la formule Premium",
+          "Assistance uniquement à partir de 50 km",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "44 véhicules", source: "extracted" },
+      { id: "cp-2", label: "Usage professionnel", source: "extracted" },
+      { id: "cp-3", label: "Sinistralité 3 ans : 12%", source: "extracted" },
+      { id: "cp-4", label: "Bonus-malus moyen : 0.76", source: "manual" },
+      { id: "cp-5", label: "Zone de circulation", source: "missing" },
+      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres pour la flotte de 44 véhicules d'ACME Corp révèle des différences significatives en termes de couverture et de tarification. Allianz propose le meilleur rapport qualité-prix sur la formule Tiers étendu (3 300 €/an), tandis qu'Axa offre la couverture la plus complète en Tous risques malgré un tarif plus élevé.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la prise en charge de l'usure véhicule dans sa formule Premium. Cependant, l'absence de couverture dommages tous accidents en formule Standard constitue une limitation importante pour une flotte professionnelle.\n\nRecommandation : pour une flotte de cette taille avec un taux de sinistralité de 12%, la formule Tous risques Axa ou Allianz est préconisée. Le choix final dépendra de l'arbitrage entre la franchise (500 € Axa vs 750 € Allianz) et le tarif annuel.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les trois assureurs proposent chacun deux niveaux de formule. Les écarts de prime annuelle varient de 660 € entre la formule la moins chère (Allianz Tiers étendu à 3 300 €) et la plus chère (Generali Premium à 4 450 €). À noter que les franchises diffèrent sensiblement d'un assureur à l'autre.",
+      analysisAfter: "En rapportant le coût au nombre de véhicules, Allianz offre le coût par véhicule le plus bas à 75 €/véhicule/an en Tiers étendu. Axa reste compétitif à 80,45 €/véhicule/an en Tiers étendu. Le surcoût du Tous risques se situe entre 15 et 18 €/véhicule/an selon l'assureur.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "axa",
+        insurerName: "Axa",
+        pointsForts: [
+          "Couverture dommages tous accidents incluse dès la première formule",
+          "Assistance 0 km disponible",
+          "Franchise compétitive à 500 €/sinistre",
+          "Réseau de garages partenaires le plus étendu (1 200 garages)",
+          "Véhicule de remplacement sous 48h",
+        ],
+        pointsFaibles: [
+          "Tarif le plus élevé sur la formule Tous risques (4 200 €/an)",
+          "Pas de garantie valeur à neuf au-delà de 12 mois",
+          "Plafond accessoires limité à 1 500 €",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        insurerName: "Allianz",
+        pointsForts: [
+          "Meilleur tarif global toutes formules confondues",
+          "Bris de glace sans franchise",
+          "Garantie conducteur étendue à 2 000 000 €",
+          "Gestion sinistres en ligne 24/7",
+        ],
+        pointsFaibles: [
+          "Franchise plus élevée à 750 €/sinistre",
+          "Pas de couverture des accessoires hors série",
+          "Délai véhicule de remplacement : 72h",
+        ],
+      },
+      {
+        insurerId: "generali",
+        insurerName: "Generali",
+        pointsForts: [
+          "Prise en charge partielle de l'usure véhicule (unique sur le marché)",
+          "Garantie perte financière incluse en formule Premium",
+          "Franchise identique à Axa (500 €/sinistre)",
+        ],
+        pointsFaibles: [
+          "Dommages tous accidents non inclus en formule Standard",
+          "Tarif le plus élevé sur la formule Premium (4 450 €/an)",
+          "Assistance uniquement à partir de 50 km du domicile",
+          "Réseau de garages partenaires limité (400 garages)",
+        ],
+      },
+    ],
+    garantiesCles: [
+      {
+        label: "Responsabilité civile",
+        values: {
+          axa: { status: "covered" },
+          allianz: { status: "covered" },
+          generali: { status: "covered" },
+        },
+      },
+      {
+        label: "Dommages tous accidents",
+        values: {
+          axa: { status: "covered" },
+          allianz: { status: "covered" },
+          generali: { status: "not_covered", keyInfo: "Option en Standard" },
+        },
+      },
+      {
+        label: "Vol et tentative de vol",
+        values: {
+          axa: { status: "covered" },
+          allianz: { status: "covered" },
+          generali: { status: "covered" },
+        },
+      },
+      {
+        label: "Bris de glace",
+        values: {
+          axa: { status: "covered", keyInfo: "Franchise 150 €" },
+          allianz: { status: "covered", keyInfo: "Sans franchise" },
+          generali: { status: "covered", keyInfo: "Franchise 100 €" },
+        },
+      },
+      {
+        label: "Assistance 0 km",
+        values: {
+          axa: { status: "covered" },
+          allianz: { status: "covered" },
+          generali: { status: "not_covered", keyInfo: "À partir de 50 km" },
+        },
+      },
+      {
+        label: "Véhicule de remplacement",
+        values: {
+          axa: { status: "covered", keyInfo: "Sous 48h" },
+          allianz: { status: "covered", keyInfo: "Sous 72h" },
+          generali: { status: "covered", keyInfo: "Sous 48h" },
+        },
+      },
+    ],
+  },
+};
+
+export function getAnalysisData(cotationId: string): AnalysisData | undefined {
+  return analysisDataMap[cotationId];
+}
+
+// ─── Client profile data ─────────────────────────────────────────────
+
+export type ClientProfileData = {
+  clientLabel: string;
+  clientSiren: string;
+  besoinsClient: string[];
+};
+
+const clientProfileMap: Record<string, ClientProfileData> = {
+  "cot-1": {
+    clientLabel: "Marble Tech SAS",
+    clientSiren: "00007U26464",
+    besoinsClient: [
+      "Couverture RC Pro étendue aux sous-traitants",
+      "Protection cyber incluse",
+    ],
+  },
+  "cot-2": {
+    clientLabel: "ACME Corp SAS",
+    clientSiren: "84392017300024",
+    besoinsClient: [
+      "Couverture tous risques sur l'ensemble du parc",
+      "Franchise plafonnée à 500 €/sinistre maximum",
+      "Assistance 0 km obligatoire (véhicules utilitaires inclus)",
+      "Véhicule de remplacement sous 48h en cas d'immobilisation",
+    ],
+  },
+};
+
+export function getClientProfile(cotationId: string): ClientProfileData | undefined {
+  return clientProfileMap[cotationId];
+}
+
+export function buildContextPills(
+  profile: ClientProfileData,
+  basePills: ContextPill[],
+): { pills: ContextPill[]; hasFullContext: boolean } {
+  const pills = basePills.map((pill) => {
+    // If a missing pill relates to a field the user has now filled, promote it to manual
+    if (pill.source === "missing") {
+      const lbl = pill.label.toLowerCase();
+      if (lbl.includes("besoin") && profile.besoinsClient.filter(Boolean).length > 0) {
+        return { ...pill, source: "manual" as const };
+      }
+    }
+    return pill;
+  });
+
+  // Add besoin items as manual pills if not already represented
+  const existingLabels = new Set(pills.map((p) => p.label.toLowerCase()));
+  profile.besoinsClient.filter(Boolean).forEach((besoin, idx) => {
+    if (!existingLabels.has(besoin.toLowerCase())) {
+      pills.push({ id: `besoin-${idx}`, label: besoin, source: "manual" });
+    }
+  });
+
+  const hasFullContext = pills.every((p) => p.source !== "missing");
+  return { pills, hasFullContext };
+}
+
 // ─── Comparison task list ────────────────────────────────────────────
 // Persisted comparison agent tasks shown on the /quoting/comparison list page.
 
