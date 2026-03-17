@@ -5,13 +5,18 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   getFollowupData,
   getComparisonData,
+  getAnalysisData,
+  getClientProfile,
+  buildContextPills,
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
-import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow } from "@/data/mock";
+import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow, AnalysisSyntheseItem, AnalysisData, ClientProfileData } from "@/data/mock";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
+import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
+import { AnalysisTab } from "@/components/quoting/AnalysisTab";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -297,6 +302,28 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
   const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
+  const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [mutableProfile, setMutableProfile] = useState<ClientProfileData>(
+    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] }
+  );
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  const openProfile = useCallback(() => {
+    setSelectedCell(null);
+    setIsProfileOpen(true);
+  }, []);
+
+  const handleProfileSave = useCallback((updated: ClientProfileData) => {
+    setMutableProfile(updated);
+    setIsProfileOpen(false);
+    setMutableAnalysis((prev) => {
+      if (!prev) return prev;
+      const { pills, hasFullContext } = buildContextPills(updated, prev.contextPills);
+      return { ...prev, contextPills: pills, hasFullContext };
+    });
+    setIsStreaming(true);
+  }, []);
 
   const startAgent = useCallback(() => {
     const phases: AgentPhase[] = ["reading_documents", "extracting_guarantees", "building_comparison", "ready"];
@@ -451,6 +478,23 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const totalDocs = mutableInsurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
 
   const currentDetail = selectedCell ? getCellDetail(selectedCell, comparisonResult, mutableInsurers) : null;
+  const analysisData = getAnalysisData(cotParamId);
+  const [mutableSynthese, setMutableSynthese] = useState<AnalysisSyntheseItem[]>(analysisData?.synthese ?? []);
+  const [mutableAnalysis, setMutableAnalysis] = useState<AnalysisData | undefined>(() => {
+    if (!analysisData) return undefined;
+    const initProfile = getClientProfile(cotParamId);
+    if (!initProfile) return analysisData;
+    const { pills, hasFullContext } = buildContextPills(initProfile, analysisData.contextPills);
+    return { ...analysisData, contextPills: pills, hasFullContext };
+  });
+
+  const handleUpdateSynthese = useCallback((updated: AnalysisSyntheseItem[]) => {
+    setMutableSynthese(updated);
+  }, []);
+
+  const handleUpdateAnalysis = useCallback((updated: AnalysisData) => {
+    setMutableAnalysis(updated);
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -471,7 +515,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             </div>
             <span className="text-[13px] font-medium text-panora-text">{clientName}</span>
           </div>
-          <button className="text-[12px] font-medium text-panora-green ml-1">Voir profil client</button>
+          <button onClick={openProfile} className="text-[12px] font-medium text-panora-green ml-1">Voir profil client</button>
           <div className="w-px h-4 bg-[#d9d9d9] ml-2" />
           <Link
             href={`/quoting/followup?id=${cotParamId}`}
@@ -493,38 +537,101 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
       {agentPhase !== "ready" ? (
         <AgentLoadingState phase={agentPhase} insurerCount={mutableInsurers.length} documentCount={totalDocs} />
       ) : (
-        <div className="flex-1 flex min-h-0">
-          <div
-            className="flex-1 overflow-auto min-w-0"
-            onClick={() => setSelectedCell(null)}
-          >
-            <ComparisonTable
-              insurers={mutableInsurers}
-              comparisonData={comparisonResult}
-              cotParamId={cotParamId}
-              selectedCell={selectedCell}
-              onCellSelect={setSelectedCell}
-              onAddExclusion={handleAddManualExclusion}
-              onUpdateExclusionLabel={handleUpdateExclusionLabel}
-              onDiscardExclusion={handleDiscardExclusion}
-              cellDisplayModes={cellDisplayModes}
-            />
+        <>
+          {/* Tab bar */}
+          <div className="h-[44px] shrink-0 border-b border-panora-border bg-white px-4 flex items-end">
+            <button
+              onClick={() => setActiveTab("comparison")}
+              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 ${
+                activeTab === "comparison"
+                  ? "border-panora-green text-panora-green font-medium"
+                  : "border-transparent text-panora-text-muted hover:text-panora-text"
+              }`}
+            >
+              Tableau comparatif
+            </button>
+            <button
+              onClick={() => setActiveTab("analysis")}
+              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
+                activeTab === "analysis"
+                  ? "border-panora-green text-panora-green font-medium"
+                  : "border-transparent text-panora-text-muted hover:text-panora-text"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Synthese / Analyse
+            </button>
           </div>
-          {selectedCell && currentDetail && (
-            <DetailPanel
-              cellDetail={currentDetail}
-              onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
-              onClose={handlePanelClose}
-              onDelete={
-                selectedCell.type === "exclusion" && currentDetail.origin === "manual"
-                  ? () => handleDeleteExclusion(selectedCell.exclusionId)
-                  : undefined
-              }
-              showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
-              onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
-            />
+
+          {/* Tab content */}
+          {activeTab === "comparison" ? (
+            <div className="flex-1 flex min-h-0">
+              <div
+                className="flex-1 overflow-auto min-w-0"
+                onClick={() => setSelectedCell(null)}
+              >
+                <ComparisonTable
+                  insurers={mutableInsurers}
+                  comparisonData={comparisonResult}
+                  cotParamId={cotParamId}
+                  selectedCell={selectedCell}
+                  onCellSelect={(cell) => { setIsProfileOpen(false); setSelectedCell(cell); }}
+                  onAddExclusion={handleAddManualExclusion}
+                  onUpdateExclusionLabel={handleUpdateExclusionLabel}
+                  onDiscardExclusion={handleDiscardExclusion}
+                  cellDisplayModes={cellDisplayModes}
+                  syntheseData={mutableSynthese}
+                  onUpdateSynthese={handleUpdateSynthese}
+                  onViewAnalysis={() => setActiveTab("analysis")}
+                  onOpenProfile={openProfile}
+                  isStreaming={isStreaming}
+                  onStreamingDone={() => setIsStreaming(false)}
+                />
+              </div>
+              {isProfileOpen ? (
+                <ClientProfilePanel
+                  profile={mutableProfile}
+                  contextPills={mutableAnalysis?.contextPills}
+                  onSave={handleProfileSave}
+                  onClose={() => setIsProfileOpen(false)}
+                />
+              ) : selectedCell && currentDetail ? (
+                <DetailPanel
+                  cellDetail={currentDetail}
+                  onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+                  onClose={handlePanelClose}
+                  onDelete={
+                    selectedCell.type === "exclusion" && currentDetail.origin === "manual"
+                      ? () => handleDeleteExclusion(selectedCell.exclusionId)
+                      : undefined
+                  }
+                  showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
+                  onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex-1 flex min-h-0">
+              <AnalysisTab
+                analysisData={mutableAnalysis}
+                insurers={mutableInsurers}
+                offerCount={mutableInsurers.length}
+                onSwitchToComparison={() => setActiveTab("comparison")}
+                onOpenProfile={openProfile}
+                onUpdateAnalysis={handleUpdateAnalysis}
+                isStreaming={isStreaming}
+              />
+              {isProfileOpen && (
+                <ClientProfilePanel
+                  profile={mutableProfile}
+                  contextPills={mutableAnalysis?.contextPills}
+                  onSave={handleProfileSave}
+                  onClose={() => setIsProfileOpen(false)}
+                />
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
