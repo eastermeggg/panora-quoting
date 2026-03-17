@@ -616,10 +616,12 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                 analysisData={mutableAnalysis}
                 insurers={mutableInsurers}
                 offerCount={mutableInsurers.length}
+                comparisonData={comparisonResult}
                 onSwitchToComparison={() => setActiveTab("comparison")}
                 onOpenProfile={openProfile}
                 onUpdateAnalysis={handleUpdateAnalysis}
                 isStreaming={isStreaming}
+                onStreamingDone={() => setIsStreaming(false)}
               />
               {isProfileOpen && (
                 <ClientProfilePanel

@@ -94,3 +94,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-panora-text-muted);
 }
+
+/* Animated gradient border for prompt bar */
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-gradient {
+  to {
+    --gradient-angle: 360deg;
+  }
+}

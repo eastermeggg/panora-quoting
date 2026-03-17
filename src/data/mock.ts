@@ -1776,6 +1776,120 @@ export function getAnalysisData(cotationId: string): AnalysisData | undefined {
   return analysisDataMap[cotationId];
 }
 
+// ─── Section reprompt types & helpers ─────────────────────────────────
+
+export type SectionId = "resume" | "financier" | "offre_analyse" | "garanties";
+export type SectionState = "generated" | "edited" | "regenerating";
+
+export type SectionMeta = {
+  id: SectionId;
+  defaultPrompt: string;
+  state: SectionState;
+  isEdited: boolean;
+  previousContent?: Partial<AnalysisData>;
+};
+
+export const DEFAULT_SECTION_PROMPTS: Record<SectionId, string> = {
+  resume: "Resume executif comparatif factuel, avec recommandation finale",
+  financier: "Analyse des conditions financieres, ecarts de prime, cout par vehicule",
+  offre_analyse: "Points forts et points faibles par assureur, factuel et synthetique",
+  garanties: "Tableau des garanties cles avec statut couvert/non couvert par assureur",
+};
+
+// Alternate content variants used when regenerating sections.
+// Each variant is keyed by instruction keywords to simulate contextual generation.
+
+const resumeVariants: Record<string, string> = {
+  court: "En synthese, l'offre AXA presente le meilleur rapport qualite-prix avec une prime annuelle competitive et une couverture etendue. L'offre Allianz reste solide mais legerement plus chere. Recommandation : privilegier AXA pour le renouvellement.",
+  detaille: "L'analyse comparative des deux offres recues met en evidence des ecarts significatifs tant sur le plan tarifaire que sur la qualite des garanties proposees.\n\nSur le volet financier, AXA propose une prime annuelle de 810,52 EUR, soit un ecart de -12% par rapport a Allianz (921,30 EUR). Cet ecart s'explique principalement par une franchise plus elevee chez AXA (500 EUR vs 350 EUR) et l'absence de la garantie assistance juridique en standard.\n\nEn termes de couverture, les deux assureurs offrent un socle comparable sur les garanties principales (RC, dommages, vol). Neanmoins, AXA se distingue par l'inclusion de l'assistance 0 km et d'une couverture dommages tous accidents sans surcoute.\n\nCompte tenu du profil de flotte du client (vehicules recents, sinistralite maitrisee), la recommandation s'oriente vers l'offre AXA, sous reserve de negocier l'ajout de la garantie assistance juridique.",
+  recommandation: "Apres analyse approfondie, nous recommandons l'offre AXA pour les raisons suivantes :\n\n1. Tarification la plus competitive (-12% vs Allianz)\n2. Couverture dommages tous accidents incluse sans surcoute\n3. Assistance 0 km integree, adaptee au profil urbain de la flotte\n4. Franchise raisonnable a 500 EUR/sinistre\n\nPoints de vigilance : negocier l'inclusion de l'assistance juridique et verifier les conditions de resiliation anticipee.",
+  default: "L'etude comparative des offres AXA et Allianz revele des positionnements differencies. AXA se positionne comme l'option la plus economique avec une couverture dommages elargie, tandis qu'Allianz offre des franchises plus basses et une assistance juridique en standard.\n\nLe profil du client, caracterise par une flotte de vehicules recents et une sinistralite maitrisee, favorise l'offre AXA dont le tarif reflete mieux ce niveau de risque. L'ecart de prime de 110 EUR/an constitue une economie notable a l'echelle de la flotte.\n\nRecommandation : retenir l'offre AXA comme base de negociation, en demandant l'alignement sur l'assistance juridique d'Allianz.",
+};
+
+const financierBeforeVariants: Record<string, string> = {
+  cout: "L'analyse des couts par vehicule met en evidence un ecart moyen de 55 EUR/an en faveur d'AXA. Sur une flotte de 12 vehicules, cela represente une economie annuelle de 660 EUR. Le cout mensuel par vehicule s'etablit a 67,54 EUR chez AXA contre 76,78 EUR chez Allianz.",
+  ecart: "Les ecarts de prime entre les deux offres s'analysent comme suit : la prime annuelle globale AXA (810,52 EUR) est inferieure de 12% a celle d'Allianz (921,30 EUR). Cette difference provient principalement de la politique de franchises (AXA : 500 EUR, Allianz : 350 EUR) et du perimetre de garanties incluses en standard.",
+  default: "L'analyse financiere fait ressortir un positionnement tarifaire favorable a AXA, avec une prime annuelle de 810,52 EUR contre 921,30 EUR pour Allianz, soit un ecart de 110,78 EUR (-12%). Les deux offres proposent des facilites de paiement mensuelles sans frais supplementaires.",
+};
+
+const financierAfterVariants: Record<string, string> = {
+  cout: "En projection sur 3 ans et en tenant compte de l'evolution probable des primes (+3%/an en moyenne), l'ecart cumule en faveur d'AXA atteindrait environ 2 040 EUR. Ce differentiel justifie la recommandation, sous reserve de la stabilite des conditions a terme.",
+  ecart: "A noter que l'ecart de franchise (150 EUR en faveur d'Allianz) ne compense l'ecart de prime qu'a partir du 1er sinistre. Pour un client avec une sinistralite inferieure a 1 sinistre/an, l'offre AXA reste plus avantageuse financierement.",
+  default: "Le rapport cout/couverture penche en faveur d'AXA pour les profils a faible sinistralite, tandis qu'Allianz peut s'averer plus economique pour les flottes a sinistralite elevee grace a ses franchises plus basses.",
+};
+
+function matchVariant<T>(instruction: string, variants: Record<string, T>): T {
+  const lower = instruction.toLowerCase();
+  for (const [key, value] of Object.entries(variants)) {
+    if (key !== "default" && lower.includes(key)) return value;
+  }
+  return variants.default;
+}
+
+export function mockRegenerateSection(
+  sectionId: SectionId,
+  instruction: string,
+  currentData: AnalysisData,
+): Promise<Partial<AnalysisData>> {
+  const delay = 1500 + Math.random() * 1000;
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      switch (sectionId) {
+        case "resume":
+          resolve({ resumeExecutif: matchVariant(instruction, resumeVariants) });
+          break;
+        case "financier":
+          resolve({
+            conditionsFinancieres: {
+              analysisBefore: matchVariant(instruction, financierBeforeVariants),
+              analysisAfter: matchVariant(instruction, financierAfterVariants),
+            },
+          });
+          break;
+        case "offre_analyse":
+          // Generate varied strengths/weaknesses based on instruction
+          resolve({
+            analyseParOffre: currentData.analyseParOffre.map((item) => {
+              const lower = instruction.toLowerCase();
+              if (lower.includes("risque") || lower.includes("faible")) {
+                return {
+                  ...item,
+                  pointsForts: [
+                    "Couverture des risques principaux conforme aux attentes",
+                    "Niveau de franchise adapte au profil de sinistralite",
+                    "Conditions de resiliation flexibles",
+                  ],
+                  pointsFaibles: [
+                    "Risques speciaux (cyber, environnement) non couverts",
+                    "Plafond de garantie inferieur aux standards du marche",
+                    "Delai de carence de 30 jours sur certaines garanties",
+                  ],
+                };
+              }
+              return {
+                ...item,
+                pointsForts: [
+                  "Tarification competitive sur le segment flotte PME",
+                  "Garanties etendues incluant l'assistance et la protection juridique",
+                  "Processus de declaration de sinistre digitalise",
+                ],
+                pointsFaibles: [
+                  "Franchise elevee sur les dommages materiels",
+                  "Exclusion des vehicules de plus de 10 ans",
+                  "Pas de garantie valeur a neuf au-dela de 24 mois",
+                ],
+              };
+            }),
+          });
+          break;
+        case "garanties":
+          resolve({ garantiesCles: currentData.garantiesCles });
+          break;
+      }
+    }, delay);
+  });
+}
+
 // ─── Client profile data ─────────────────────────────────────────────
 
 export type ClientProfileData = {
