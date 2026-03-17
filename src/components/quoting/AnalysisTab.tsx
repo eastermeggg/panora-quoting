@@ -19,6 +19,8 @@ interface AnalysisTabProps {
   onUpdateAnalysis?: (updated: AnalysisData) => void;
   isStreaming?: boolean;
   onStreamingDone?: () => void;
+  /** When false, shows empty state prompting user to complete the client profile */
+  hasClientProfile?: boolean;
 }
 
 /** Splits "810,52 €/an" into { amount, period } */
@@ -497,7 +499,7 @@ function initSectionStates(): Record<SectionId, SectionMeta> {
 
 // ─── Main component ─────────────────────────────────────────────────
 
-export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData, onSwitchToComparison, onOpenProfile, onUpdateAnalysis, isStreaming, onStreamingDone }: AnalysisTabProps) {
+export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData, onSwitchToComparison, onOpenProfile, onUpdateAnalysis, isStreaming, onStreamingDone, hasClientProfile = true }: AnalysisTabProps) {
   const [sectionStates, setSectionStates] = useState<Record<SectionId, SectionMeta>>(initSectionStates);
   const [targetSections, setTargetSections] = useState<SectionId[]>([]);
   const [streamingSection, setStreamingSection] = useState<SectionId | null>(null);
@@ -631,6 +633,34 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
           <p className="text-[17px] font-serif font-semibold text-panora-text">Offre unique</p>
           <p className="text-[14px] text-panora-text-muted leading-5">
             L&apos;analyse comparative necessite au moins deux offres.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasClientProfile) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#f5f4f1]">
+        <div className="text-center max-w-md space-y-4">
+          <div className="w-14 h-14 rounded-full bg-[#f3f0ff] flex items-center justify-center mx-auto">
+            <Sparkles className="w-7 h-7 text-[#8b5cf6]" />
+          </div>
+          <div>
+            <p className="text-[20px] font-serif font-semibold text-panora-text">Analyse non disponible</p>
+            <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
+              Pour generer la synthese comparative et l&apos;analyse detaillee, completez le profil client avec les besoins specifiques de votre client.
+            </p>
+          </div>
+          <button
+            onClick={onOpenProfile}
+            className="btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium mx-auto"
+          >
+            <Sparkles className="w-4 h-4" />
+            Completer le profil client
+          </button>
+          <p className="text-[12px] text-panora-text-muted">
+            L&apos;analyse sera generee automatiquement une fois le profil complété.
           </p>
         </div>
       </div>

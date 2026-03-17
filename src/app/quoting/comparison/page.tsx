@@ -7,11 +7,13 @@ import {
   getComparisonData,
   getAnalysisData,
   getClientProfile,
+  updateClientProfile,
   buildContextPills,
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
 import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow, AnalysisSyntheseItem, AnalysisData, ClientProfileData } from "@/data/mock";
+import { ComparisonWizard } from "@/components/quoting/ComparisonWizard";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
@@ -34,8 +36,33 @@ import {
 // ─── List View ───────────────────────────────────────────────────────
 
 function ComparisonListView() {
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const router = useRouter();
   const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
   const done = comparisonTasks.filter((t) => t.status === "done");
+
+  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: string[] }) => {
+    const cotationId = "cot-1";
+    // Update client profile with wizard besoins
+    updateClientProfile(cotationId, {
+      clientLabel: data.client,
+      clientSiren: "00007U26464",
+      besoinsClient: data.besoinsClient,
+    });
+    // Add new in_progress task (unshift so it's found first by detail view)
+    comparisonTasks.unshift({
+      id: `cmp-${Date.now()}`,
+      cotationId,
+      client: data.client,
+      products: data.products,
+      insurerIds: data.insurerIds,
+      createdBy: currentUser.name,
+      date: new Date().toLocaleDateString("fr-FR"),
+      status: "in_progress",
+    });
+    setWizardOpen(false);
+    router.push(`/quoting/comparison?id=${cotationId}`);
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -47,7 +74,7 @@ function ComparisonListView() {
             Assistant comparaison
           </h1>
         </div>
-        <button className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
+        <button onClick={() => setWizardOpen(true)} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
           <Sparkles className="w-4 h-4" />
           Nouvelle comparaison
         </button>
@@ -87,6 +114,13 @@ function ComparisonListView() {
           </>
         )}
       </div>
+
+      {wizardOpen && (
+        <ComparisonWizard
+          onClose={() => setWizardOpen(false)}
+          onSubmit={handleWizardSubmit}
+        />
+      )}
     </div>
   );
 }
@@ -308,6 +342,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] }
   );
   const [isStreaming, setIsStreaming] = useState(false);
+  const hasClientProfile = mutableProfile.besoinsClient.filter(Boolean).length > 0;
 
   const openProfile = useCallback(() => {
     setSelectedCell(null);
@@ -334,6 +369,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         setAgentPhase(phase);
         if (phase === "ready") {
           setComparisonResult(getComparisonData(cotParamId));
+          setIsStreaming(true);
           return;
         }
         i++;
@@ -586,6 +622,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   onOpenProfile={openProfile}
                   isStreaming={isStreaming}
                   onStreamingDone={() => setIsStreaming(false)}
+                  hasClientProfile={hasClientProfile}
                 />
               </div>
               {isProfileOpen ? (
@@ -622,6 +659,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                 onUpdateAnalysis={handleUpdateAnalysis}
                 isStreaming={isStreaming}
                 onStreamingDone={() => setIsStreaming(false)}
+                hasClientProfile={hasClientProfile}
               />
               {isProfileOpen && (
                 <ClientProfilePanel
