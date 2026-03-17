@@ -23,6 +23,8 @@ interface ComparisonTableProps {
   onOpenProfile?: () => void;
   isStreaming?: boolean;
   onStreamingDone?: () => void;
+  /** When false, shows empty state in synthese row prompting user to complete the profile */
+  hasClientProfile?: boolean;
 }
 
 function cellIdKey(c: CellIdentifier): string {
@@ -188,7 +190,7 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
@@ -252,7 +254,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
       </div>
 
       {/* Section: Synthese IA */}
-      {syntheseData && syntheseData.length > 0 && (
+      {(syntheseData && syntheseData.length > 0) || !hasClientProfile ? (
         <div>
           <div className="flex bg-[#f3f0ff] border-b border-panora-border h-[44px]">
             <div className="w-[250px] shrink-0 px-4 flex items-center gap-2 border-r border-panora-border">
@@ -272,41 +274,66 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             <div className="flex-1" />
           </div>
           {!syntheseCollapsed && (
-            <div className="flex border-b border-panora-border">
-              <div className="w-[250px] shrink-0 px-4 py-4 border-r border-panora-border">
-                <p className="text-[12px] text-panora-text-muted leading-[18px]">
-                  La synthese est generee a partir des devis et du{" "}
-                  <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">profil client</button>{" "}
-                  que vous pouvez modifier.
-                </p>
-              </div>
-              {insurers.map((ins, insIdx) => {
-                const item = syntheseData.find((s) => s.insurerId === ins.id);
-                return (
-                  <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
-                    {item ? (
-                      <SyntheseCell
-                        item={item}
-                        onUpdate={(updated) => {
-                          const next = syntheseData.map((s) => s.insurerId === ins.id ? updated : s);
-                          onUpdateSynthese?.(next);
-                        }}
-                        onViewAnalysis={onViewAnalysis}
-                        isStreaming={isStreaming}
-                        streamDelay={insIdx * 400}
-                        onStreamingDone={insIdx === insurers.length - 1 ? onStreamingDone : undefined}
-                      />
-                    ) : (
-                      <span className="text-[13px] text-panora-text-muted">—</span>
-                    )}
+            !hasClientProfile ? (
+              /* Empty state: no client profile */
+              <div className="flex border-b border-panora-border">
+                <div className="w-[250px] shrink-0 border-r border-panora-border" />
+                <div className="flex-1 px-6 py-8 flex flex-col items-center text-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#f3f0ff] flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-[#8b5cf6]" />
                   </div>
-                );
-              })}
-            </div>
+                  <div>
+                    <p className="text-[14px] font-medium text-panora-text">Synthese non disponible</p>
+                    <p className="text-[13px] text-panora-text-muted mt-1 leading-5 max-w-[400px]">
+                      Completez le profil client et les besoins pour generer une synthese comparative personnalisee.
+                    </p>
+                  </div>
+                  <button
+                    onClick={onOpenProfile}
+                    className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium mt-1"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Completer le profil client
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex border-b border-panora-border">
+                <div className="w-[250px] shrink-0 px-4 py-4 border-r border-panora-border">
+                  <p className="text-[12px] text-panora-text-muted leading-[18px]">
+                    La synthese est generee a partir des devis et du{" "}
+                    <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">profil client</button>{" "}
+                    que vous pouvez modifier.
+                  </p>
+                </div>
+                {insurers.map((ins, insIdx) => {
+                  const item = syntheseData?.find((s) => s.insurerId === ins.id);
+                  return (
+                    <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                      {item ? (
+                        <SyntheseCell
+                          item={item}
+                          onUpdate={(updated) => {
+                            const next = (syntheseData ?? []).map((s) => s.insurerId === ins.id ? updated : s);
+                            onUpdateSynthese?.(next);
+                          }}
+                          onViewAnalysis={onViewAnalysis}
+                          isStreaming={isStreaming}
+                          streamDelay={insIdx * 400}
+                          onStreamingDone={insIdx === insurers.length - 1 ? onStreamingDone : undefined}
+                        />
+                      ) : (
+                        <span className="text-[13px] text-panora-text-muted">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
           )}
           <SectionDivider />
         </div>
-      )}
+      ) : null}
 
       {/* Section: Conditions générales — single Prix row, sub-offers inside cells */}
       <SectionHeader title="Conditions générales" />

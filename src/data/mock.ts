@@ -1618,6 +1618,115 @@ export type AnalysisData = {
 };
 
 const analysisDataMap: Record<string, AnalysisData> = {
+  "cot-1": {
+    synthese: [
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Meilleur rapport qualité-prix sur la formule Essentielle",
+          "Couverture RC Pro étendue aux sous-traitants incluse",
+          "Franchise compétitive à 500 €/sinistre",
+        ],
+        pointsFaibles: [
+          "Protection cyber non incluse en formule Essentielle",
+          "Plafond de garantie limité à 1 500 000 € en Essentielle",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Protection juridique incluse dès la première formule",
+          "Couverture monde entier sans surcoût",
+        ],
+        pointsFaibles: [
+          "Prime annuelle la plus élevée du panel",
+          "Franchise élevée à 1 000 €/sinistre",
+          "Délai de carence de 30 jours sur la cyber",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Protection cyber incluse dès la formule de base",
+          "Assistance juridique étendue incluse",
+          "Plafond RC le plus élevé à 3 000 000 €",
+        ],
+        pointsFaibles: [
+          "Tarif intermédiaire mais pas le plus compétitif",
+          "Exclusion des sous-traitants hors UE",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "CA 2,4 M€", source: "extracted" },
+      { id: "cp-2", label: "Activité : conseil IT", source: "extracted" },
+      { id: "cp-3", label: "12 salariés", source: "extracted" },
+      { id: "cp-4", label: "Sinistralité 3 ans : 0", source: "manual" },
+      { id: "cp-5", label: "Sous-traitance", source: "missing" },
+      { id: "cp-6", label: "Activité à l'international", source: "missing" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: "L'analyse comparative des trois offres RC Pro pour Marble Tech SAS révèle des positionnements différenciés. Axa propose le tarif le plus compétitif avec la formule Essentielle à 810,52 €/an, tandis qu'Allianz offre la couverture la plus complète avec une protection cyber incluse dès la formule de base.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la protection juridique incluse et la couverture monde entier. Cependant, la franchise plus élevée (1 000 €) et le délai de carence sur la cyber constituent des points de vigilance.\n\nRecommandation : compte tenu du profil technologique de Marble Tech et du besoin en couverture cyber, l'offre Allianz présente le meilleur alignement avec les besoins exprimés. L'offre Axa reste pertinente si le budget est la priorité, sous réserve de souscrire l'option cyber.",
+    conditionsFinancieres: {
+      analysisBefore: "Les trois assureurs proposent chacun trois niveaux de formule. Les écarts de prime annuelle varient de 539,48 € entre la formule la moins chère (Axa Essentielle à 810,52 €) et la plus chère (Allianz Étendue à 1 350,00 €). Les franchises diffèrent sensiblement : 500 € chez Axa, 750 € chez Allianz et 1 000 € chez Generali.",
+      analysisAfter: "En rapportant le coût au chiffre d'affaires de 2,4 M€, la prime Axa représente 0,034% du CA en formule Essentielle, ce qui reste dans la fourchette basse du marché pour une RC Pro IT. Le surcoût de la couverture cyber chez Allianz (incluse) vs Axa (option à ~200 €/an) doit être intégré dans la comparaison.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "axa",
+        insurerName: "Axa",
+        pointsForts: [
+          "Tarif le plus compétitif du panel avec la formule Essentielle à 810,52 €/an",
+          "RC Pro étendue aux sous-traitants incluse dans toutes les formules",
+          "Franchise contenue à 500 €/sinistre, la plus basse du panel",
+          "Trois niveaux de formule permettant un ajustement fin de la couverture",
+        ],
+        pointsFaibles: [
+          "Protection cyber non incluse en formule Essentielle, disponible en option",
+          "Plafond de garantie limité à 1 500 000 € en formule Essentielle",
+          "Pas de protection juridique en standard",
+        ],
+      },
+      {
+        insurerId: "generali",
+        insurerName: "Generali",
+        pointsForts: [
+          "Protection juridique incluse dès la première formule",
+          "Couverture monde entier sans restriction géographique",
+          "Garantie perte d'exploitation incluse en formule Premium",
+        ],
+        pointsFaibles: [
+          "Prime annuelle la plus élevée du panel sur les formules comparables",
+          "Franchise la plus élevée à 1 000 €/sinistre",
+          "Délai de carence de 30 jours sur la garantie cyber",
+          "Sous-traitants hors UE non couverts",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        insurerName: "Allianz",
+        pointsForts: [
+          "Protection cyber incluse dès la formule de base, sans délai de carence",
+          "Plafond RC le plus élevé du panel à 3 000 000 €",
+          "Assistance juridique étendue avec prise en charge des frais de procédure",
+          "Couverture des dommages immatériels non consécutifs",
+        ],
+        pointsFaibles: [
+          "Tarif intermédiaire, ni le plus compétitif ni le plus cher",
+          "Exclusion des sous-traitants établis hors UE",
+          "Franchise de 750 €, légèrement au-dessus d'Axa",
+        ],
+      },
+    ],
+    garantiesCles: [
+      { label: "RC Professionnelle", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, generali: { status: "covered", keyInfo: "2 000 000 €" }, allianz: { status: "covered", keyInfo: "3 000 000 €" } } },
+      { label: "Protection cyber", values: { axa: { status: "not_covered", keyInfo: "Option" }, generali: { status: "covered", keyInfo: "Carence 30j" }, allianz: { status: "covered", keyInfo: "Incluse" } } },
+      { label: "Protection juridique", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
+      { label: "Sous-traitants", values: { axa: { status: "covered", keyInfo: "Tous" }, generali: { status: "covered", keyInfo: "UE uniquement" }, allianz: { status: "covered", keyInfo: "UE uniquement" } } },
+      { label: "Couverture monde entier", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
+      { label: "Perte d'exploitation", values: { axa: { status: "not_covered" }, generali: { status: "covered", keyInfo: "Premium" }, allianz: { status: "covered" } } },
+    ],
+  },
   "cot-2": {
     synthese: [
       {
@@ -1921,6 +2030,10 @@ const clientProfileMap: Record<string, ClientProfileData> = {
 
 export function getClientProfile(cotationId: string): ClientProfileData | undefined {
   return clientProfileMap[cotationId];
+}
+
+export function updateClientProfile(cotationId: string, data: ClientProfileData): void {
+  clientProfileMap[cotationId] = data;
 }
 
 export function buildContextPills(
