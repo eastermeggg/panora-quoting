@@ -5,17 +5,25 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   getFollowupData,
   getComparisonData,
+  getAnalysisData,
+  getClientProfile,
+  updateClientProfile,
+  buildContextPills,
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
-import type { ComparisonData, ComparisonTask } from "@/data/mock";
+import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow, AnalysisSyntheseItem, AnalysisData, ClientProfileData } from "@/data/mock";
+import { ComparisonWizard } from "@/components/quoting/ComparisonWizard";
+import { DetailPanel } from "@/components/quoting/DetailPanel";
+import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
+import { AnalysisTab } from "@/components/quoting/AnalysisTab";
+import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  FileSignature,
   Loader2,
   FileSearch,
   CheckCircle2,
@@ -28,8 +36,33 @@ import {
 // ─── List View ───────────────────────────────────────────────────────
 
 function ComparisonListView() {
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const router = useRouter();
   const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
   const done = comparisonTasks.filter((t) => t.status === "done");
+
+  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
+    const cotationId = "cot-1";
+    // Update client profile with wizard besoins
+    updateClientProfile(cotationId, {
+      clientLabel: data.client,
+      clientSiren: "00007U26464",
+      besoinsClient: data.besoinsClient,
+    });
+    // Add new in_progress task (unshift so it's found first by detail view)
+    comparisonTasks.unshift({
+      id: `cmp-${Date.now()}`,
+      cotationId,
+      client: data.client,
+      products: data.products,
+      insurerIds: data.insurerIds,
+      createdBy: currentUser.name,
+      date: new Date().toLocaleDateString("fr-FR"),
+      status: "in_progress",
+    });
+    setWizardOpen(false);
+    router.push(`/quoting/comparison?id=${cotationId}`);
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -41,7 +74,7 @@ function ComparisonListView() {
             Assistant comparaison
           </h1>
         </div>
-        <button className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
+        <button onClick={() => setWizardOpen(true)} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
           <Sparkles className="w-4 h-4" />
           Nouvelle comparaison
         </button>
@@ -81,6 +114,13 @@ function ComparisonListView() {
           </>
         )}
       </div>
+
+      {wizardOpen && (
+        <ComparisonWizard
+          onClose={() => setWizardOpen(false)}
+          onSubmit={handleWizardSubmit}
+        />
+      )}
     </div>
   );
 }
@@ -205,6 +245,82 @@ const PHASE_DURATIONS: Partial<Record<AgentPhase, number>> = {
   building_comparison: 800,
 };
 
+function getCellDetail(
+  cellId: CellIdentifier,
+  data: ComparisonData | undefined,
+  insurers: InsurerData[],
+): CellDetail | null {
+  if (cellId.type === "guarantee" && data) {
+    const section = data.sections[cellId.sectionIndex];
+    if (!section) return null;
+    const row = section.rows[cellId.rowIndex];
+    if (!row) return null;
+    const detail = row.details?.[cellId.insurerId];
+    if (detail) return detail;
+    // Fallback: build a minimal detail from cell value
+    const cell = row.values[cellId.insurerId];
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    return {
+      title: row.label,
+      covered: cell?.type !== "cross",
+      insurerId: cellId.insurerId,
+      insurerName: ins?.name ?? cellId.insurerId,
+      description: "",
+      cellType: "guarantee",
+      mainLimit: "1 500 €",
+      mainDeductible: "5 000 €",
+      subLimits: [],
+      sources: [],
+    };
+  }
+  if (cellId.type === "price") {
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    if (!ins?.pricing || ins.pricing.length === 0) return null;
+    return {
+      title: "Tarification",
+      covered: true,
+      insurerId: cellId.insurerId,
+      insurerName: ins.name,
+      description: "",
+      cellType: "price",
+      pricingRows: ins.pricing.map((formula, idx) => ({
+        id: `pr-${idx}`,
+        offerLabel: formula.formula,
+        price: formula.annual,
+        conditions: formula.monthly,
+      })),
+      sources: [],
+    };
+  }
+  if (cellId.type === "exclusion" && data?.exclusions) {
+    const row = data.exclusions.find((r) => r.id === cellId.exclusionId);
+    if (!row) return null;
+    const detail = row.details?.[cellId.insurerId];
+    if (detail) return detail;
+    const cellVal = row.values[cellId.insurerId];
+    const ins = insurers.find((i) => i.id === cellId.insurerId);
+    return {
+      title: row.label,
+      covered: cellVal?.type === "inclus",
+      insurerId: cellId.insurerId,
+      insurerName: ins?.name ?? cellId.insurerId,
+      description: "",
+      cellType: "exclusion",
+      origin: row.origin,
+      exclusionId: row.id,
+      subLimits: [],
+      sources: [],
+    };
+  }
+  return null;
+}
+
+function cellIdKey(c: CellIdentifier): string {
+  if (c.type === "guarantee") return `g-${c.sectionIndex}-${c.rowIndex}-${c.insurerId}`;
+  if (c.type === "price") return `p-${c.insurerId}`;
+  return `e-${c.exclusionId}-${c.insurerId}`;
+}
+
 function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const router = useRouter();
   const followupData = getFollowupData(cotParamId);
@@ -217,6 +333,32 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [comparisonResult, setComparisonResult] = useState<ComparisonData | undefined>(
     alreadyDone ? getComparisonData(cotParamId) : undefined
   );
+  const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
+  const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
+  const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
+  const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [mutableProfile, setMutableProfile] = useState<ClientProfileData>(
+    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
+  );
+  const [isStreaming, setIsStreaming] = useState(false);
+  const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
+
+  const openProfile = useCallback(() => {
+    setSelectedCell(null);
+    setIsProfileOpen(true);
+  }, []);
+
+  const handleProfileSave = useCallback((updated: ClientProfileData) => {
+    setMutableProfile(updated);
+    setIsProfileOpen(false);
+    setMutableAnalysis((prev) => {
+      if (!prev) return prev;
+      const { pills, hasFullContext } = buildContextPills(updated, prev.contextPills);
+      return { ...prev, contextPills: pills, hasFullContext };
+    });
+    setIsStreaming(true);
+  }, []);
 
   const startAgent = useCallback(() => {
     const phases: AgentPhase[] = ["reading_documents", "extracting_guarantees", "building_comparison", "ready"];
@@ -227,6 +369,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         setAgentPhase(phase);
         if (phase === "ready") {
           setComparisonResult(getComparisonData(cotParamId));
+          setIsStreaming(true);
           return;
         }
         i++;
@@ -242,6 +385,122 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     return () => clearTimeout(timer);
   }, [startAgent, alreadyDone]);
 
+  const handleCellUpdate = useCallback((cellId: CellIdentifier, updatedDetail: CellDetail) => {
+    if (cellId.type === "guarantee") {
+      setComparisonResult((prev) => {
+        if (!prev) return prev;
+        const sections = prev.sections.map((section, sIdx) => {
+          if (sIdx !== cellId.sectionIndex) return section;
+          const rows = section.rows.map((row, rIdx) => {
+            if (rIdx !== cellId.rowIndex) return row;
+            // Update the cell value based on covered toggle
+            const currentCell = row.values[cellId.insurerId];
+            let newCell = currentCell;
+            if (updatedDetail.covered && currentCell?.type === "cross") {
+              newCell = { type: "check" };
+            } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
+              newCell = { type: "cross" };
+            }
+            return {
+              ...row,
+              values: { ...row.values, [cellId.insurerId]: newCell },
+              details: { ...row.details, [cellId.insurerId]: updatedDetail },
+            };
+          });
+          return { ...section, rows };
+        });
+        return { ...prev, sections };
+      });
+    } else if (cellId.type === "price") {
+      // Update mutableInsurers pricing from all pricingRows
+      setMutableInsurers((prev) =>
+        prev.map((ins) => {
+          if (ins.id !== cellId.insurerId) return ins;
+          if (!updatedDetail.pricingRows) return ins;
+          const pricing = updatedDetail.pricingRows.map((row, idx) => ({
+            formula: row.offerLabel,
+            annual: row.price,
+            monthly: row.conditions,
+          }));
+          return { ...ins, pricing };
+        })
+      );
+    } else if (cellId.type === "exclusion") {
+      setComparisonResult((prev) => {
+        if (!prev?.exclusions) return prev;
+        const exclusions = prev.exclusions.map((row) => {
+          if (row.id !== cellId.exclusionId) return row;
+          // Update cell value based on covered toggle
+          const currentCell = row.values[cellId.insurerId];
+          let newCell = currentCell;
+          if (updatedDetail.covered && currentCell?.type !== "inclus") {
+            newCell = { type: "inclus" };
+          } else if (!updatedDetail.covered && currentCell?.type !== "exclu") {
+            newCell = { type: "exclu" };
+          }
+          return {
+            ...row,
+            label: updatedDetail.title || row.label,
+            values: { ...row.values, [cellId.insurerId]: newCell },
+            details: { ...row.details, [cellId.insurerId]: updatedDetail },
+          };
+        });
+        return { ...prev, exclusions };
+      });
+    }
+  }, []);
+
+  const handleAddManualExclusion = useCallback((): string => {
+    const newId = `excl-m-${Date.now()}`;
+    const newRow: ExclusionRow = {
+      id: newId,
+      label: "",
+      origin: "manual",
+      values: Object.fromEntries(mutableInsurers.map((ins) => [ins.id, { type: "exclu" as const }])),
+    };
+    setComparisonResult((prev) => {
+      if (!prev) return prev;
+      return { ...prev, exclusions: [...(prev.exclusions ?? []), newRow] };
+    });
+    return newId;
+  }, [mutableInsurers]);
+
+  const handleUpdateExclusionLabel = useCallback((exclusionId: string, label: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return {
+        ...prev,
+        exclusions: prev.exclusions.map((r) =>
+          r.id === exclusionId ? { ...r, label } : r
+        ),
+      };
+    });
+  }, []);
+
+  const handleDiscardExclusion = useCallback((exclusionId: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return { ...prev, exclusions: prev.exclusions.filter((r) => r.id !== exclusionId) };
+    });
+  }, []);
+
+  const handleDeleteExclusion = useCallback((exclusionId: string) => {
+    setComparisonResult((prev) => {
+      if (!prev?.exclusions) return prev;
+      return { ...prev, exclusions: prev.exclusions.filter((r) => r.id !== exclusionId) };
+    });
+    setSelectedCell(null);
+  }, []);
+
+  const handlePanelClose = useCallback(() => {
+    setSelectedCell(null);
+  }, []);
+
+  const handleToggleCellDisplayMode = useCallback((cellId: CellIdentifier) => {
+    const key = cellIdKey(cellId);
+    setCellDisplayModes((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
   if (!followupData) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -250,9 +509,28 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     );
   }
 
-  const { cotation, insurers } = followupData;
+  const { cotation } = followupData;
   const clientName = cotation.client;
-  const totalDocs = insurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
+  const totalDocs = mutableInsurers.reduce((sum, ins) => sum + (ins.documents?.length ?? 0), 0);
+
+  const currentDetail = selectedCell ? getCellDetail(selectedCell, comparisonResult, mutableInsurers) : null;
+  const analysisData = getAnalysisData(cotParamId);
+  const [mutableSynthese, setMutableSynthese] = useState<AnalysisSyntheseItem[]>(analysisData?.synthese ?? []);
+  const [mutableAnalysis, setMutableAnalysis] = useState<AnalysisData | undefined>(() => {
+    if (!analysisData) return undefined;
+    const initProfile = getClientProfile(cotParamId);
+    if (!initProfile) return analysisData;
+    const { pills, hasFullContext } = buildContextPills(initProfile, analysisData.contextPills);
+    return { ...analysisData, contextPills: pills, hasFullContext };
+  });
+
+  const handleUpdateSynthese = useCallback((updated: AnalysisSyntheseItem[]) => {
+    setMutableSynthese(updated);
+  }, []);
+
+  const handleUpdateAnalysis = useCallback((updated: AnalysisData) => {
+    setMutableAnalysis(updated);
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -273,7 +551,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             </div>
             <span className="text-[13px] font-medium text-panora-text">{clientName}</span>
           </div>
-          <button className="text-[12px] font-medium text-panora-green ml-1">Voir profil client</button>
+          <button onClick={openProfile} className="text-[12px] font-medium text-panora-green ml-1">Voir profil client</button>
           <div className="w-px h-4 bg-[#d9d9d9] ml-2" />
           <Link
             href={`/quoting/followup?id=${cotParamId}`}
@@ -283,21 +561,117 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
-        <button
-          onClick={() => console.log("TODO: Finaliser la proposition")}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
-        >
-          <FileSignature className="w-4 h-4" />
-          Finaliser la proposition
-        </button>
+        <FinaliserDropdown
+          clientName={mutableProfile.clientLabel || followupData?.cotation.client}
+          presentationUrl={`/presentation/${cotParamId}`}
+          onGenerateDevoirConseil={() => console.log("TODO: Devoir de conseil")}
+          onDownloadEtudePDF={() => console.log("TODO: Telecharger etude PDF")}
+          onDownloadSynthesePDF={() => console.log("TODO: Telecharger synthese PDF")}
+        />
       </div>
 
       {agentPhase !== "ready" ? (
-        <AgentLoadingState phase={agentPhase} insurerCount={insurers.length} documentCount={totalDocs} />
+        <AgentLoadingState phase={agentPhase} insurerCount={mutableInsurers.length} documentCount={totalDocs} />
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <ComparisonTable insurers={insurers} comparisonData={comparisonResult} cotParamId={cotParamId} />
-        </div>
+        <>
+          {/* Tab bar */}
+          <div className="h-[44px] shrink-0 border-b border-panora-border bg-white px-4 flex items-end">
+            <button
+              onClick={() => setActiveTab("comparison")}
+              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 ${
+                activeTab === "comparison"
+                  ? "border-panora-green text-panora-green font-medium"
+                  : "border-transparent text-panora-text-muted hover:text-panora-text"
+              }`}
+            >
+              Tableau comparatif
+            </button>
+            <button
+              onClick={() => setActiveTab("analysis")}
+              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
+                activeTab === "analysis"
+                  ? "border-panora-green text-panora-green font-medium"
+                  : "border-transparent text-panora-text-muted hover:text-panora-text"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Synthese
+            </button>
+          </div>
+
+          {/* Tab content */}
+          {activeTab === "comparison" ? (
+            <div className="flex-1 flex min-h-0">
+              <div
+                className="flex-1 overflow-auto min-w-0"
+                onClick={() => setSelectedCell(null)}
+              >
+                <ComparisonTable
+                  insurers={mutableInsurers}
+                  comparisonData={comparisonResult}
+                  cotParamId={cotParamId}
+                  selectedCell={selectedCell}
+                  onCellSelect={(cell) => { setIsProfileOpen(false); setSelectedCell(cell); }}
+                  onAddExclusion={handleAddManualExclusion}
+                  onUpdateExclusionLabel={handleUpdateExclusionLabel}
+                  onDiscardExclusion={handleDiscardExclusion}
+                  cellDisplayModes={cellDisplayModes}
+                  syntheseData={mutableSynthese}
+                  onUpdateSynthese={handleUpdateSynthese}
+                  onViewAnalysis={() => setActiveTab("analysis")}
+                  onOpenProfile={openProfile}
+                  isStreaming={isStreaming}
+                  onStreamingDone={() => setIsStreaming(false)}
+                  hasClientProfile={hasClientProfile}
+                />
+              </div>
+              {isProfileOpen ? (
+                <ClientProfilePanel
+                  profile={mutableProfile}
+                  contextPills={mutableAnalysis?.contextPills}
+                  onSave={handleProfileSave}
+                  onClose={() => setIsProfileOpen(false)}
+                />
+              ) : selectedCell && currentDetail ? (
+                <DetailPanel
+                  cellDetail={currentDetail}
+                  onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+                  onClose={handlePanelClose}
+                  onDelete={
+                    selectedCell.type === "exclusion" && currentDetail.origin === "manual"
+                      ? () => handleDeleteExclusion(selectedCell.exclusionId)
+                      : undefined
+                  }
+                  showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
+                  onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex-1 flex min-h-0">
+              <AnalysisTab
+                analysisData={mutableAnalysis}
+                insurers={mutableInsurers}
+                offerCount={mutableInsurers.length}
+                comparisonData={comparisonResult}
+                onSwitchToComparison={() => setActiveTab("comparison")}
+                onOpenProfile={openProfile}
+                onUpdateAnalysis={handleUpdateAnalysis}
+                isStreaming={isStreaming}
+                onStreamingDone={() => setIsStreaming(false)}
+                hasClientProfile={hasClientProfile}
+              />
+              {isProfileOpen && (
+                <ClientProfilePanel
+                  profile={mutableProfile}
+                  contextPills={mutableAnalysis?.contextPills}
+                  onSave={handleProfileSave}
+                  onClose={() => setIsProfileOpen(false)}
+                />
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
