@@ -2,10 +2,11 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import { Check, X as XIcon, HelpCircle, FileDown, Copy, Plus, Sparkles, RotateCcw, Loader2, Send, Trash2, Search } from "lucide-react";
-import type { AnalysisData, InsurerData, SectionId, SectionMeta, ComparisonData, CellDetail } from "@/data/mock";
+import { Check, X as XIcon, Plus, Sparkles, RotateCcw, Loader2, Send, Trash2, Search, ArrowRight } from "lucide-react";
+import type { AnalysisData, InsurerData, SectionId, SectionMeta, ComparisonData, CellDetail, ContextPill } from "@/data/mock";
 import { DEFAULT_SECTION_PROMPTS, mockRegenerateSection } from "@/data/mock";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
+import { BesoinTag } from "@/components/ui/BesoinTag";
 
 type GarantieCellId = { rowIndex: number; insurerId: string };
 
@@ -36,31 +37,43 @@ function EditableBlock({
   value,
   onCommit,
   className,
+  placeholder,
 }: {
   value: string;
   onCommit: (value: string) => void;
   className?: string;
+  placeholder?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [showPlaceholder, setShowPlaceholder] = useState(!value.trim());
 
   const commit = () => {
     if (!ref.current) return;
     const text = ref.current.innerText?.trim() ?? "";
+    setShowPlaceholder(!text);
     if (text !== value) onCommit(text);
   };
 
   return (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      className={`outline-none whitespace-pre-wrap rounded-[4px] focus:ring-1 focus:ring-panora-green/30 px-1 -mx-1 ${className ?? ""}`}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") e.currentTarget.blur();
-      }}
-    >
-      {value}
+    <div className="relative">
+      {showPlaceholder && placeholder && (
+        <span className="absolute left-1 top-0 text-panora-text-muted/50 pointer-events-none select-none" style={{ fontSize: "inherit", lineHeight: "inherit" }}>
+          {placeholder}
+        </span>
+      )}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        className={`outline-none whitespace-pre-wrap ${className ?? ""}`}
+        onFocus={() => setShowPlaceholder(false)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") e.currentTarget.blur();
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -485,6 +498,72 @@ function FloatingPromptBar({
   );
 }
 
+// ─── Contexte client section — read-only display, shortcuts to panel ──
+
+function ContexteClientSection({
+  contextPills,
+  onOpenProfile,
+  noteBefore,
+  onNoteBeforeChange,
+}: {
+  contextPills: ContextPill[];
+  onOpenProfile: () => void;
+  noteBefore?: string;
+  onNoteBeforeChange?: (value: string) => void;
+}) {
+  const visiblePills = contextPills.filter((p) => p.source !== "missing");
+
+  // Map pill source to BesoinTag source (extracted → ai visually)
+  const tagSource = (pill: ContextPill): "ai" | "manual" => {
+    if (pill.source === "ai" || pill.source === "extracted") return "ai";
+    return "manual";
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
+        <button
+          onClick={onOpenProfile}
+          className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:text-panora-green/80 transition-colors px-2 py-1 rounded-[6px] border border-panora-green/20 hover:bg-panora-green/5"
+        >
+          Modifier
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {/* Introduction paragraph */}
+        <EditableBlock
+          value={noteBefore || ""}
+          className="text-[14px] leading-6 text-panora-text"
+          placeholder="Presenter le contexte du client et les enjeux de cette comparaison..."
+          onCommit={(v) => onNoteBeforeChange?.(v)}
+        />
+
+        {visiblePills.length === 0 ? (
+          <p className="text-[14px] text-panora-text-muted">
+            Aucun besoin renseigne.{" "}
+            <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">
+              Completer le profil
+            </button>
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2 items-start">
+            {visiblePills.map((pill) => (
+              <BesoinTag
+                key={pill.id}
+                value={pill.label}
+                source={tagSource(pill)}
+                compact
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Initial section states helper ──────────────────────────────────
 
 function initSectionStates(): Record<SectionId, SectionMeta> {
@@ -641,27 +720,90 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
 
   if (!hasClientProfile) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#f5f4f1]">
-        <div className="text-center max-w-md space-y-4">
-          <div className="w-14 h-14 rounded-full bg-[#f3f0ff] flex items-center justify-center mx-auto">
-            <Sparkles className="w-7 h-7 text-[#8b5cf6]" />
+      <div className="flex-1 overflow-y-auto bg-[#f5f4f1] relative">
+        {/* Skeleton preview of the synthesis — blurred to tease content */}
+        <div className="max-w-[820px] mx-auto my-8 pointer-events-none select-none" aria-hidden>
+          <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-10 py-10 space-y-10 opacity-[0.45] blur-[1.5px]">
+            {/* Fake title */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
+                <div className="h-3 w-16 rounded bg-[#8b5cf6]/20" />
+              </div>
+              <div className="h-7 w-64 rounded bg-panora-text/10 mb-2" />
+              <div className="h-3.5 w-48 rounded bg-panora-text/7" />
+            </div>
+            <hr className="border-panora-border" />
+            {/* Fake context pills */}
+            <div>
+              <div className="h-5 w-32 rounded bg-panora-text/10 mb-3" />
+              <div className="flex flex-wrap gap-2">
+                <div className="h-7 w-20 rounded-full bg-panora-secondary" />
+                <div className="h-7 w-28 rounded-full bg-panora-secondary" />
+                <div className="h-7 w-24 rounded-full bg-panora-secondary" />
+                <div className="h-7 w-32 rounded-full border border-dashed border-[#d4d2cc]" />
+              </div>
+            </div>
+            <hr className="border-panora-border" />
+            {/* Fake resume executif */}
+            <div>
+              <div className="h-5 w-40 rounded bg-panora-text/10 mb-3" />
+              <div className="space-y-2">
+                <div className="h-4 w-full rounded bg-panora-text/7" />
+                <div className="h-4 w-full rounded bg-panora-text/7" />
+                <div className="h-4 w-3/4 rounded bg-panora-text/7" />
+                <div className="h-4 w-full rounded bg-panora-text/7" />
+                <div className="h-4 w-5/6 rounded bg-panora-text/7" />
+              </div>
+            </div>
+            <hr className="border-panora-border" />
+            {/* Fake pricing table */}
+            <div>
+              <div className="h-5 w-48 rounded bg-panora-text/10 mb-3" />
+              <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="border border-panora-border rounded-[8px] p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-panora-secondary" />
+                      <div className="h-4 w-20 rounded bg-panora-text/10" />
+                    </div>
+                    <div className="h-6 w-24 rounded bg-panora-green/15" />
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-full rounded bg-panora-text/5" />
+                      <div className="h-3 w-3/4 rounded bg-panora-text/5" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-[20px] font-serif font-semibold text-panora-text">Analyse non disponible</p>
-            <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
-              Pour generer la synthese comparative et l&apos;analyse detaillee, completez le profil client avec les besoins specifiques de votre client.
-            </p>
+        </div>
+
+        {/* CTA overlay */}
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-[#f5f4f1]/30 via-[#f5f4f1]/70 to-[#f5f4f1]/95">
+          <div className="bg-white border border-panora-border rounded-xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)] max-w-md w-full">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#dbeee5] flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-panora-green" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-serif font-semibold text-panora-text leading-6 mb-1.5">
+                  Personnalisez cette synthese
+                </h3>
+                <p className="text-[13px] text-panora-text-muted leading-5">
+                  Renseignez les besoins de votre client pour generer une synthese comparative personnalisee avec recommandations.
+                </p>
+              </div>
+              <button
+                onClick={onOpenProfile}
+                className="btn-primary flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium mt-1"
+              >
+                Renseigner les besoins client
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <p className="text-[12px] text-panora-text-muted">Moins de 2 minutes</p>
+            </div>
           </div>
-          <button
-            onClick={onOpenProfile}
-            className="btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium mx-auto"
-          >
-            <Sparkles className="w-4 h-4" />
-            Completer le profil client
-          </button>
-          <p className="text-[12px] text-panora-text-muted">
-            L&apos;analyse sera generee automatiquement une fois le profil complété.
-          </p>
         </div>
       </div>
     );
@@ -679,94 +821,36 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
 
   const scrollContent = (
     <div className="flex-1 overflow-y-auto bg-[#f5f4f1]">
-      <div className="max-w-[820px] mx-auto my-8 relative">
-        {/* ── Floating actions (right gutter) ── */}
-        <div className="absolute -right-[140px] top-0 w-[120px] space-y-2 hidden xl:block">
-          <button
-            onClick={() => console.log("TODO: Exporter")}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-          >
-            <FileDown className="w-3.5 h-3.5" />
-            Exporter
-          </button>
-          <button
-            onClick={() => console.log("TODO: Copier")}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            Copier
-          </button>
-        </div>
-
+      <div className="max-w-[820px] mx-auto my-8">
         {/* Document page */}
         <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative">
           <div className="px-10 py-10 space-y-10">
 
             {/* ── Title ── */}
-            <div className="flex items-start justify-between pb-2">
-              <div>
-                <p className="text-[12px] font-medium text-[#8b5cf6] tracking-wide uppercase mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Analyse IA
-                </p>
-                <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9">
-                  Synthese comparative
-                </h1>
-                <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
-                  {insurers.length} offres analysees &middot; Cliquez sur un texte pour le modifier directement
-                </p>
-              </div>
-              {/* Inline fallback for narrow screens */}
-              <div className="flex items-center gap-2 shrink-0 ml-4 xl:hidden">
-                <button
-                  onClick={() => console.log("TODO: Exporter")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors"
-                >
-                  <FileDown className="w-3.5 h-3.5" />
-                  Exporter
-                </button>
-                <button
-                  onClick={() => console.log("TODO: Copier")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  Copier
-                </button>
-              </div>
+            <div className="pb-2">
+              <p className="text-[12px] font-medium text-[#8b5cf6] tracking-wide uppercase mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Analyse IA
+              </p>
+              <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9">
+                Synthese comparative
+              </h1>
+              <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
+                {insurers.length} offres analysees &middot; Cliquez sur un texte pour le modifier directement
+              </p>
             </div>
 
             <Hr />
 
             {/* ── Contexte client ── */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
-                <button onClick={onOpenProfile} className="text-[12px] font-medium text-panora-green hover:underline">
-                  Modifier
-                </button>
-              </div>
-              {contextPills.length === 0 ? (
-                <p className="text-[14px] text-panora-text-muted">
-                  Aucun contexte renseigne. <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">Completer le profil</button>
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {contextPills.map((pill) => (
-                    <span
-                      key={pill.id}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] leading-4 ${
-                        pill.source === "missing"
-                          ? "border border-dashed border-[#d4d2cc] text-panora-text-muted"
-                          : "bg-panora-secondary text-panora-text"
-                      }`}
-                    >
-                      {pill.source === "missing" && <HelpCircle className="w-3 h-3" />}
-                      {pill.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ContexteClientSection
+              contextPills={contextPills}
+              onOpenProfile={onOpenProfile}
+              noteBefore={analysisData?.contextNoteBefore}
+              onNoteBeforeChange={(v) => {
+                if (analysisData) onUpdateAnalysis?.({ ...analysisData, contextNoteBefore: v });
+              }}
+            />
 
             {!hiddenSections.has("resume") && <Hr />}
 
@@ -1144,6 +1228,17 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 </>
               )}
             </div>}
+
+            {/* ── Note complementaire — end of document ── */}
+            <Hr />
+            <EditableBlock
+              value={analysisData?.contextNoteAfter || ""}
+              className="text-[14px] leading-6 text-panora-text-muted"
+              placeholder="Ajouter une note complementaire..."
+              onCommit={(v) => {
+                if (analysisData) onUpdateAnalysis?.({ ...analysisData, contextNoteAfter: v });
+              }}
+            />
 
           </div>
         </div>

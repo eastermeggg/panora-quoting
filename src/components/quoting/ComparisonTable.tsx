@@ -276,26 +276,18 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           {!syntheseCollapsed && (
             !hasClientProfile ? (
               /* Empty state: no client profile */
-              <div className="flex border-b border-panora-border">
-                <div className="w-[250px] shrink-0 border-r border-panora-border" />
-                <div className="flex-1 px-6 py-8 flex flex-col items-center text-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#f3f0ff] flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-[#8b5cf6]" />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-medium text-panora-text">Synthese non disponible</p>
-                    <p className="text-[13px] text-panora-text-muted mt-1 leading-5 max-w-[400px]">
-                      Completez le profil client et les besoins pour generer une synthese comparative personnalisee.
-                    </p>
-                  </div>
-                  <button
-                    onClick={onOpenProfile}
-                    className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium mt-1"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Completer le profil client
-                  </button>
-                </div>
+              <div className="flex items-center border-b border-panora-border bg-[#f7fbf9] px-5 py-4 gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-panora-green shrink-0" />
+                <p className="text-[13px] font-medium text-panora-text flex-1">
+                  Completez le profil client pour personnaliser la synthese
+                </p>
+                <button
+                  onClick={onOpenProfile}
+                  className="btn-primary flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium shrink-0"
+                >
+                  Renseigner le profil client
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             ) : (
               <div className="flex border-b border-panora-border">
@@ -848,7 +840,7 @@ function SyntheseCell({
         onClick={(e) => { e.stopPropagation(); onViewAnalysis?.(); }}
         className="flex items-center gap-1 text-[12px] font-medium text-panora-green hover:underline"
       >
-        Voir analyse
+        Voir la synthese complete
         <ArrowRight className="w-3 h-3" />
       </button>
     </div>

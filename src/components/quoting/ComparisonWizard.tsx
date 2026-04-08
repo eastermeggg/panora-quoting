@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Plus,
 } from "lucide-react";
+import { BesoinTag } from "@/components/ui/BesoinTag";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ interface ComparisonWizardProps {
     client: string;
     products: string[];
     insurerIds: string[];
-    besoinsClient: string[];
+    besoinsClient: { id: string; value: string; source: "ai" | "manual" }[];
     skippedProfile: boolean;
   }) => void;
 }
@@ -153,7 +154,7 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
       client: "Marble Tech SAS",
       products: selectedProducts,
       insurerIds,
-      besoinsClient: skipProfile ? [] : besoinsClient.map((b) => b.value),
+      besoinsClient: skipProfile ? [] : besoinsClient.map((b) => ({ id: b.id, value: b.value, source: b.source })),
       skippedProfile: skipProfile,
     });
   };
@@ -516,27 +517,12 @@ function Step3Profile({
 
         <div className="space-y-2">
           {besoinsClient.map((besoin) => (
-            <div
+            <BesoinTag
               key={besoin.id}
-              className={`flex items-center gap-2.5 rounded-[7px] px-3 py-2.5 h-10 ${
-                besoin.source === "ai"
-                  ? "bg-[#ebf3ef] border border-[#9dd5bb]"
-                  : "bg-white border border-panora-border"
-              }`}
-            >
-              <span className="text-[13px] text-panora-text flex-1">
-                {besoin.value}
-              </span>
-              {besoin.source === "ai" && (
-                <Sparkles className="w-3.5 h-3.5 text-panora-green shrink-0" />
-              )}
-              <button
-                onClick={() => onRemoveBesoin(besoin.id)}
-                className="w-4 h-4 flex items-center justify-center text-panora-text-muted hover:text-panora-text transition-colors shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              value={besoin.value}
+              source={besoin.source}
+              onRemove={() => onRemoveBesoin(besoin.id)}
+            />
           ))}
 
           {/* Add input */}
@@ -551,7 +537,7 @@ function Step3Profile({
               }
             }}
             placeholder="Ajoutez un besoin client. Ex: Couverture cyber minimum 500k€..."
-            className="w-full bg-white border border-[#e2dfd8] rounded-[7px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2.5 h-10 text-[13px] text-panora-text placeholder:text-panora-text-muted outline-none focus:border-panora-green transition-colors"
+            className="w-full bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2 min-h-[36px] text-[13px] text-panora-text placeholder:text-panora-text-muted outline-none focus:border-panora-green transition-colors"
           />
         </div>
 

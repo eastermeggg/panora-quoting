@@ -1598,7 +1598,9 @@ export function getComparisonData(cotationId: string): ComparisonData | undefine
 export type ContextPill = {
   id: string;
   label: string;
-  source: "extracted" | "manual" | "missing";
+  source: "extracted" | "ai" | "manual" | "missing";
+  /** For missing pills: explains why this info would improve the analysis */
+  hint?: string;
 };
 
 export type AnalysisSyntheseItem = {
@@ -1611,6 +1613,10 @@ export type AnalysisData = {
   synthese: AnalysisSyntheseItem[];
   contextPills: ContextPill[];
   hasFullContext: boolean;
+  /** Free text above the context pills */
+  contextNoteBefore?: string;
+  /** Free text below the context pills */
+  contextNoteAfter?: string;
   resumeExecutif: string;
   conditionsFinancieres: { analysisBefore: string; analysisAfter: string };
   analyseParOffre: Array<{ insurerId: string; insurerName: string; pointsForts: string[]; pointsFaibles: string[] }>;
@@ -1662,8 +1668,8 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-2", label: "Activité : conseil IT", source: "extracted" },
       { id: "cp-3", label: "12 salariés", source: "extracted" },
       { id: "cp-4", label: "Sinistralité 3 ans : 0", source: "manual" },
-      { id: "cp-5", label: "Sous-traitance", source: "missing" },
-      { id: "cp-6", label: "Activité à l'international", source: "missing" },
+      { id: "cp-5", label: "Sous-traitance", source: "missing", hint: "Impacte le perimetre de couverture RC" },
+      { id: "cp-6", label: "Activité à l'international", source: "missing", hint: "Determine la zone geographique de garantie" },
     ],
     hasFullContext: false,
     resumeExecutif: "L'analyse comparative des trois offres RC Pro pour Marble Tech SAS révèle des positionnements différenciés. Axa propose le tarif le plus compétitif avec la formule Essentielle à 810,52 €/an, tandis qu'Allianz offre la couverture la plus complète avec une protection cyber incluse dès la formule de base.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la protection juridique incluse et la couverture monde entier. Cependant, la franchise plus élevée (1 000 €) et le délai de carence sur la cyber constituent des points de vigilance.\n\nRecommandation : compte tenu du profil technologique de Marble Tech et du besoin en couverture cyber, l'offre Allianz présente le meilleur alignement avec les besoins exprimés. L'offre Axa reste pertinente si le budget est la priorité, sous réserve de souscrire l'option cyber.",
@@ -1771,8 +1777,8 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-2", label: "Usage professionnel", source: "extracted" },
       { id: "cp-3", label: "Sinistralité 3 ans : 12%", source: "extracted" },
       { id: "cp-4", label: "Bonus-malus moyen : 0.76", source: "manual" },
-      { id: "cp-5", label: "Zone de circulation", source: "missing" },
-      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing" },
+      { id: "cp-5", label: "Zone de circulation", source: "missing", hint: "Affine le calcul du risque routier" },
+      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et les options d'assurance" },
     ],
     hasFullContext: false,
     resumeExecutif: `L'analyse comparative des trois offres pour la flotte de 44 véhicules d'ACME Corp révèle des différences significatives en termes de couverture et de tarification. Allianz propose le meilleur rapport qualité-prix sur la formule Tiers étendu (3 300 €/an), tandis qu'Axa offre la couverture la plus complète en Tous risques malgré un tarif plus élevé.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la prise en charge de l'usure véhicule dans sa formule Premium. Cependant, l'absence de couverture dommages tous accidents en formule Standard constitue une limitation importante pour une flotte professionnelle.\n\nRecommandation : pour une flotte de cette taille avec un taux de sinistralité de 12%, la formule Tous risques Axa ou Allianz est préconisée. Le choix final dépendra de l'arbitrage entre la franchise (500 € Axa vs 750 € Allianz) et le tarif annuel.`,
@@ -2001,10 +2007,16 @@ export function mockRegenerateSection(
 
 // ─── Client profile data ─────────────────────────────────────────────
 
+export type BesoinItem = {
+  id: string;
+  value: string;
+  source: "ai" | "manual";
+};
+
 export type ClientProfileData = {
   clientLabel: string;
   clientSiren: string;
-  besoinsClient: string[];
+  besoinsClient: BesoinItem[];
 };
 
 const clientProfileMap: Record<string, ClientProfileData> = {
@@ -2012,18 +2024,20 @@ const clientProfileMap: Record<string, ClientProfileData> = {
     clientLabel: "Marble Tech SAS",
     clientSiren: "00007U26464",
     besoinsClient: [
-      "Couverture RC Pro étendue aux sous-traitants",
-      "Protection cyber incluse",
+      { id: "b-1", value: "Couverture RC Pro étendue aux sous-traitants", source: "ai" },
+      { id: "b-2", value: "Protection cyber incluse", source: "ai" },
+      { id: "b-7", value: "Franchise max 1 000€ par sinistre", source: "manual" },
+      { id: "b-8", value: "Besoin d'une couverture monde entier (missions clients a l'international)", source: "manual" },
     ],
   },
   "cot-2": {
     clientLabel: "ACME Corp SAS",
     clientSiren: "84392017300024",
     besoinsClient: [
-      "Couverture tous risques sur l'ensemble du parc",
-      "Franchise plafonnée à 500 €/sinistre maximum",
-      "Assistance 0 km obligatoire (véhicules utilitaires inclus)",
-      "Véhicule de remplacement sous 48h en cas d'immobilisation",
+      { id: "b-3", value: "Couverture tous risques sur l'ensemble du parc", source: "ai" },
+      { id: "b-4", value: "Franchise plafonnée à 500 €/sinistre maximum", source: "ai" },
+      { id: "b-5", value: "Assistance 0 km obligatoire (véhicules utilitaires inclus)", source: "ai" },
+      { id: "b-6", value: "Véhicule de remplacement sous 48h en cas d'immobilisation", source: "manual" },
     ],
   },
 };
@@ -2040,24 +2054,34 @@ export function buildContextPills(
   profile: ClientProfileData,
   basePills: ContextPill[],
 ): { pills: ContextPill[]; hasFullContext: boolean } {
-  const pills = basePills.map((pill) => {
-    // If a missing pill relates to a field the user has now filled, promote it to manual
-    if (pill.source === "missing") {
-      const lbl = pill.label.toLowerCase();
-      if (lbl.includes("besoin") && profile.besoinsClient.filter(Boolean).length > 0) {
-        return { ...pill, source: "manual" as const };
-      }
+  // besoinsClient is the source of truth — it now contains extracted items too.
+  // Start fresh: build pills from besoinsClient, then append missing base pills
+  // that haven't been addressed yet.
+  const pills: ContextPill[] = [];
+  const usedLabels = new Set<string>();
+
+  // 1. Add all besoins as pills, preserving their source (ai or manual)
+  profile.besoinsClient.filter((b) => b.value.trim()).forEach((besoin, idx) => {
+    const key = besoin.value.toLowerCase();
+    if (!usedLabels.has(key)) {
+      pills.push({ id: `besoin-${idx}`, label: besoin.value, source: besoin.source });
+      usedLabels.add(key);
     }
-    return pill;
   });
 
-  // Add besoin items as manual pills if not already represented
-  const existingLabels = new Set(pills.map((p) => p.label.toLowerCase()));
-  profile.besoinsClient.filter(Boolean).forEach((besoin, idx) => {
-    if (!existingLabels.has(besoin.toLowerCase())) {
-      pills.push({ id: `besoin-${idx}`, label: besoin, source: "manual" });
+  // 2. Keep "missing" base pills that haven't been filled by a besoin
+  const hasBesoins = pills.length > 0;
+  for (const pill of basePills) {
+    if (pill.source === "missing") {
+      const lbl = pill.label.toLowerCase();
+      // Promote besoin-related missing pills if user has provided besoins
+      if (lbl.includes("besoin") && hasBesoins) continue;
+      if (!usedLabels.has(lbl)) {
+        pills.push(pill);
+        usedLabels.add(lbl);
+      }
     }
-  });
+  }
 
   const hasFullContext = pills.every((p) => p.source !== "missing");
   return { pills, hasFullContext };

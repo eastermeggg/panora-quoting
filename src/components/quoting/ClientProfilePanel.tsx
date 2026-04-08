@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X as XIcon, ChevronDown, Sparkles, FileSearch } from "lucide-react";
-import type { ClientProfileData, ContextPill } from "@/data/mock";
+import { X as XIcon, ChevronDown, Sparkles, Plus } from "lucide-react";
+import type { ClientProfileData, ContextPill, BesoinItem } from "@/data/mock";
+import { BesoinTag } from "@/components/ui/BesoinTag";
 
 interface ClientProfilePanelProps {
   profile: ClientProfileData;
@@ -11,64 +12,96 @@ interface ClientProfilePanelProps {
   onClose: () => void;
 }
 
-type BesoinRow = { id: string; value: string };
-
 let nextId = 0;
 function makeId() {
-  return `besoin-${++nextId}`;
-}
-
-function toRows(values: string[]): BesoinRow[] {
-  const rows = values.map((v) => ({ id: makeId(), value: v }));
-  // Always end with one empty row
-  rows.push({ id: makeId(), value: "" });
-  return rows;
+  return `besoin-panel-${++nextId}`;
 }
 
 export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: ClientProfilePanelProps) {
   const [clientLabel] = useState(profile.clientLabel);
   const [clientSiren] = useState(profile.clientSiren);
-  const [rows, setRows] = useState<BesoinRow[]>(() => toRows(profile.besoinsClient));
 
-  const newRowRef = useRef<string | null>(null);
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  // Focus newly added row
-  useEffect(() => {
-    if (newRowRef.current) {
-      inputRefs.current[newRowRef.current]?.focus();
-      newRowRef.current = null;
+  // Merge extracted context pills into the editable besoins list as "ai" source items.
+  // Only add extracted pills that aren't already represented in besoinsClient.
+  const [besoins, setBesoins] = useState<BesoinItem[]>(() => {
+    const existing = [...profile.besoinsClient];
+    const existingLabels = new Set(existing.map((b) => b.value.toLowerCase()));
+    const extractedPills = (contextPills ?? []).filter((p) => p.source === "extracted");
+    for (const pill of extractedPills) {
+      if (!existingLabels.has(pill.label.toLowerCase())) {
+        existing.unshift({ id: `extracted-${pill.id}`, value: pill.label, source: "ai" });
+      }
     }
+    return existing;
   });
+  const [newBesoinInput, setNewBesoinInput] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && editRef.current) {
+      editRef.current.focus();
+      editRef.current.select();
+    }
+  }, [editingId]);
 
   const isDirty = (() => {
-    const current = rows.map((r) => r.value.trim()).filter(Boolean);
+    const current = besoins.filter((b) => b.value.trim());
     const original = profile.besoinsClient;
     if (current.length !== original.length) return true;
-    return current.some((b, i) => b !== original[i]);
+    return current.some((b, i) => b.value !== original[i]?.value || b.source !== original[i]?.source);
   })();
 
-  const updateRow = useCallback((id: string, value: string) => {
-    setRows((prev) => {
-      const next = prev.map((r) => (r.id === id ? { ...r, value } : r));
-      // If the last row now has content, append a new empty one
-      const last = next[next.length - 1];
-      if (last && last.value.trim() !== "") {
-        const newRow = { id: makeId(), value: "" };
-        newRowRef.current = newRow.id;
-        next.push(newRow);
-      }
-      return next;
-    });
+  const addBesoin = useCallback(() => {
+    const trimmed = newBesoinInput.trim();
+    if (!trimmed) return;
+    setBesoins((prev) => [...prev, { id: makeId(), value: trimmed, source: "manual" }]);
+    setNewBesoinInput("");
+    inputRef.current?.focus();
+  }, [newBesoinInput]);
+
+  const removeBesoin = useCallback((id: string) => {
+    setBesoins((prev) => prev.filter((b) => b.id !== id));
   }, []);
 
+  const startEdit = useCallback((besoin: BesoinItem) => {
+    setEditingId(besoin.id);
+    setEditingValue(besoin.value);
+  }, []);
+
+  const commitEdit = useCallback(() => {
+    if (!editingId) return;
+    const trimmed = editingValue.trim();
+    if (trimmed) {
+      // When editing an AI-detected item, it becomes manual
+      setBesoins((prev) => prev.map((b) => (b.id === editingId ? { ...b, value: trimmed, source: "manual" as const } : b)));
+    } else {
+      setBesoins((prev) => prev.filter((b) => b.id !== editingId));
+    }
+    setEditingId(null);
+    setEditingValue("");
+  }, [editingId, editingValue]);
+
   const handleSave = () => {
-    const trimmed = rows.map((r) => r.value.trim()).filter(Boolean);
-    onSave({ clientLabel, clientSiren, besoinsClient: trimmed });
+    const filtered = besoins.filter((b) => b.value.trim());
+    onSave({ clientLabel, clientSiren, besoinsClient: filtered });
   };
 
-  const filledBesoins = rows.filter((r) => r.value.trim()).length;
-  const extractedPills = (contextPills ?? []).filter((p) => p.source === "extracted");
+  const aiCount = besoins.filter((b) => b.source === "ai").length;
+  const filledBesoins = besoins.filter((b) => b.value.trim()).length;
+
+  // Missing suggestions: context pills the AI suggests for this product type,
+  // filtered out if the user already has a besoin with matching text.
+  const besoinLabels = new Set(besoins.map((b) => b.value.toLowerCase()));
+  const missingSuggestions = (contextPills ?? []).filter(
+    (p) => p.source === "missing" && !besoinLabels.has(p.label.toLowerCase())
+  );
+
+  const addSuggestion = useCallback((label: string) => {
+    setBesoins((prev) => [...prev, { id: makeId(), value: label, source: "manual" }]);
+  }, []);
 
   return (
     <div
@@ -109,47 +142,103 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
           </div>
         </div>
 
-        {/* Contexte client */}
+        {/* Besoins client — single unified list */}
         <div className="space-y-2.5">
-          <label className="text-[13px] font-medium text-panora-text">
-            Contexte client
-            {(extractedPills.length + filledBesoins) > 0 && (
-              <span className="ml-1.5 text-panora-text-muted font-normal">({extractedPills.length + filledBesoins})</span>
-            )}
-          </label>
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
+            <label className="text-[13px] font-medium text-panora-text">
+              Besoins client
+              {filledBesoins > 0 && (
+                <span className="ml-1.5 text-panora-text-muted font-normal">({filledBesoins})</span>
+              )}
+            </label>
+          </div>
+          <p className="text-[12px] text-panora-text-muted leading-[18px]">
+            Tout element lie au client pouvant influencer le choix d&apos;une offre. Plus c&apos;est specifique, plus l&apos;analyse sera pertinente.
+          </p>
 
-          {/* Extracted items (read-only) */}
-          {extractedPills.length > 0 && (
-            <div className="space-y-1.5">
-              {extractedPills.map((pill) => (
+          {/* All besoins — extracted (as ai) + manual + ai in one list */}
+          <div className="space-y-2">
+            {besoins.map((besoin) => (
+              editingId === besoin.id ? (
                 <div
-                  key={pill.id}
-                  className="flex items-center gap-2 px-3 py-2 border border-[#e2dfd8] rounded-[8px] bg-[#faf9f7]"
+                  key={besoin.id}
+                  className="flex items-start gap-2.5 rounded-[8px] px-3 py-2 min-h-[36px] bg-white border border-panora-green/40"
                 >
-                  <FileSearch className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
-                  <span className="text-[13px] text-panora-text flex-1">{pill.label}</span>
-                  <span className="text-[10px] font-medium text-panora-text-muted uppercase tracking-wide bg-panora-secondary px-1.5 py-0.5 rounded">Extrait</span>
+                  <input
+                    ref={editRef}
+                    type="text"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+                      if (e.key === "Escape") { setEditingId(null); setEditingValue(""); }
+                    }}
+                    className="flex-1 text-[13px] text-panora-text bg-transparent outline-none leading-[18px] py-[1px]"
+                  />
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Editable besoin rows */}
-          <div className="space-y-1.5">
-            {rows.map((row, idx) => {
-              const isLast = idx === rows.length - 1;
-              return (
-                <input
-                  key={row.id}
-                  ref={(el) => { inputRefs.current[row.id] = el; }}
-                  type="text"
-                  value={row.value}
-                  onChange={(e) => updateRow(row.id, e.target.value)}
-                  placeholder={isLast ? "Ajouter un besoin..." : "Ex : franchise max 500 €, assistance 0 km..."}
-                  className="w-full px-3 py-2 text-[13px] text-panora-text bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] placeholder:text-panora-text-muted/50 outline-none focus:ring-1 focus:ring-panora-green/30"
+              ) : (
+                <BesoinTag
+                  key={besoin.id}
+                  value={besoin.value}
+                  source={besoin.source}
+                  onClick={() => startEdit(besoin)}
+                  onRemove={() => removeBesoin(besoin.id)}
                 />
-              );
-            })}
+              )
+            ))}
+
+            {/* Add input */}
+            <input
+              ref={inputRef}
+              type="text"
+              value={newBesoinInput}
+              onChange={(e) => setNewBesoinInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addBesoin();
+                }
+              }}
+              placeholder="Ajoutez un besoin client. Ex: Couverture cyber minimum 500k€..."
+              className="w-full bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2 min-h-[36px] text-[13px] text-panora-text placeholder:text-panora-text-muted/50 outline-none focus:border-panora-green transition-colors"
+            />
+          </div>
+
+          <div className="space-y-2">
+            {/* AI-suggested missing info for this product */}
+            {missingSuggestions.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[12px] text-panora-text-muted">
+                  Infos utiles pour ce type de produit :
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {missingSuggestions.map((pill) => (
+                    <button
+                      key={pill.id}
+                      onClick={() => addSuggestion(pill.label)}
+                      className="inline-flex items-center gap-1 rounded-[8px] border border-dashed border-[#d4d2cc] text-panora-text-muted px-2 py-1 text-[12px] leading-4 hover:border-panora-green/40 hover:text-panora-text transition-colors"
+                      title={pill.hint}
+                    >
+                      <Plus className="w-3 h-3 shrink-0" />
+                      {pill.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {missingSuggestions.length === 0 && (
+              <p className="text-[12px] text-panora-text-muted">
+                Exemples : Franchise max 1 000€, Protection juridique incluse, Couverture monde entier
+              </p>
+            )}
+            {aiCount > 0 && (
+              <p className="text-[12px] text-panora-green flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                {aiCount} detectes automatiquement
+              </p>
+            )}
           </div>
         </div>
       </div>

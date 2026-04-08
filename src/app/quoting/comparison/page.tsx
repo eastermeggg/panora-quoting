@@ -19,11 +19,11 @@ import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import { AnalysisTab } from "@/components/quoting/AnalysisTab";
+import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  FileSignature,
   Loader2,
   FileSearch,
   CheckCircle2,
@@ -41,7 +41,7 @@ function ComparisonListView() {
   const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
   const done = comparisonTasks.filter((t) => t.status === "done");
 
-  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: string[] }) => {
+  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
     const cotationId = "cot-1";
     // Update client profile with wizard besoins
     updateClientProfile(cotationId, {
@@ -339,10 +339,10 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mutableProfile, setMutableProfile] = useState<ClientProfileData>(
-    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] }
+    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
   );
   const [isStreaming, setIsStreaming] = useState(false);
-  const hasClientProfile = mutableProfile.besoinsClient.filter(Boolean).length > 0;
+  const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
 
   const openProfile = useCallback(() => {
     setSelectedCell(null);
@@ -561,13 +561,13 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
-        <button
-          onClick={() => console.log("TODO: Finaliser la proposition")}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
-        >
-          <FileSignature className="w-4 h-4" />
-          Finaliser la proposition
-        </button>
+        <FinaliserDropdown
+          clientName={mutableProfile.clientLabel || followupData?.cotation.client}
+          presentationUrl={`/presentation/${cotParamId}`}
+          onGenerateDevoirConseil={() => console.log("TODO: Devoir de conseil")}
+          onDownloadEtudePDF={() => console.log("TODO: Telecharger etude PDF")}
+          onDownloadSynthesePDF={() => console.log("TODO: Telecharger synthese PDF")}
+        />
       </div>
 
       {agentPhase !== "ready" ? (
@@ -595,7 +595,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Synthese / Analyse
+              Synthese
             </button>
           </div>
 
