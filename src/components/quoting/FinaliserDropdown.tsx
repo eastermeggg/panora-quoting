@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronDown, ExternalLink, Download, Settings, Check, Copy, FileSignature, FileDown } from "lucide-react";
+import { ChevronDown, Check, Copy, FileSignature, FileDown, Eye, ArrowDown, Palette, AlignLeft, Table } from "lucide-react";
 
 interface ExportDropdownProps {
   clientName?: string;
@@ -9,6 +9,7 @@ interface ExportDropdownProps {
   onGenerateDevoirConseil: () => void;
   onDownloadEtudePDF: () => void;
   onDownloadSynthesePDF: () => void;
+  onExportTableauXLS?: () => void;
 }
 
 export function FinaliserDropdown({
@@ -17,6 +18,7 @@ export function FinaliserDropdown({
   onGenerateDevoirConseil,
   onDownloadEtudePDF,
   onDownloadSynthesePDF,
+  onExportTableauXLS,
 }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -56,111 +58,121 @@ export function FinaliserDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 w-[340px] bg-white border border-panora-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] z-50 overflow-hidden">
-          {/* Primary — Presentation client */}
-          <div className="px-4 pt-4 pb-3 border-b border-panora-border">
-            <div className="mb-3">
+        <div className="absolute right-0 top-full mt-1.5 w-[320px] bg-white border border-panora-border rounded-[14px] shadow-[0px_18px_18px_0px_rgba(0,0,0,0.04),0px_4px_10px_0px_rgba(0,0,0,0.05)] z-50 overflow-hidden">
+          {/* Presenter au client */}
+          <div className="flex flex-col gap-3 p-3.5 bg-[#faf8f5] rounded-[8px]">
+            <div className="flex flex-col gap-1">
               <p className="text-[14px] font-semibold text-panora-text">
-                Presentation client
+                Presenter au client
               </p>
-              <p className="text-[12px] text-panora-text-muted mt-0.5 leading-4">
-                Comparatif et synthese, prets a partager.
+              <p className="text-[12px] text-[#85827b] leading-4">
+                Un lien pour tout partager avec votre client
               </p>
             </div>
 
-            {/* URL input + copy */}
-            <div className="flex items-center gap-0 border border-[#e2dfd8] rounded-[8px] overflow-hidden shadow-[0px_1px_2px_rgba(0,0,0,0.05)] mb-3">
-              <input
-                type="text"
-                readOnly
-                value={presentationUrl}
-                className="flex-1 min-w-0 px-3 py-2 text-[12px] text-panora-text-muted bg-[#faf9f7] outline-none truncate"
-              />
-              <button
-                onClick={copyLink}
-                className={`shrink-0 px-3 py-2 border-l border-[#e2dfd8] text-[12px] font-medium transition-colors flex items-center gap-1.5 ${
-                  linkCopied
-                    ? "bg-[#f0faf5] text-panora-green"
-                    : "bg-white text-panora-text hover:bg-panora-bg"
-                }`}
-              >
-                {linkCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {linkCopied ? "Copie" : "Copier"}
-              </button>
-            </div>
-
-            {/* Preview card — clickable to open */}
-            <a
-              href={presentationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-[8px] border border-[#e2dfd8] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-3 hover:border-panora-green/40 transition-colors group"
-            >
-              <div className="bg-[#173c2d] px-4 pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 rounded-full bg-white/20" />
-                  <div className="h-1.5 w-12 rounded-full bg-white/30" />
-                </div>
-                <div className="h-2 w-28 rounded-full bg-white/50 mb-1.5" />
-                <div className="h-1.5 w-20 rounded-full bg-white/25" />
-              </div>
-              <div className="bg-white px-4 py-2.5 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <div className="h-1.5 w-16 rounded-full bg-[#e2dfd8]" />
-                  <div className="h-1.5 w-10 rounded-full bg-[#e2dfd8]" />
-                </div>
-                <span className="text-[11px] text-panora-text-muted group-hover:text-panora-green transition-colors flex items-center gap-1">
-                  Ouvrir
-                  <ExternalLink className="w-3 h-3" />
+            {/* Link + copy button */}
+            <div className="flex gap-2">
+              <div className="flex-1 min-w-0 flex items-center px-2 py-1.5 bg-panora-secondary rounded-[8px]">
+                <span className="text-[13px] text-[#85827b] truncate">
+                  {presentationUrl}
                 </span>
               </div>
-            </a>
-
-            {/* Download + Customize row */}
-            <div className="flex items-center justify-between">
               <button
-                onClick={() => handleAction(onDownloadSynthesePDF)}
-                className="flex items-center gap-1.5 text-[12px] font-medium text-panora-text hover:text-panora-green transition-colors"
+                onClick={copyLink}
+                className={`shrink-0 flex items-center justify-center gap-2 px-3 py-1.5 rounded-[8px] text-[13px] font-medium shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors border ${
+                  linkCopied
+                    ? "bg-panora-green border-panora-green text-white"
+                    : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg"
+                }`}
               >
-                <Download className="w-3.5 h-3.5" />
-                Telecharger en PDF
+                {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {linkCopied ? "Copie !" : "Copier lien"}
               </button>
-              <a
-                href="/settings/presentation"
-                className="flex items-center gap-1 text-[11px] text-panora-text-muted hover:text-panora-text transition-colors"
-              >
-                <Settings className="w-3 h-3" />
-                Personnaliser
-              </a>
+            </div>
+
+            {/* Preview card */}
+            <div className="rounded-[8px] border border-[rgba(34,32,26,0.15)] overflow-hidden shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
+              <div className="bg-[#304370] h-[126px] flex">
+                <div className="flex-1 flex flex-col justify-between px-3 py-[13px]">
+                  <div className="bg-white rounded-[4px] p-1 w-fit">
+                    <div className="flex items-center gap-[3px]">
+                      <div className="w-[9px] h-[9px] rounded-full bg-panora-green" />
+                      <span className="text-[6px] font-semibold text-panora-text tracking-tight">Panora</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[13px] text-white font-serif tracking-[-0.26px]">
+                      Etude des offres d&apos;assurance
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-[7px] w-[101px] rounded-full bg-white/15" />
+                      <div className="h-[7px] w-[146px] rounded-full bg-white/15" />
+                    </div>
+                  </div>
+                </div>
+                <div className="w-[56px] bg-white/[0.06]" />
+              </div>
+
+              {/* Action bar: Voir | Telecharger | Customiser */}
+              <div className="flex items-center gap-2.5 px-2.5 py-2.5">
+                <a
+                  href={presentationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Voir
+                </a>
+                <div className="w-px h-3.5 bg-panora-border" />
+                <button
+                  onClick={() => handleAction(onDownloadEtudePDF)}
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                  Telecharger
+                </button>
+                <div className="w-px h-3.5 bg-panora-border" />
+                <a
+                  href="/settings/presentation"
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  Customiser
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Section label */}
-          <div className="px-4 py-1.5 text-[11px] text-panora-text-muted uppercase tracking-wide bg-panora-bg border-b border-panora-border">
-            Autres actions
-          </div>
+          <div className="h-px bg-panora-border" />
 
-          {/* Secondary actions */}
-          <button
-            onClick={() => handleAction(onGenerateDevoirConseil)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-panora-bg transition-colors text-left border-b border-panora-border"
-          >
-            <FileSignature className="w-4 h-4 text-panora-text-muted shrink-0" />
-            <div>
-              <span className="text-[13px] text-panora-text block">Devoir de conseil</span>
-              <span className="text-[11px] text-panora-text-muted">Assistant 3 etapes pour le document reglementaire</span>
+          {/* Autres actions */}
+          <div className="flex flex-col gap-1 p-1.5">
+            <div className="px-1.5 py-0.5">
+              <span className="text-[12px] font-medium text-[#85827b]">Autres actions</span>
             </div>
-          </button>
-          <button
-            onClick={() => handleAction(onDownloadEtudePDF)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-panora-bg transition-colors text-left"
-          >
-            <FileDown className="w-4 h-4 text-panora-text-muted shrink-0" />
-            <div>
-              <span className="text-[13px] text-panora-text block">Telecharger l'etude complete</span>
-              <span className="text-[11px] text-panora-text-muted">Tableau comparatif et analyse IA en PDF</span>
-            </div>
-          </button>
+            <button
+              onClick={() => handleAction(onGenerateDevoirConseil)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
+            >
+              <FileSignature className="w-4 h-4 text-panora-text-muted shrink-0" />
+              <span className="text-[13px] text-panora-text">Generer le devoir de conseil</span>
+            </button>
+            <button
+              onClick={() => handleAction(onDownloadSynthesePDF)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
+            >
+              <AlignLeft className="w-4 h-4 text-panora-text-muted shrink-0" />
+              <span className="text-[13px] text-panora-text">Telecharger la synthese (PDF)</span>
+            </button>
+            <button
+              onClick={() => handleAction(onExportTableauXLS ?? (() => {}))}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
+            >
+              <Table className="w-4 h-4 text-panora-text-muted shrink-0" />
+              <span className="text-[13px] text-panora-text">Telecharger le tableau (XLS)</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

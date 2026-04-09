@@ -131,7 +131,7 @@ function DocumentsSection({ documents }: { documents: string[] }) {
 function PricingTable({
   pricing,
 }: {
-  pricing: Array<{ formula: string; monthly: string; annual: string }>;
+  pricing: Array<{ formula: string; details: Array<{ label: string; value: string }> }>;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -146,16 +146,13 @@ function PricingTable({
               Formule
             </span>
           </div>
-          <div className="w-[183px] px-4 py-[11px] text-right">
-            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
-              Montant mensuel
-            </span>
-          </div>
-          <div className="w-[183px] px-4 py-[11px] text-right">
-            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
-              Montant annuel
-            </span>
-          </div>
+          {pricing[0]?.details.map((d, di) => (
+            <div key={di} className="w-[183px] px-4 py-[11px] text-right">
+              <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+                {d.label}
+              </span>
+            </div>
+          ))}
         </div>
         {/* Table rows */}
         {pricing.map((row, i) => (
@@ -174,16 +171,13 @@ function PricingTable({
                 <Eye className="w-3.5 h-3.5 text-panora-text-secondary" />
               </div>
             </div>
-            <div className="w-[183px] px-4 py-4 text-right">
-              <span className="text-[13px] font-medium text-panora-text leading-5">
-                {row.monthly}
-              </span>
-            </div>
-            <div className="w-[183px] px-4 py-4 text-right">
-              <span className="text-[13px] font-medium text-panora-text leading-5">
-                {row.annual}
-              </span>
-            </div>
+            {row.details.map((d, di) => (
+              <div key={di} className="w-[183px] px-4 py-4 text-right">
+                <span className="text-[13px] font-medium text-panora-text leading-5">
+                  {d.value}
+                </span>
+              </div>
+            ))}
           </div>
         ))}
       </div>

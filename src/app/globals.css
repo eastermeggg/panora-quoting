@@ -107,3 +107,91 @@ body {
     --gradient-angle: 360deg;
   }
 }
+
+/* Streaming ambient background glow */
+@keyframes streaming-bg-glow {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes streaming-bg-drift {
+  0% {
+    transform: translate(-10%, -15%) scale(1);
+  }
+  33% {
+    transform: translate(10%, -5%) scale(1.1);
+  }
+  66% {
+    transform: translate(-5%, 10%) scale(0.95);
+  }
+  100% {
+    transform: translate(-10%, -15%) scale(1);
+  }
+}
+
+.streaming-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.streaming-bg::before,
+.streaming-bg::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  animation:
+    streaming-bg-glow 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards,
+    streaming-bg-drift 8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: transform, opacity;
+  z-index: 0;
+}
+
+/* Primary blob — warm green, top-right area */
+.streaming-bg::before {
+  width: 600px;
+  height: 600px;
+  top: 10%;
+  right: -5%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 162, 114, 0.07) 0%,
+    rgba(0, 162, 114, 0.03) 40%,
+    transparent 70%
+  );
+}
+
+/* Secondary blob — softer, bottom-left area */
+.streaming-bg::after {
+  width: 500px;
+  height: 500px;
+  bottom: 5%;
+  left: -5%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 162, 114, 0.05) 0%,
+    rgba(0, 162, 114, 0.02) 40%,
+    transparent 70%
+  );
+  animation-delay: 0s, -3s;
+}
+
+/* Keep content above the blobs */
+.streaming-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streaming-bg::before,
+  .streaming-bg::after {
+    animation: streaming-bg-glow 0.01ms forwards;
+  }
+}

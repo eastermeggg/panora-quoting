@@ -251,7 +251,9 @@ function getCellDetail(
   insurers: InsurerData[],
 ): CellDetail | null {
   if (cellId.type === "guarantee" && data) {
-    const section = data.sections[cellId.sectionIndex];
+    // Flatten products → subGroups into a flat section list for backward-compatible indexing
+    const flatSections = data.products?.flatMap((p) => p.subGroups) ?? data.sections ?? [];
+    const section = flatSections[cellId.sectionIndex];
     if (!section) return null;
     const row = section.rows[cellId.rowIndex];
     if (!row) return null;
@@ -286,8 +288,8 @@ function getCellDetail(
       pricingRows: ins.pricing.map((formula, idx) => ({
         id: `pr-${idx}`,
         offerLabel: formula.formula,
-        price: formula.annual,
-        conditions: formula.monthly,
+        price: formula.details[0]?.value ?? "",
+        conditions: formula.details[1]?.value ?? "",
       })),
       sources: [],
     };
@@ -389,27 +391,32 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     if (cellId.type === "guarantee") {
       setComparisonResult((prev) => {
         if (!prev) return prev;
-        const sections = prev.sections.map((section, sIdx) => {
-          if (sIdx !== cellId.sectionIndex) return section;
-          const rows = section.rows.map((row, rIdx) => {
-            if (rIdx !== cellId.rowIndex) return row;
-            // Update the cell value based on covered toggle
-            const currentCell = row.values[cellId.insurerId];
-            let newCell = currentCell;
-            if (updatedDetail.covered && currentCell?.type === "cross") {
-              newCell = { type: "check" };
-            } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
-              newCell = { type: "cross" };
-            }
-            return {
-              ...row,
-              values: { ...row.values, [cellId.insurerId]: newCell },
-              details: { ...row.details, [cellId.insurerId]: updatedDetail },
-            };
-          });
-          return { ...section, rows };
-        });
-        return { ...prev, sections };
+        // Update through nested products → subGroups using flat sectionIndex
+        let flatIdx = 0;
+        const products = (prev.products ?? []).map((product) => ({
+          ...product,
+          subGroups: product.subGroups.map((sg) => {
+            const currentIdx = flatIdx++;
+            if (currentIdx !== cellId.sectionIndex) return sg;
+            const rows = sg.rows.map((row, rIdx) => {
+              if (rIdx !== cellId.rowIndex) return row;
+              const currentCell = row.values[cellId.insurerId];
+              let newCell = currentCell;
+              if (updatedDetail.covered && currentCell?.type === "cross") {
+                newCell = { type: "check" };
+              } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
+                newCell = { type: "cross" };
+              }
+              return {
+                ...row,
+                values: { ...row.values, [cellId.insurerId]: newCell },
+                details: { ...row.details, [cellId.insurerId]: updatedDetail },
+              };
+            });
+            return { ...sg, rows };
+          }),
+        }));
+        return { ...prev, products };
       });
     } else if (cellId.type === "price") {
       // Update mutableInsurers pricing from all pricingRows
@@ -417,10 +424,12 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         prev.map((ins) => {
           if (ins.id !== cellId.insurerId) return ins;
           if (!updatedDetail.pricingRows) return ins;
-          const pricing = updatedDetail.pricingRows.map((row, idx) => ({
+          const pricing = updatedDetail.pricingRows.map((row) => ({
             formula: row.offerLabel,
-            annual: row.price,
-            monthly: row.conditions,
+            details: [
+              { label: "Prime annuelle", value: row.price },
+              { label: "Prime mensuelle", value: row.conditions },
+            ],
           }));
           return { ...ins, pricing };
         })

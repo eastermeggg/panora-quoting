@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import { Check, X as XIcon, Plus, Sparkles, RotateCcw, Loader2, Send, Trash2, Search, ArrowRight } from "lucide-react";
+import { Check, X as XIcon, Plus, Sparkles, Loader2, Send, Trash2, Search, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import type { AnalysisData, InsurerData, SectionId, SectionMeta, ComparisonData, CellDetail, ContextPill } from "@/data/mock";
 import { DEFAULT_SECTION_PROMPTS, mockRegenerateSection } from "@/data/mock";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
@@ -170,7 +170,7 @@ function StreamingBlock({
   return (
     <div className={`whitespace-pre-wrap ${className ?? ""}`}>
       {displayed}
-      {showCursor && <span className="inline-block w-[5px] h-[13px] bg-[#8b5cf6]/60 ml-[1px] animate-pulse rounded-sm align-middle" />}
+      {showCursor && <span className="inline-block w-[5px] h-[13px] bg-panora-green/50 ml-[1px] animate-pulse rounded-sm align-middle" />}
     </div>
   );
 }
@@ -178,7 +178,7 @@ function StreamingBlock({
 // ─── Horizontal rule ────────────────────────────────────────────────
 
 function Hr() {
-  return <hr className="border-panora-border my-0" />;
+  return <hr className="border-panora-border mt-0 mb-8" />;
 }
 
 // ─── Section Header ─────────────────────────────────────────────────
@@ -207,13 +207,14 @@ function SectionHeader({
   };
 
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-panora-green shrink-0 mt-0.5" />
         <h2
           ref={titleRef}
           contentEditable
           suppressContentEditableWarning
-          className="text-[18px] font-serif font-semibold text-panora-text outline-none rounded-[4px] focus:ring-1 focus:ring-panora-green/30 px-1 -mx-1"
+          className="text-[18px] font-serif font-semibold text-panora-text outline-none"
           onBlur={commitTitle}
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
@@ -236,18 +237,7 @@ function SectionHeader({
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
-        <button
-          onClick={onToggleTarget}
-          className={`flex items-center gap-1.5 text-[12px] px-2 py-1 rounded-[6px] transition-colors ${
-            isTargeted
-              ? "text-panora-green font-medium bg-panora-green/10"
-              : "text-panora-text-muted hover:text-panora-text hover:bg-panora-bg opacity-0 group-hover:opacity-100"
-          }`}
-          title={isTargeted ? "Retirer du scope" : "Cibler cette section"}
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          {isTargeted ? "Cible" : "Cibler"}
-        </button>
+        {/* Chat-bar targeting — hidden for now */}
       </div>
     </div>
   );
@@ -310,7 +300,8 @@ function AddGuaranteePopover({
 
   // Build list of all guarantees + exclusions from comparison data
   const allItems: AvailableGuarantee[] = [];
-  for (const section of comparisonData.sections) {
+  const flatSections = comparisonData.products?.flatMap((p) => p.subGroups) ?? comparisonData.sections ?? [];
+  for (const section of flatSections) {
     for (const row of section.rows) {
       if (!existingLabels.has(row.label)) {
         allItems.push({ label: row.label, source: "guarantee", sectionTitle: section.title });
@@ -375,6 +366,84 @@ function AddGuaranteePopover({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Pricing card (Figma-matched) ────────────────────────────────────
+
+function PricingVariante({
+  formula,
+  defaultOpen,
+}: {
+  formula: { formula: string; details: Array<{ label: string; value: string }> };
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-[5px] w-full h-6 text-left"
+      >
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
+        )}
+        <span className="text-[12px] font-medium text-panora-text-muted tracking-[0.12px] truncate">
+          {formula.formula}
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1 mt-1">
+          {formula.details.map((detail, i) => {
+            const { amount, period } = splitPrice(detail.value);
+            return (
+              <div key={i} className="flex items-baseline justify-between">
+                <span className="text-[13px] text-[#85827b]">{detail.label}</span>
+                <span>
+                  <span className="text-[13px] font-medium text-panora-text">{amount} </span>
+                  {period && <span className="text-[13px] text-panora-text-muted">{period}</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PricingCards({ insurers }: { insurers: InsurerData[] }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      {insurers.map((ins) => {
+        const pricing = ins.pricing ?? [];
+        return (
+          <div key={ins.id} className="border border-panora-border rounded-[10px] overflow-hidden bg-white">
+            <div className="flex items-center gap-3 px-3.5 py-3 bg-[#faf8f5] border-b border-panora-border">
+              <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-8 h-8 rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" />
+              <span className="text-[14px] font-semibold text-panora-text tracking-[-0.1px]">{ins.name}</span>
+            </div>
+            {pricing.length === 0 ? (
+              <div className="p-3">
+                <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
+              </div>
+            ) : (
+              pricing.map((formula, fIdx) => (
+                <div
+                  key={fIdx}
+                  className={`p-3 ${fIdx < pricing.length - 1 ? "border-b border-panora-border" : ""}`}
+                >
+                  <PricingVariante formula={formula} defaultOpen={fIdx === 0} />
+                </div>
+              ))
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -521,8 +590,11 @@ function ContexteClientSection({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-panora-green shrink-0" />
+          <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
+        </div>
         <button
           onClick={onOpenProfile}
           className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:text-panora-green/80 transition-colors px-2 py-1 rounded-[6px] border border-panora-green/20 hover:bg-panora-green/5"
@@ -535,13 +607,13 @@ function ContexteClientSection({
         {/* Introduction paragraph */}
         <EditableBlock
           value={noteBefore || ""}
-          className="text-[14px] leading-6 text-panora-text"
+          className="text-[13px] leading-5 text-panora-text"
           placeholder="Presenter le contexte du client et les enjeux de cette comparaison..."
           onCommit={(v) => onNoteBeforeChange?.(v)}
         />
 
         {visiblePills.length === 0 ? (
-          <p className="text-[14px] text-panora-text-muted">
+          <p className="text-[13px] text-panora-text-muted">
             Aucun besoin renseigne.{" "}
             <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">
               Completer le profil
@@ -692,7 +764,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
       <div className="flex-1 flex items-center justify-center bg-panora-bg">
         <div className="text-center max-w-sm space-y-3">
           <Sparkles className="w-8 h-8 text-panora-text-muted mx-auto" />
-          <p className="text-[17px] font-serif font-semibold text-panora-text">Aucune offre</p>
+          <p className="text-[16px] font-serif font-semibold text-panora-text">Aucune offre</p>
           <p className="text-[14px] text-panora-text-muted leading-5">
             Ajoutez des offres au tableau comparatif pour generer l&apos;analyse.
           </p>
@@ -709,7 +781,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
       <div className="flex-1 flex items-center justify-center bg-panora-bg">
         <div className="text-center max-w-sm space-y-3">
           <Sparkles className="w-8 h-8 text-panora-text-muted mx-auto" />
-          <p className="text-[17px] font-serif font-semibold text-panora-text">Offre unique</p>
+          <p className="text-[16px] font-serif font-semibold text-panora-text">Offre unique</p>
           <p className="text-[14px] text-panora-text-muted leading-5">
             L&apos;analyse comparative necessite au moins deux offres.
           </p>
@@ -723,20 +795,22 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
       <div className="flex-1 overflow-y-auto bg-[#f5f4f1] relative">
         {/* Skeleton preview of the synthesis — blurred to tease content */}
         <div className="max-w-[820px] mx-auto my-8 pointer-events-none select-none" aria-hidden>
-          <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-10 py-10 space-y-10 opacity-[0.45] blur-[1.5px]">
-            {/* Fake title */}
+          <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] px-10 py-10 space-y-8 opacity-[0.55]">
+            {/* Title */}
             <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
-                <div className="h-3 w-16 rounded bg-[#8b5cf6]/20" />
-              </div>
-              <div className="h-7 w-64 rounded bg-panora-text/10 mb-2" />
-              <div className="h-3.5 w-48 rounded bg-panora-text/7" />
+              <div className="w-8 h-[3px] bg-panora-green/40 rounded-full mb-4" />
+              <h1 className="text-[28px] font-serif font-semibold text-panora-text/40 leading-9 tracking-[-0.3px]">
+                Synthese comparative
+              </h1>
+              <div className="h-3.5 w-32 rounded bg-panora-text/6 mt-2" />
             </div>
             <hr className="border-panora-border" />
-            {/* Fake context pills */}
+            {/* Contexte client */}
             <div>
-              <div className="h-5 w-32 rounded bg-panora-text/10 mb-3" />
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-panora-green/40" />
+                <h2 className="text-[18px] font-serif font-semibold text-panora-text/40">Contexte client</h2>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <div className="h-7 w-20 rounded-full bg-panora-secondary" />
                 <div className="h-7 w-28 rounded-full bg-panora-secondary" />
@@ -745,35 +819,53 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
               </div>
             </div>
             <hr className="border-panora-border" />
-            {/* Fake resume executif */}
+            {/* Resume executif */}
             <div>
-              <div className="h-5 w-40 rounded bg-panora-text/10 mb-3" />
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-panora-green/40" />
+                <h2 className="text-[18px] font-serif font-semibold text-panora-text/40">Resume executif</h2>
+              </div>
               <div className="space-y-2">
-                <div className="h-4 w-full rounded bg-panora-text/7" />
-                <div className="h-4 w-full rounded bg-panora-text/7" />
-                <div className="h-4 w-3/4 rounded bg-panora-text/7" />
-                <div className="h-4 w-full rounded bg-panora-text/7" />
-                <div className="h-4 w-5/6 rounded bg-panora-text/7" />
+                <div className="h-4 w-full rounded bg-panora-text/6" />
+                <div className="h-4 w-full rounded bg-panora-text/6" />
+                <div className="h-4 w-3/4 rounded bg-panora-text/6" />
+                <div className="h-4 w-5/6 rounded bg-panora-text/6" />
               </div>
             </div>
             <hr className="border-panora-border" />
-            {/* Fake pricing table */}
+            {/* Conditions financieres */}
             <div>
-              <div className="h-5 w-48 rounded bg-panora-text/10 mb-3" />
-              <div className="grid grid-cols-3 gap-4">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="border border-panora-border rounded-[8px] p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-panora-secondary" />
-                      <div className="h-4 w-20 rounded bg-panora-text/10" />
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-panora-green/40" />
+                <h2 className="text-[18px] font-serif font-semibold text-panora-text/40">Conditions financieres</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[0, 1].map((i) => (
+                  <div key={i} className="border border-panora-border rounded-[10px] overflow-hidden">
+                    <div className="flex items-center gap-3 px-3.5 py-3 bg-[#faf8f5] border-b border-panora-border">
+                      <div className="w-8 h-8 rounded-[8px] bg-panora-secondary" />
+                      <div className="h-4 w-24 rounded bg-panora-text/8" />
                     </div>
-                    <div className="h-6 w-24 rounded bg-panora-green/15" />
-                    <div className="space-y-1.5">
-                      <div className="h-3 w-full rounded bg-panora-text/5" />
-                      <div className="h-3 w-3/4 rounded bg-panora-text/5" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-3.5 w-full rounded bg-panora-text/5" />
+                      <div className="h-3.5 w-3/4 rounded bg-panora-text/5" />
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+            <hr className="border-panora-border" />
+            {/* Garanties cles */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-panora-green/40" />
+                <h2 className="text-[18px] font-serif font-semibold text-panora-text/40">Garanties cles</h2>
+              </div>
+              <div className="space-y-2">
+                <div className="h-9 w-full rounded bg-panora-text/4" />
+                <div className="h-9 w-full rounded bg-panora-text/3" />
+                <div className="h-9 w-full rounded bg-panora-text/4" />
+                <div className="h-9 w-full rounded bg-panora-text/3" />
               </div>
             </div>
           </div>
@@ -787,7 +879,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 <Sparkles className="w-5 h-5 text-panora-green" />
               </div>
               <div>
-                <h3 className="text-[18px] font-serif font-semibold text-panora-text leading-6 mb-1.5">
+                <h3 className="text-[16px] font-serif font-semibold text-panora-text leading-6 mb-1.5">
                   Personnalisez cette synthese
                 </h3>
                 <p className="text-[13px] text-panora-text-muted leading-5">
@@ -820,23 +912,20 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
   const { contextPills, resumeExecutif, conditionsFinancieres, analyseParOffre, garantiesCles } = analysisData;
 
   const scrollContent = (
-    <div className="flex-1 overflow-y-auto bg-[#f5f4f1]">
+    <div className={`flex-1 overflow-y-auto bg-[#f5f4f1] ${(isStreaming || streamingSection) ? "streaming-bg" : ""}`}>
       <div className="max-w-[820px] mx-auto my-8">
         {/* Document page */}
         <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative">
-          <div className="px-10 py-10 space-y-10">
+          <div className="px-10 py-8 space-y-8">
 
             {/* ── Title ── */}
-            <div className="pb-2">
-              <p className="text-[12px] font-medium text-[#8b5cf6] tracking-wide uppercase mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Analyse IA
-              </p>
-              <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9">
+            <div>
+              <div className="w-8 h-[3px] bg-panora-green rounded-full mb-4" />
+              <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9 tracking-[-0.3px]">
                 Synthese comparative
               </h1>
-              <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
-                {insurers.length} offres analysees &middot; Cliquez sur un texte pour le modifier directement
+              <p className="text-[13px] text-panora-text-muted mt-1.5">
+                {insurers.length} offres analysees
               </p>
             </div>
 
@@ -852,10 +941,10 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
               }}
             />
 
-            {!hiddenSections.has("resume") && <Hr />}
+            <Hr />
 
             {/* ── Resume executif ── */}
-            {!hiddenSections.has("resume") && <div className="group">
+            {!hiddenSections.has("resume") && <div className={"group"}>
               <SectionHeader
                 title={sectionTitles.resume}
                 meta={sectionStates.resume}
@@ -864,16 +953,12 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 onTitleChange={(t) => handleTitleChange("resume", t)}
                 onDelete={() => handleDeleteSection("resume")}
               />
-              {sectionStates.resume.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="text-[15px] leading-7 text-panora-text">{resumeExecutif}</div>
-                </RegeneratingOverlay>
-              ) : (isStreaming || streamingSection === "resume") ? (
+              {(isStreaming || streamingSection === "resume") ? (
                 <StreamingBlock
                   text={resumeExecutif}
                   active
                   delay={streamingSection === "resume" ? 0 : 0}
-                  className="text-[15px] leading-7 text-panora-text"
+                  className="text-[14px] leading-6 text-panora-text"
                   onComplete={() => {
                     if (streamingSection === "resume") setStreamingSection(null);
                     if (isStreaming && !streamingSection) onStreamingDone?.();
@@ -883,17 +968,17 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 <>
                   <EditableBlock
                     value={resumeExecutif}
-                    className="text-[15px] leading-7 text-panora-text"
+                    className="text-[14px] leading-6 text-panora-text"
                     onCommit={(v) => updateWithEdit("resume", { resumeExecutif: v })}
                   />
                 </>
               )}
             </div>}
 
-            {!hiddenSections.has("financier") && <Hr />}
+            {!hiddenSections.has("resume") && !hiddenSections.has("financier") && <Hr />}
 
             {/* ── Conditions financieres ── */}
-            {!hiddenSections.has("financier") && <div className="group">
+            {!hiddenSections.has("financier") && <div className={"group"}>
               <SectionHeader
                 title={sectionTitles.financier}
                 meta={sectionStates.financier}
@@ -902,69 +987,22 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 onTitleChange={(t) => handleTitleChange("financier", t)}
                 onDelete={() => handleDeleteSection("financier")}
               />
-              {sectionStates.financier.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="text-[15px] leading-7 text-panora-text mb-6">{conditionsFinancieres.analysisBefore}</div>
-                  <div className="text-[15px] leading-7 text-panora-text">{conditionsFinancieres.analysisAfter}</div>
-                </RegeneratingOverlay>
-              ) : (isStreaming || streamingSection === "financier") ? (
+              {(isStreaming || streamingSection === "financier") ? (
                 <>
                   <StreamingBlock
                     text={conditionsFinancieres.analysisBefore}
                     active
                     delay={streamingSection === "financier" ? 0 : resumeExecutif.length * 8 / 3}
-                    className="text-[15px] leading-7 text-panora-text mb-6"
+                    className="text-[14px] leading-6 text-panora-text mb-6"
                   />
 
-                  {/* Pricing cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    {insurers.map((ins) => {
-                      const pricing = ins.pricing ?? [];
-                      return (
-                        <div key={ins.id} className="border border-panora-border rounded-[8px] overflow-hidden">
-                          <div className="flex items-center gap-2 px-4 py-2.5 bg-[#faf8f5] border-b border-panora-border">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[3px]" />
-                            <span className="text-[13px] font-semibold text-panora-text">{ins.name}</span>
-                          </div>
-                          <div className="p-4">
-                            {pricing.length === 0 ? (
-                              <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {pricing.map((formula, fIdx) => {
-                                  const annual = splitPrice(formula.annual);
-                                  return (
-                                    <div key={fIdx} className={fIdx > 0 ? "pt-3 border-t border-panora-border" : ""}>
-                                      <p className="text-[12px] font-medium text-panora-text-muted uppercase tracking-wide mb-1">{formula.formula}</p>
-                                      <div className="flex items-baseline justify-between">
-                                        <span className="text-[13px] text-panora-text-muted">Annuel</span>
-                                        <span>
-                                          <span className="text-[16px] font-semibold text-panora-text">{annual.amount}</span>
-                                          {annual.period && <span className="text-[12px] text-panora-text-muted ml-0.5">{annual.period}</span>}
-                                        </span>
-                                      </div>
-                                      {formula.monthly && (
-                                        <div className="flex items-baseline justify-between mt-0.5">
-                                          <span className="text-[13px] text-panora-text-muted">Mensuel</span>
-                                          <span className="text-[13px] text-panora-text">{formula.monthly}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <PricingCards insurers={insurers} />
 
                   <StreamingBlock
                     text={conditionsFinancieres.analysisAfter}
                     active
                     delay={streamingSection === "financier" ? conditionsFinancieres.analysisBefore.length * 8 / 3 : (resumeExecutif.length + conditionsFinancieres.analysisBefore.length) * 8 / 3 + 200}
-                    className="text-[15px] leading-7 text-panora-text"
+                    className="text-[14px] leading-6 text-panora-text"
                     onComplete={() => {
                       if (streamingSection === "financier") setStreamingSection(null);
                     }}
@@ -974,67 +1012,25 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 <>
                   <EditableBlock
                     value={conditionsFinancieres.analysisBefore}
-                    className="text-[15px] leading-7 text-panora-text mb-6"
+                    className="text-[14px] leading-6 text-panora-text mb-6"
                     onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisBefore: v } })}
                   />
 
-                  {/* Pricing cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    {insurers.map((ins) => {
-                      const pricing = ins.pricing ?? [];
-                      return (
-                        <div key={ins.id} className="border border-panora-border rounded-[8px] overflow-hidden">
-                          <div className="flex items-center gap-2 px-4 py-2.5 bg-[#faf8f5] border-b border-panora-border">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[3px]" />
-                            <span className="text-[13px] font-semibold text-panora-text">{ins.name}</span>
-                          </div>
-                          <div className="p-4">
-                            {pricing.length === 0 ? (
-                              <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {pricing.map((formula, fIdx) => {
-                                  const annual = splitPrice(formula.annual);
-                                  return (
-                                    <div key={fIdx} className={fIdx > 0 ? "pt-3 border-t border-panora-border" : ""}>
-                                      <p className="text-[12px] font-medium text-panora-text-muted uppercase tracking-wide mb-1">{formula.formula}</p>
-                                      <div className="flex items-baseline justify-between">
-                                        <span className="text-[13px] text-panora-text-muted">Annuel</span>
-                                        <span>
-                                          <span className="text-[16px] font-semibold text-panora-text">{annual.amount}</span>
-                                          {annual.period && <span className="text-[12px] text-panora-text-muted ml-0.5">{annual.period}</span>}
-                                        </span>
-                                      </div>
-                                      {formula.monthly && (
-                                        <div className="flex items-baseline justify-between mt-0.5">
-                                          <span className="text-[13px] text-panora-text-muted">Mensuel</span>
-                                          <span className="text-[13px] text-panora-text">{formula.monthly}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <PricingCards insurers={insurers} />
 
                   <EditableBlock
                     value={conditionsFinancieres.analysisAfter}
-                    className="text-[15px] leading-7 text-panora-text"
+                    className="text-[14px] leading-6 text-panora-text"
                     onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisAfter: v } })}
                   />
                 </>
               )}
             </div>}
 
-            {!hiddenSections.has("offre_analyse") && <Hr />}
+            {!hiddenSections.has("financier") && !hiddenSections.has("offre_analyse") && <Hr />}
 
             {/* ── Analyse par offre ── */}
-            {!hiddenSections.has("offre_analyse") && <div className="group">
+            {!hiddenSections.has("offre_analyse") && <div className={"group"}>
               <SectionHeader
                 title={sectionTitles.offre_analyse}
                 meta={sectionStates.offre_analyse}
@@ -1043,17 +1039,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 onTitleChange={(t) => handleTitleChange("offre_analyse", t)}
                 onDelete={() => handleDeleteSection("offre_analyse")}
               />
-              {sectionStates.offre_analyse.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="space-y-4">
-                    {analyseParOffre.map((item) => (
-                      <div key={item.insurerId} className="border border-panora-border rounded-[8px] p-4">
-                        <span className="text-[13px] font-semibold text-panora-text">{item.insurerName}</span>
-                      </div>
-                    ))}
-                  </div>
-                </RegeneratingOverlay>
-              ) : (
+              {(
                 <>
                   <div className="space-y-4">
                     {analyseParOffre.map((item, idx) => (
@@ -1126,10 +1112,10 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
               )}
             </div>}
 
-            {!hiddenSections.has("garanties") && <Hr />}
+            {!hiddenSections.has("offre_analyse") && !hiddenSections.has("garanties") && <Hr />}
 
             {/* ── Garanties cles ── */}
-            {!hiddenSections.has("garanties") && <div className="group">
+            {!hiddenSections.has("garanties") && <div className={"group"}>
               <SectionHeader
                 title={sectionTitles.garanties}
                 meta={sectionStates.garanties}
@@ -1138,33 +1124,18 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                 onTitleChange={(t) => handleTitleChange("garanties", t)}
                 onDelete={() => handleDeleteSection("garanties")}
               />
-              {sectionStates.garanties.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="border border-panora-border rounded-[8px] p-4">
-                    <span className="text-[13px] text-panora-text-muted">Garanties cles</span>
-                  </div>
-                </RegeneratingOverlay>
-              ) : (
+              {(
                 <>
-                  <div className="border border-panora-border rounded-[8px] overflow-hidden">
-                    <div className="flex border-b border-panora-border bg-[#faf8f5]">
-                      <div className="w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border">
-                        <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">Garantie</span>
-                      </div>
-                      {insurers.map((ins) => (
-                        <div key={ins.id} className="flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0">
-                          <div className="flex items-center gap-1.5">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-4 h-4 rounded-[2px]" />
-                            <span className="text-[12px] font-medium text-panora-text">{ins.name}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {garantiesCles.map((row, rIdx) => {
+                  {(() => {
+                    const guaranteeRows = garantiesCles.map((r, i) => ({ ...r, origIdx: i })).filter((r) => r.type !== "exclusion");
+                    const exclusionRows = garantiesCles.map((r, i) => ({ ...r, origIdx: i })).filter((r) => r.type === "exclusion");
+
+                    const renderRow = (row: typeof garantiesCles[0] & { origIdx: number }, isLast: boolean) => {
+                      const rIdx = row.origIdx;
                       const isSelected = selectedGarantie?.rowIndex === rIdx;
                       return (
-                        <div key={rIdx} className={`flex group/row ${rIdx < garantiesCles.length - 1 ? "border-b border-panora-border" : ""}`}>
-                          <div className="w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border flex items-center justify-between">
+                        <div key={rIdx} className={`flex group/row ${!isLast ? "border-b border-panora-border" : ""}`}>
+                          <div className="w-[200px] min-w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border flex items-center justify-between">
                             <span className="text-[13px] text-panora-text">{row.label}</span>
                             <button
                               onClick={() => handleDeleteGuaranteeRow(rIdx)}
@@ -1181,7 +1152,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                               <div
                                 key={ins.id}
                                 onClick={() => setSelectedGarantie(cellSelected ? null : { rowIndex: rIdx, insurerId: ins.id })}
-                                className={`flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0 cursor-pointer transition-colors ${
+                                className={`min-w-[120px] flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0 cursor-pointer transition-colors ${
                                   cellSelected ? "bg-panora-green/5 ring-2 ring-inset ring-panora-green" : "hover:bg-panora-bg/50"
                                 }`}
                               >
@@ -1206,25 +1177,70 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
                           })}
                         </div>
                       );
-                    })}
-                    <div className="border-t border-panora-border px-3 py-2 relative">
-                      <button
-                        onClick={() => setShowAddGuarantee(!showAddGuarantee)}
-                        className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Ajouter une garantie
-                      </button>
-                      {showAddGuarantee && comparisonData && (
-                        <AddGuaranteePopover
-                          comparisonData={comparisonData}
-                          existingLabels={new Set(garantiesCles.map((r) => r.label))}
-                          onAdd={handleAddGuarantee}
-                          onClose={() => setShowAddGuarantee(false)}
-                        />
-                      )}
-                    </div>
-                  </div>
+                    };
+
+                    return (
+                      <div className="overflow-x-auto -mx-10 px-10">
+                        <div className="border border-panora-border rounded-[8px] overflow-hidden min-w-fit">
+                          {/* Header */}
+                          <div className="flex border-b border-panora-border bg-[#faf8f5]">
+                            <div className="w-[200px] min-w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border" />
+                            {insurers.map((ins) => (
+                              <div key={ins.id} className="min-w-[120px] flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0">
+                                <div className="flex items-center gap-1.5">
+                                  <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-4 h-4 rounded-[2px]" />
+                                  <span className="text-[12px] font-medium text-panora-text">{ins.name}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Guarantees group */}
+                          {guaranteeRows.length > 0 && (
+                            <>
+                              <div className="flex border-b border-panora-border bg-[#faf8f5]/60">
+                                <div className="px-3 py-1.5">
+                                  <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">Garanties</span>
+                                </div>
+                              </div>
+                              {guaranteeRows.map((row, i) => renderRow(row, i === guaranteeRows.length - 1 && exclusionRows.length === 0))}
+                            </>
+                          )}
+
+                          {/* Exclusions group */}
+                          {exclusionRows.length > 0 && (
+                            <>
+                              <div className="flex border-b border-t border-panora-border bg-[#fde8e8]/30">
+                                <div className="px-3 py-1.5">
+                                  <span className="text-[11px] font-medium text-[#952617]/70 uppercase tracking-wide">Exclusions</span>
+                                </div>
+                              </div>
+                              {exclusionRows.map((row, i) => renderRow(row, i === exclusionRows.length - 1))}
+                            </>
+                          )}
+
+                          {/* Add row */}
+                          <div className="border-t border-panora-border px-3 py-2 relative">
+                            <button
+                              onClick={() => setShowAddGuarantee(!showAddGuarantee)}
+                              className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Ajouter
+                            </button>
+                            {showAddGuarantee && comparisonData && (
+                              <AddGuaranteePopover
+                                comparisonData={comparisonData}
+                                existingLabels={new Set(garantiesCles.map((r) => r.label))}
+                                onAdd={handleAddGuarantee}
+                                onClose={() => setShowAddGuarantee(false)}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>}
@@ -1233,7 +1249,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
             <Hr />
             <EditableBlock
               value={analysisData?.contextNoteAfter || ""}
-              className="text-[14px] leading-6 text-panora-text-muted"
+              className="text-[13px] leading-5 text-panora-text-muted"
               placeholder="Ajouter une note complementaire..."
               onCommit={(v) => {
                 if (analysisData) onUpdateAnalysis?.({ ...analysisData, contextNoteAfter: v });
@@ -1245,15 +1261,7 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
 
       </div>
 
-      {/* Floating prompt bar — sticky to bottom of scroll container, aligned with doc */}
-      <FloatingPromptBar
-        targetSections={targetSections}
-        sectionTitles={sectionTitles}
-        onRemoveSection={(id) => setTargetSections((prev) => prev.filter((s) => s !== id))}
-        onSubmit={handlePromptSubmit}
-        onClear={() => setTargetSections([])}
-        isRegenerating={isRegenerating}
-      />
+      {/* Floating prompt bar — hidden for now */}
     </div>
   );
 

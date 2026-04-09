@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
-import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Sparkles, Eye, EyeOff, Info, ArrowRight } from "lucide-react";
+import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles } from "lucide-react";
 import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem } from "@/data/mock";
 
 interface ComparisonTableProps {
@@ -196,7 +196,12 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
   const [pricingMode, setPricingMode] = useState<"ht" | "ttc">("ttc");
   const [showAnnual, setShowAnnual] = useState(true);
-  const [syntheseCollapsed, setSyntheseCollapsed] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (key: string) => setCollapsedSections((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
 
   const toggleRowVisibility = (rowKey: string) => {
     setShownRows((prev) => {
@@ -256,24 +261,13 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
       {/* Section: Synthese IA */}
       {(syntheseData && syntheseData.length > 0) || !hasClientProfile ? (
         <div>
-          <div className="flex bg-[#f3f0ff] border-b border-panora-border h-[44px]">
-            <div className="w-[250px] shrink-0 px-4 flex items-center gap-2 border-r border-panora-border">
-              <button
-                onClick={() => setSyntheseCollapsed(!syntheseCollapsed)}
-                className="flex items-center justify-center p-1 rounded-[4px] bg-[#e8e4f3] shrink-0"
-              >
-                {syntheseCollapsed ? (
-                  <ChevronRight className="w-3.5 h-3.5 text-[#8b5cf6]" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-[#8b5cf6]" />
-                )}
-              </button>
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#8b5cf6]" />
-              <span className="text-[15px] font-semibold font-display text-[#22201a]">Synthese IA</span>
-            </div>
-            <div className="flex-1" />
-          </div>
-          {!syntheseCollapsed && (
+          <SectionHeader
+            title="Synthese IA"
+            variant="synthese"
+            collapsed={collapsedSections.has("synthese")}
+            onToggle={() => toggleSection("synthese")}
+          />
+          {!collapsedSections.has("synthese") && (
             !hasClientProfile ? (
               /* Empty state: no client profile */
               <div className="flex items-center border-b border-panora-border bg-[#f7fbf9] px-5 py-4 gap-3">
@@ -328,8 +322,12 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
       ) : null}
 
       {/* Section: Conditions générales — single Prix row, sub-offers inside cells */}
-      <SectionHeader title="Conditions générales" />
-      <div className="flex border-b border-panora-border">
+      <SectionHeader
+        title="Conditions générales"
+        collapsed={collapsedSections.has("conditions")}
+        onToggle={() => toggleSection("conditions")}
+      />
+      {!collapsedSections.has("conditions") && <div className="flex border-b border-panora-border">
         {/* Left label */}
         <div className={`w-[250px] shrink-0 px-4 py-4 border-r border-panora-border flex flex-col gap-2.5 relative ${isPriceRowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
           <div className="flex items-center justify-between">
@@ -413,10 +411,9 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                         </button>
                         {isOpen && (
                           <div className="space-y-0.5">
-                            <PriceLine label={`${ins.name} net`} value={formula.annual} />
-                            {formula.monthly && (
-                              <PriceLine label="Mensuel" value={formula.monthly} />
-                            )}
+                            {formula.details.map((d, di) => (
+                              <PriceLine key={di} label={d.label} value={d.value} />
+                            ))}
                           </div>
                         )}
                       </div>
@@ -427,57 +424,85 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             </ComparisonCell>
           );
         })}
-      </div>
+      </div>}
 
       {/* Separator */}
       <SectionDivider />
 
-      {/* Guarantee sections */}
-      {comparisonData?.sections.map((section, sIdx) => (
-        <div key={sIdx}>
-          <SectionHeader title={section.title} />
-          {section.rows.map((row, rIdx) => {
-            const rowKey = `gua-${sIdx}-${rIdx}`;
-            const rowActive = isGuaranteeRowActive(sIdx, rIdx);
-            const rowShown = shownRows.has(rowKey);
-            return (
-            <div key={rIdx} className="flex border-b border-panora-border group/row">
-              <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
-                <span className={`text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text`}>{row.label}</span>
-                <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
-                {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
-              </div>
-              {insurers.map((ins) => {
-                const cell = row.values[ins.id] ?? { type: "empty" as const };
-                const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
-                const isSelected = cellIdEquals(selectedCell, cellId);
-                const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
-                const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
-
+      {/* Guarantee products → sub-groups → rows */}
+      {(() => {
+        let flatSectionIdx = 0;
+        return comparisonData?.products?.map((product, pIdx) => {
+          const productKey = `product-${pIdx}`;
+          const productCollapsed = collapsedSections.has(productKey);
+          return (
+            <div key={pIdx}>
+              <SectionHeader
+                title={product.title}
+                variant="product"
+                collapsed={productCollapsed}
+                onToggle={() => toggleSection(productKey)}
+              />
+              {!productCollapsed && product.subGroups.map((subGroup, sgIdx) => {
+                const sIdx = flatSectionIdx++;
+                const subKey = `sub-${pIdx}-${sgIdx}`;
+                const subCollapsed = collapsedSections.has(subKey);
                 return (
-                  <ComparisonCell
-                    key={ins.id}
-                    isSelected={isSelected}
-                    onClick={() => onCellSelect?.(cellId)}
-                    className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
-                  >
-                    {keyDetail ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <CellBadge cell={cell} />
-                        <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
-                      </span>
-                    ) : (
-                      <CellBadge cell={cell} />
-                    )}
-                  </ComparisonCell>
+                  <div key={sgIdx}>
+                    {sgIdx > 0 && <SectionDivider />}
+                    <SectionHeader
+                      title={subGroup.title}
+                      variant="sub"
+                      collapsed={subCollapsed}
+                      onToggle={() => toggleSection(subKey)}
+                    />
+                    {!subCollapsed && subGroup.rows.map((row, rIdx) => {
+                      const rowKey = `gua-${sIdx}-${rIdx}`;
+                      const rowActive = isGuaranteeRowActive(sIdx, rIdx);
+                      const rowShown = shownRows.has(rowKey);
+                      return (
+                        <div key={rIdx} className="flex border-b border-panora-border group/row">
+                          <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
+                            <span className="text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text">{row.label}</span>
+                            <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
+                            {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
+                          </div>
+                          {insurers.map((ins) => {
+                            const cell = row.values[ins.id] ?? { type: "empty" as const };
+                            const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
+                            const isSelected = cellIdEquals(selectedCell, cellId);
+                            const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
+                            const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
+
+                            return (
+                              <ComparisonCell
+                                key={ins.id}
+                                isSelected={isSelected}
+                                onClick={() => onCellSelect?.(cellId)}
+                                className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                              >
+                                {keyDetail ? (
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <CellBadge cell={cell} />
+                                    <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
+                                  </span>
+                                ) : (
+                                  <CellBadge cell={cell} />
+                                )}
+                              </ComparisonCell>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
               })}
+              <SectionDivider />
             </div>
-            );
-          })}
-          <SectionDivider />
-        </div>
-      ))}
+          );
+        });
+      })()}
 
       {/* Exclusions section */}
       {comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
@@ -551,7 +576,13 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
 
         return (
           <div>
-            <SectionHeader title="Exclusions" variant="destructive" />
+            <SectionHeader
+              title="Exclusions"
+              variant="destructive"
+              collapsed={collapsedSections.has("exclusions")}
+              onToggle={() => toggleSection("exclusions")}
+            />
+            {!collapsedSections.has("exclusions") && <>
             <SectionDivider />
 
             {/* Deterministic rows — flat, no sub-group */}
@@ -560,25 +591,13 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             {/* AI sub-group — collapsible */}
             {aiRows.length > 0 && (
               <div>
-                <div className="flex bg-[#faf8f5] border-b border-panora-border h-[46px]">
-                  <div className="w-[250px] shrink-0 px-4 flex items-center gap-2 border-r border-panora-border">
-                    <button
-                      onClick={() => toggle(aiGroupKey)}
-                      className="flex items-center justify-center p-1 rounded-[4px] bg-[#eae7e0] shrink-0"
-                    >
-                      {isAiExpanded ? (
-                        <ChevronDown className="w-3.5 h-3.5 text-panora-text" />
-                      ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-panora-text" />
-                      )}
-                    </button>
-                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#8b5cf6]" />
-                    <span className="text-[13px] font-medium text-panora-text whitespace-nowrap">
-                      {aiRows.length} autre{aiRows.length > 1 ? "s" : ""} exclusion{aiRows.length > 1 ? "s" : ""} détectée{aiRows.length > 1 ? "s" : ""} par l&apos;IA
-                    </span>
-                  </div>
-                  <div className="flex-1" />
-                </div>
+                <SectionDivider />
+                <SectionHeader
+                  title={`${aiRows.length} autre${aiRows.length > 1 ? "s" : ""} exclusion${aiRows.length > 1 ? "s" : ""} détectée${aiRows.length > 1 ? "s" : ""} par l'IA`}
+                  variant="sub"
+                  collapsed={!isAiExpanded}
+                  onToggle={() => toggle(aiGroupKey)}
+                />
                 {isAiExpanded && aiRows.map(renderExclusionRow)}
               </div>
             )}
@@ -606,6 +625,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             {manualRows.map(renderExclusionRow)}
 
             <SectionDivider />
+            </>}
           </div>
         );
       })()}
@@ -847,15 +867,65 @@ function SyntheseCell({
   );
 }
 
-function SectionHeader({ title, variant = "brand" }: { title: string; variant?: "brand" | "destructive" }) {
-  const bg = variant === "destructive" ? "bg-[#fdf5f4]" : "bg-[#ebf3ef]";
-  const textColor = variant === "destructive" ? "text-[#952617]" : "text-[#22201a]";
-  return (
-    <div className={`flex ${bg} border-b border-panora-border h-[44px]`}>
-      <div className="w-[250px] shrink-0 px-4 flex items-center border-r border-panora-border">
-        <span className={`text-[15px] font-semibold font-display ${textColor}`}>{title}</span>
+function SectionHeader({ title, variant = "product", collapsed, onToggle }: {
+  title: string;
+  variant?: "product" | "sub" | "destructive" | "synthese";
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
+  const chevron = onToggle ? (
+    <button onClick={onToggle} className="shrink-0 flex items-center justify-center p-1 rounded-[4px] hover:bg-[#eae7e0] transition-colors">
+      {collapsed ? (
+        <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted" />
+      )}
+    </button>
+  ) : null;
+
+  if (variant === "synthese") {
+    return (
+      <div className="group flex items-center gap-2 px-4 border-b border-panora-border h-[40px] bg-[#faf8f5]">
+        {onToggle ? (
+          <button onClick={onToggle} className="shrink-0 flex items-center justify-center p-1 rounded-[4px] hover:bg-[#eae7e0] transition-colors">
+            <Sparkles className="w-3.5 h-3.5 text-panora-text-muted group-hover:hidden" />
+            {collapsed ? (
+              <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted hidden group-hover:block" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted hidden group-hover:block" />
+            )}
+          </button>
+        ) : (
+          <Sparkles className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
+        )}
+        <span className="text-[14px] font-semibold font-display text-panora-text tracking-[-0.2px]">{title}</span>
       </div>
-      <div className="flex-1" />
+    );
+  }
+
+  if (variant === "product") {
+    return (
+      <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[40px] bg-[#faf8f5]">
+        {chevron}
+        <span className="text-[14px] font-semibold font-display text-panora-text tracking-[-0.2px]">{title}</span>
+      </div>
+    );
+  }
+
+  if (variant === "sub") {
+    return (
+      <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[34px]">
+        {chevron}
+        <span className="text-[10px] font-medium tracking-[0.5px] uppercase text-panora-text-muted">{title}</span>
+      </div>
+    );
+  }
+
+  // destructive — exclusions
+  return (
+    <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[40px] bg-[#fdf5f4]/40">
+      {chevron}
+      <span className="text-[14px] font-semibold font-display text-[#952617] tracking-[-0.2px]">{title}</span>
     </div>
   );
 }

@@ -298,7 +298,7 @@ function AllDoneBanner({
   cotParamId: string;
 }) {
   const insurerPrices = insurers.map((ins) => {
-    const annuals = (ins.pricing ?? []).map((p) => parsePriceEuros(p.annual));
+    const annuals = (ins.pricing ?? []).map((p) => parsePriceEuros(p.details[0]?.value ?? ""));
     const cheapest = annuals.length > 0 ? Math.min(...annuals) : 0;
     return { ...ins, cheapest, offerCount: ins.pricing?.length ?? 0 };
   });
