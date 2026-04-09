@@ -81,7 +81,7 @@ function PriceLine({ label, value }: { label: string; value: string }) {
     <div className="flex items-baseline justify-between">
       <span className="text-[13px] leading-5 text-panora-text-muted">{label}</span>
       <span className="whitespace-nowrap">
-        <span className="text-[15px] font-semibold leading-6 text-panora-text">{amount}</span>
+        <span className="text-[13px] font-medium leading-5 text-panora-text">{amount}</span>
         {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
       </span>
     </div>
@@ -270,18 +270,11 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           {!collapsedSections.has("synthese") && (
             !hasClientProfile ? (
               /* Empty state: no client profile */
-              <div className="flex items-center border-b border-panora-border bg-[#f7fbf9] px-5 py-4 gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-panora-green shrink-0" />
-                <p className="text-[13px] font-medium text-panora-text flex-1">
-                  Completez le profil client pour personnaliser la synthese
+              <div className="border-b border-panora-border px-5 py-4">
+                <p className="text-[13px] font-medium text-panora-text">
+                  <button onClick={onOpenProfile} className="text-panora-green underline hover:no-underline">Completez le profil client</button>
+                  {" "}pour generer une analyse personnalisee.
                 </p>
-                <button
-                  onClick={onOpenProfile}
-                  className="btn-primary flex items-center gap-2 px-3.5 py-2 text-[13px] font-medium shrink-0"
-                >
-                  Renseigner le profil client
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
               </div>
             ) : (
               <div className="flex border-b border-panora-border">
@@ -400,7 +393,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                             e.stopPropagation();
                             toggle(key);
                           }}
-                          className="flex items-center gap-[5px] text-[12px] font-medium text-panora-green tracking-[0.12px] leading-6"
+                          className="flex items-center gap-[5px] text-[12px] font-medium text-panora-text-muted tracking-[0.12px] leading-6"
                         >
                           {isOpen ? (
                             <ChevronDown className="w-3.5 h-3.5 shrink-0" />
@@ -761,8 +754,8 @@ function SyntheseCell({
   const faiblesRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const fortsText = item.pointsForts.join("\n");
-  const faiblesText = item.pointsFaibles.join("\n");
+  const fortsText = item.pointsForts.map((s) => `• ${s}`).join("\n");
+  const faiblesText = item.pointsFaibles.map((s) => `• ${s}`).join("\n");
 
   // Track which sections have finished streaming
   const [fortsDone, setFortsDone] = useState(false);
@@ -840,7 +833,7 @@ function SyntheseCell({
           onBlur={commitForts}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {item.pointsForts.join("\n")}
+          {item.pointsForts.map((s) => `• ${s}`).join("\n")}
         </div>
       </div>
       <div>
@@ -853,7 +846,7 @@ function SyntheseCell({
           onBlur={commitFaibles}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {item.pointsFaibles.join("\n")}
+          {item.pointsFaibles.map((s) => `• ${s}`).join("\n")}
         </div>
       </div>
       <button

@@ -20,6 +20,7 @@ import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import { AnalysisTab } from "@/components/quoting/AnalysisTab";
 import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
+import { DevoirConseilWizard } from "@/components/quoting/DevoirConseilWizard";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -344,6 +345,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
   );
   const [isStreaming, setIsStreaming] = useState(false);
+  const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
   const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
 
   const openProfile = useCallback(() => {
@@ -573,7 +575,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         <FinaliserDropdown
           clientName={mutableProfile.clientLabel || followupData?.cotation.client}
           presentationUrl={`/presentation/${cotParamId}`}
-          onGenerateDevoirConseil={() => console.log("TODO: Devoir de conseil")}
+          onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
           onDownloadEtudePDF={() => console.log("TODO: Telecharger etude PDF")}
           onDownloadSynthesePDF={() => console.log("TODO: Telecharger synthese PDF")}
         />
@@ -669,6 +671,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                 isStreaming={isStreaming}
                 onStreamingDone={() => setIsStreaming(false)}
                 hasClientProfile={hasClientProfile}
+                isPanelOpen={isProfileOpen}
               />
               {isProfileOpen && (
                 <ClientProfilePanel
@@ -681,6 +684,19 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             </div>
           )}
         </>
+      )}
+
+      {devoirWizardOpen && (
+        <DevoirConseilWizard
+          onClose={() => setDevoirWizardOpen(false)}
+          onSubmit={(data) => {
+            console.log("Devoir de conseil generated:", data);
+            setDevoirWizardOpen(false);
+          }}
+          insurers={mutableInsurers}
+          profile={mutableProfile}
+          template={{ id: "tpl-1", name: "Modèle DDA standard — Howden", updatedAt: "02/04/2026" }}
+        />
       )}
     </div>
   );
