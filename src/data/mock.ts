@@ -72,7 +72,7 @@ export type InsurerData = {
   status: "completed" | "action_required" | "in_progress";
   reference: string;
   documents?: string[];
-  pricing?: Array<{ formula: string; monthly: string; annual: string }>;
+  pricing?: Array<{ formula: string; details: Array<{ label: string; value: string }> }>;
   quoteInfo?: Array<{ label: string; value: string }>;
   alertMessage?: string;
   alertDescription?: string;
@@ -98,9 +98,9 @@ export const initialInsurers: InsurerData[] = [
       "Tableau_Garanties_Axa.pdf",
     ],
     pricing: [
-      { formula: "Essentielle", monthly: "87,71 €", annual: "810,52 €/an" },
-      { formula: "Équilibre", monthly: "112,50 €", annual: "1 040,00 €/an" },
-      { formula: "Étendue", monthly: "145,83 €", annual: "1 350,00 €/an" },
+      { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "810,52 €/an" }, { label: "Prime mensuelle", value: "87,71 €" }] },
+      { formula: "Équilibre", details: [{ label: "Prime annuelle", value: "1 040,00 €/an" }, { label: "Prime mensuelle", value: "112,50 €" }] },
+      { formula: "Étendue", details: [{ label: "Prime annuelle", value: "1 350,00 €/an" }, { label: "Prime mensuelle", value: "145,83 €" }] },
     ],
     quoteInfo: [
       { label: "Référence devis", value: "4RGWBWMKEB" },
@@ -145,8 +145,8 @@ export const initialInsurers: InsurerData[] = [
       "Conditions_Generales_Generali.pdf",
     ],
     pricing: [
-      { formula: "Standard", monthly: "95,00 €", annual: "1 140,00 €/an" },
-      { formula: "Premium", monthly: "135,00 €", annual: "1 620,00 €/an" },
+      { formula: "Standard", details: [{ label: "Prime annuelle", value: "1 140,00 €/an" }, { label: "Prime mensuelle", value: "95,00 €" }] },
+      { formula: "Premium", details: [{ label: "Prime annuelle", value: "1 620,00 €/an" }, { label: "Prime mensuelle", value: "135,00 €" }] },
     ],
     quoteInfo: [
       { label: "Référence devis", value: "GEN-2026-5523" },
@@ -183,8 +183,8 @@ export const initialInsurers: InsurerData[] = [
       "Conditions_Generales_Allianz.pdf",
     ],
     pricing: [
-      { formula: "Confort", monthly: "102,00 €", annual: "1 224,00 €/an" },
-      { formula: "Confort+", monthly: "128,50 €", annual: "1 542,00 €/an" },
+      { formula: "Confort", details: [{ label: "Prime annuelle", value: "1 224,00 €/an" }, { label: "Prime mensuelle", value: "102,00 €" }] },
+      { formula: "Confort+", details: [{ label: "Prime annuelle", value: "1 542,00 €/an" }, { label: "Prime mensuelle", value: "128,50 €" }] },
     ],
     quoteInfo: [
       { label: "Référence devis", value: "ALZ-2026-8841" },
@@ -357,6 +357,34 @@ export const cotationsList: Cotation[] = [
       { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-RC-3302", bestPrice: "875,00 €/an" },
     ],
   },
+  {
+    id: "cot-7",
+    cotationId: "COT-2026-0151",
+    client: "Dupont SA",
+    product: "Santé collective",
+    productIcon: "shield",
+    createdAt: "14/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "alan", name: "Alan", status: "completed", reference: "ALN-SC-2201", bestPrice: "82,50 €/pers/mois" },
+      { id: "malakoff", name: "Malakoff Humanis", status: "completed", reference: "MH-SC-4410", bestPrice: "78,30 €/pers/mois" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-SC-7703", bestPrice: "85,00 €/pers/mois" },
+    ],
+  },
+  {
+    id: "cot-6",
+    cotationId: "COT-2026-0148",
+    client: "LegalPlace SAS",
+    product: "Prévoyance / AT",
+    productIcon: "shield",
+    createdAt: "12/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-AT-5501", bestPrice: "1.85%" },
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-AT-3344", bestPrice: "1.72%" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-AT-9920", bestPrice: "1.90%" },
+    ],
+  },
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -413,8 +441,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "AXA-FL-2211",
         documents: ["Devis_Axa_Flotte_ACME.pdf", "Conditions_Generales_Flotte_Axa.pdf"],
         pricing: [
-          { formula: "Tiers étendu", monthly: "295,00 €", annual: "3 540,00 €/an" },
-          { formula: "Tous risques", monthly: "350,00 €", annual: "4 200,00 €/an" },
+          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "3 540,00 €/an" }, { label: "Prime mensuelle", value: "295,00 €" }] },
+          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "4 200,00 €/an" }, { label: "Prime mensuelle", value: "350,00 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "AXA-FL-2211" },
@@ -431,8 +459,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "ALZ-FL-8877",
         documents: ["Devis_Allianz_Flotte_ACME.pdf", "Tableau_Garanties_Allianz.pdf"],
         pricing: [
-          { formula: "Tiers étendu", monthly: "275,00 €", annual: "3 300,00 €/an" },
-          { formula: "Tous risques", monthly: "331,67 €", annual: "3 980,00 €/an" },
+          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "3 300,00 €/an" }, { label: "Prime mensuelle", value: "275,00 €" }] },
+          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "3 980,00 €/an" }, { label: "Prime mensuelle", value: "331,67 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "ALZ-FL-8877" },
@@ -449,8 +477,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "GEN-FL-1124",
         documents: ["Devis_Generali_Flotte_ACME.pdf"],
         pricing: [
-          { formula: "Standard", monthly: "320,00 €", annual: "3 840,00 €/an" },
-          { formula: "Premium", monthly: "370,83 €", annual: "4 450,00 €/an" },
+          { formula: "Standard", details: [{ label: "Prime annuelle", value: "3 840,00 €/an" }, { label: "Prime mensuelle", value: "320,00 €" }] },
+          { formula: "Premium", details: [{ label: "Prime annuelle", value: "4 450,00 €/an" }, { label: "Prime mensuelle", value: "370,83 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "GEN-FL-1124" },
@@ -461,6 +489,128 @@ const cotationFollowupMap: Record<string, FollowupData> = {
           { label: "Franchise", value: "500 € / sinistre" },
         ],
         allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-7": {
+    cotation: cotationsList[6],
+    projectName: "Santé Collective Dupont SA 2026",
+    emailSubject: "Cotation Santé Collective - Dupont SA",
+    scenarioId: "sante-collective",
+    attachments: [
+      { name: "Kbis_Dupont_SA.pdf", size: "210 Ko", fieldsExtracted: 3 },
+      { name: "DUE_Mutuelle_Dupont.pdf", size: "450 Ko", fieldsExtracted: 5 },
+      { name: "Effectifs_2025_Dupont.pdf", size: "320 Ko", fieldsExtracted: 8 },
+    ],
+    insurers: [
+      {
+        id: "alan", name: "Alan", logo: "💜", logoColor: "#6C5CE7", hasCode: true,
+        status: "completed", reference: "ALN-SC-2201",
+        documents: ["Devis_Alan_Sante_Dupont.pdf", "Tableau_Garanties_Alan.pdf"],
+        pricing: [
+          { formula: "Formule Confort", details: [{ label: "Tarif cadre isolé", value: "82,50 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "62,00 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALN-SC-2201" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Alan", 7),
+      },
+      {
+        id: "malakoff", name: "Malakoff Humanis", logo: "🟠", logoColor: "#E67E22", hasCode: true,
+        status: "completed", reference: "MH-SC-4410",
+        documents: ["Devis_Malakoff_Sante_Dupont.pdf", "CG_Malakoff_Sante.pdf"],
+        pricing: [
+          { formula: "Formule Équilibre", details: [{ label: "Tarif cadre isolé", value: "78,30 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "59,80 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MH-SC-4410" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Malakoff Humanis", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-SC-7703",
+        documents: ["Devis_Generali_Sante_Dupont.pdf"],
+        pricing: [
+          { formula: "Formule Vitalité", details: [{ label: "Tarif cadre isolé", value: "85,00 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "64,50 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-SC-7703" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-6": {
+    cotation: cotationsList[5],
+    projectName: "Prévoyance AT LegalPlace 2026",
+    emailSubject: "Cotation Prévoyance AT - LegalPlace SAS",
+    scenarioId: "prevoyance-at",
+    attachments: [
+      { name: "Kbis_LegalPlace.pdf", size: "220 Ko", fieldsExtracted: 3 },
+      { name: "Masse_Salariale_2025_LegalPlace.pdf", size: "890 Ko", fieldsExtracted: 6 },
+      { name: "Convention_Collective_Syntec.pdf", size: "1.5 Mo", fieldsExtracted: 4 },
+    ],
+    insurers: [
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-AT-5501",
+        documents: ["Devis_Generali_AT_LegalPlace.pdf", "Conditions_Generales_Prevoyance_Generali.pdf"],
+        pricing: [
+          { formula: "Formule Standard", details: [{ label: "Taux global", value: "1,85 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-AT-5501" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-AT-3344",
+        documents: ["Devis_Axa_AT_LegalPlace.pdf", "Tableau_Garanties_Axa_AT.pdf"],
+        pricing: [
+          { formula: "Formule Confort", details: [{ label: "Taux global", value: "1,72 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-AT-3344" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-AT-9920",
+        documents: ["Devis_Allianz_AT_LegalPlace.pdf"],
+        pricing: [
+          { formula: "Formule Essentielle", details: [{ label: "Taux global", value: "1,90 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-AT-9920" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
       },
     ],
   },
@@ -479,8 +629,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "AXA-RC-9912",
         documents: ["Devis_Axa_RC_Pro_TechVision.pdf", "Conditions_Generales_Axa.pdf"],
         pricing: [
-          { formula: "Essentielle", monthly: "68,33 €", annual: "820,00 €/an" },
-          { formula: "Étendue", monthly: "98,33 €", annual: "1 180,00 €/an" },
+          { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "820,00 €/an" }, { label: "Prime mensuelle", value: "68,33 €" }] },
+          { formula: "Étendue", details: [{ label: "Prime annuelle", value: "1 180,00 €/an" }, { label: "Prime mensuelle", value: "98,33 €" }] },
         ],
         allSteps: makeSteps("Axa", 7),
         quoteInfo: [
@@ -497,8 +647,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "CHB-RC-4401",
         documents: ["Devis_Chubb_RC_Pro_TechVision.pdf", "Tableau_Garanties_Chubb.pdf"],
         pricing: [
-          { formula: "Standard", monthly: "85,00 €", annual: "1 020,00 €/an" },
-          { formula: "Premium", monthly: "120,83 €", annual: "1 450,00 €/an" },
+          { formula: "Standard", details: [{ label: "Prime annuelle", value: "1 020,00 €/an" }, { label: "Prime mensuelle", value: "85,00 €" }] },
+          { formula: "Premium", details: [{ label: "Prime annuelle", value: "1 450,00 €/an" }, { label: "Prime mensuelle", value: "120,83 €" }] },
         ],
         allSteps: makeSteps("Chubb", 7),
         quoteInfo: [
@@ -538,9 +688,9 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         },
         documents: ["Devis_Axa_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Axa.pdf"],
         pricing: [
-          { formula: "Essentielle", monthly: "142,50 €", annual: "1 710,00 €/an" },
-          { formula: "Confort", monthly: "178,33 €", annual: "2 140,00 €/an" },
-          { formula: "Étendue", monthly: "215,00 €", annual: "2 580,00 €/an" },
+          { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "1 710,00 €/an" }, { label: "Prime mensuelle", value: "142,50 €" }] },
+          { formula: "Confort", details: [{ label: "Prime annuelle", value: "2 140,00 €/an" }, { label: "Prime mensuelle", value: "178,33 €" }] },
+          { formula: "Étendue", details: [{ label: "Prime annuelle", value: "2 580,00 €/an" }, { label: "Prime mensuelle", value: "215,00 €" }] },
         ],
         allSteps: [
           { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification en cours", status: "success" },
@@ -566,8 +716,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "MAIF-MR-4402",
         documents: ["Devis_MAIF_Multirisque_GreenWay.pdf"],
         pricing: [
-          { formula: "Confort", monthly: "154,17 €", annual: "1 850,00 €/an" },
-          { formula: "Sérénité", monthly: "195,00 €", annual: "2 340,00 €/an" },
+          { formula: "Confort", details: [{ label: "Prime annuelle", value: "1 850,00 €/an" }, { label: "Prime mensuelle", value: "154,17 €" }] },
+          { formula: "Sérénité", details: [{ label: "Prime annuelle", value: "2 340,00 €/an" }, { label: "Prime mensuelle", value: "195,00 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "MAIF-MR-4402" },
@@ -595,8 +745,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         },
         documents: ["Devis_Generali_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Generali.pdf"],
         pricing: [
-          { formula: "Standard", monthly: "165,00 €", annual: "1 980,00 €/an" },
-          { formula: "Premium", monthly: "208,33 €", annual: "2 500,00 €/an" },
+          { formula: "Standard", details: [{ label: "Prime annuelle", value: "1 980,00 €/an" }, { label: "Prime mensuelle", value: "165,00 €" }] },
+          { formula: "Premium", details: [{ label: "Prime annuelle", value: "2 500,00 €/an" }, { label: "Prime mensuelle", value: "208,33 €" }] },
         ],
         allSteps: [
           { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification en cours", status: "success" },
@@ -634,8 +784,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "AXA-RC-7711",
         documents: ["Devis_Axa_RC_Pro_Digital_Solutions.pdf", "Conditions_Generales_Axa.pdf"],
         pricing: [
-          { formula: "Essentielle", monthly: "76,67 €", annual: "920,00 €/an" },
-          { formula: "Étendue", monthly: "110,00 €", annual: "1 320,00 €/an" },
+          { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "920,00 €/an" }, { label: "Prime mensuelle", value: "76,67 €" }] },
+          { formula: "Étendue", details: [{ label: "Prime annuelle", value: "1 320,00 €/an" }, { label: "Prime mensuelle", value: "110,00 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "AXA-RC-7711" },
@@ -652,8 +802,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "ALZ-RC-3302",
         documents: ["Devis_Allianz_RC_Pro_Digital_Solutions.pdf"],
         pricing: [
-          { formula: "Standard", monthly: "72,92 €", annual: "875,00 €/an" },
-          { formula: "Premium", monthly: "105,00 €", annual: "1 260,00 €/an" },
+          { formula: "Standard", details: [{ label: "Prime annuelle", value: "875,00 €/an" }, { label: "Prime mensuelle", value: "72,92 €" }] },
+          { formula: "Premium", details: [{ label: "Prime annuelle", value: "1 260,00 €/an" }, { label: "Prime mensuelle", value: "105,00 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "ALZ-RC-3302" },
@@ -733,8 +883,20 @@ export type GuaranteeRow = {
   details?: Record<string, CellDetail>;
 };
 
+export type GuaranteeSubGroup = {
+  title: string;
+  rows: GuaranteeRow[];
+};
+
+export type GuaranteeProduct = {
+  title: string;
+  subGroups: GuaranteeSubGroup[];
+};
+
+/** @deprecated — kept for migration, use GuaranteeProduct */
 export type GuaranteeSection = {
   title: string;
+  level?: "product" | "sub";
   rows: GuaranteeRow[];
 };
 
@@ -752,9 +914,57 @@ export type ExclusionRow = {
   details?: Record<string, CellDetail>;
 };
 
+// ─── Dynamic fields & rate-based pricing ─────────────────────────────
+
+export type DynamicField = {
+  id: string;
+  label: string;
+  sectionKey: string;
+  sectionLabel: string;
+  type: "number" | "select";
+  required?: boolean;
+};
+
+export type DynamicFieldValues = Record<string, number | undefined>;
+
+/** A rate-based guarantee row where each insurer quotes a % rate.
+ *  The € amount is computed client-side: rate × payroll category. */
+export type RateRow = {
+  label: string;
+  /** Which dynamic field (by id) provides the base for computation */
+  dynamicFieldId: string;
+  /** Rate per insurer (e.g. 0.0185 for 1.85%) keyed by insurer id */
+  rates: Record<string, number>;
+  details?: Record<string, CellDetail>;
+};
+
+export type RateSubGroup = {
+  title: string;
+  rows: RateRow[];
+};
+
+export type RateUnit = "percent" | "eur_per_person_month";
+
+export type RateProduct = {
+  title: string;
+  subGroups: RateSubGroup[];
+  /** How to interpret rates: "percent" (rate × base) or "eur_per_person_month" (rate × headcount × 12). Defaults to "percent". */
+  rateUnit?: RateUnit;
+  /** Dynamic field id providing the employer share % (for eur_per_person_month products) */
+  employerShareFieldId?: string;
+};
+
 export type ComparisonData = {
-  sections: GuaranteeSection[];
+  products: GuaranteeProduct[];
+  /** @deprecated — use products */
+  sections?: GuaranteeSection[];
   exclusions?: ExclusionRow[];
+  /** Rate-based products (Workers' Comp, Group Health, etc.) */
+  rateProducts?: RateProduct[];
+  /** Dynamic fields required for rate computation */
+  dynamicFields?: DynamicField[];
+  /** Current values for dynamic fields */
+  dynamicFieldValues?: DynamicFieldValues;
 };
 
 function makeDetail(
@@ -871,145 +1081,150 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
     ],
-    sections: [
+    products: [
       {
-        title: "Couvertures véhicules",
-        rows: [
+        title: "Auto",
+        subGroups: [
           {
-            label: "Responsabilité civile",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Responsabilité civile", "axa", "Axa", true, "Couverture RC obligatoire pour tous les véhicules de la flotte.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "1 500 €", "5 000 €"),
-              allianz: makeDetail("Responsabilité civile", "allianz", "Allianz", true, "RC automobile obligatoire conforme à la législation en vigueur.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "2 000 €", "3 000 €"),
-              generali: makeDetail("Responsabilité civile", "generali", "Generali", true, "Garantie de base couvrant la responsabilité civile des conducteurs.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }], defaultSources, "1 000 €", "2 500 €"),
-            },
+            title: "Couvertures véhicules",
+            rows: [
+              {
+                label: "Responsabilité civile",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Responsabilité civile", "axa", "Axa", true, "Couverture RC obligatoire pour tous les véhicules de la flotte.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "1 500 €", "5 000 €"),
+                  allianz: makeDetail("Responsabilité civile", "allianz", "Allianz", true, "RC automobile obligatoire conforme à la législation en vigueur.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "2 000 €", "3 000 €"),
+                  generali: makeDetail("Responsabilité civile", "generali", "Generali", true, "Garantie de base couvrant la responsabilité civile des conducteurs.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }], defaultSources, "1 000 €", "2 500 €"),
+                },
+              },
+              {
+                label: "Dommages tous accidents",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Dommages tous accidents", "axa", "Axa", true, "Prise en charge des dommages au véhicule assuré, quelle que soit la responsabilité.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources, "75 000 €", "500 €"),
+                  allianz: makeDetail("Dommages tous accidents", "allianz", "Allianz", true, "Couverture complète des dommages au véhicule.", [{ id: "sl-1", label: "Franchise", value: "750 €" }], defaultSources, "100 000 €", "750 €"),
+                  generali: makeDetail("Dommages tous accidents", "generali", "Generali", false, "Non inclus dans la formule Standard. Disponible en option.", [], defaultSources),
+                },
+              },
+              {
+                label: "Vol et tentative de vol",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Vol et tentative de vol", "axa", "Axa", true, "Indemnisation en cas de vol ou tentative de vol du véhicule.", [{ id: "sl-1", label: "Plafond", value: "Valeur vénale" }], defaultSources, "50 000 €", "300 €"),
+                  allianz: makeDetail("Vol et tentative de vol", "allianz", "Allianz", true, "Couverture vol incluant les accessoires.", [{ id: "sl-1", label: "Plafond accessoires", value: "1 500 €" }], defaultSources, "60 000 €", "400 €"),
+                  generali: makeDetail("Vol et tentative de vol", "generali", "Generali", true, "Garantie vol de base.", [{ id: "sl-1", label: "Franchise", value: "10% valeur vénale" }], defaultSources, "40 000 €", "250 €"),
+                },
+              },
+              {
+                label: "Bris de glace",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Bris de glace", "axa", "Axa", true, "Remplacement ou réparation de tous les vitrages du véhicule.", [{ id: "sl-1", label: "Franchise réparation", value: "0 €" }, { id: "sl-2", label: "Franchise remplacement", value: "50 €" }], defaultSources, "10 000 €", "0 €"),
+                  allianz: makeDetail("Bris de glace", "allianz", "Allianz", true, "Couverture bris de glace pare-brise, lunette arrière et vitres latérales.", [{ id: "sl-1", label: "Franchise", value: "75 €" }], defaultSources, "15 000 €", "75 €"),
+                  generali: makeDetail("Bris de glace", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
+                },
+              },
+              {
+                label: "Incendie, explosion, tempête",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Incendie, explosion, tempête", "axa", "Axa", true, "Protection contre incendie, explosion et événements climatiques.", [{ id: "sl-1", label: "Franchise tempête", value: "250 €" }], defaultSources, "200 000 €", "250 €"),
+                  allianz: makeDetail("Incendie, explosion, tempête", "allianz", "Allianz", true, "Garantie étendue incendie et événements naturels.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources, "150 000 €", "300 €"),
+                  generali: makeDetail("Incendie, explosion, tempête", "generali", "Generali", true, "Couverture de base incendie et tempête.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Catastrophes naturelles",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Garantie légale catastrophes naturelles.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+                  allianz: makeDetail("Catastrophes naturelles", "allianz", "Allianz", true, "Conformément à la réglementation en vigueur.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+                  generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Couverture obligatoire.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Protection juridique",
+                values: { axa: { type: "check" }, allianz: { type: "cross" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Protection juridique", "axa", "Axa", true, "Assistance juridique en cas de litige lié au véhicule.", [{ id: "sl-1", label: "Plafond honoraires", value: "15 000 €" }], defaultSources),
+                  allianz: makeDetail("Protection juridique", "allianz", "Allianz", false, "Non incluse. Disponible en option.", [], defaultSources),
+                  generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique incluse dans la formule.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Dommages tous accidents",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Dommages tous accidents", "axa", "Axa", true, "Prise en charge des dommages au véhicule assuré, quelle que soit la responsabilité.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources, "75 000 €", "500 €"),
-              allianz: makeDetail("Dommages tous accidents", "allianz", "Allianz", true, "Couverture complète des dommages au véhicule.", [{ id: "sl-1", label: "Franchise", value: "750 €" }], defaultSources, "100 000 €", "750 €"),
-              generali: makeDetail("Dommages tous accidents", "generali", "Generali", false, "Non inclus dans la formule Standard. Disponible en option.", [], defaultSources),
-            },
+            title: "Garanties conducteur",
+            rows: [
+              {
+                label: "Protection corporelle du conducteur",
+                values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "750 000 €" } },
+                details: {
+                  axa: makeDetail("Protection corporelle du conducteur", "axa", "Axa", true, "Indemnisation des dommages corporels subis par le conducteur.", [{ id: "sl-1", label: "Capital décès", value: "1 000 000 €" }, { id: "sl-2", label: "Frais de soins", value: "Illimité" }], defaultSources),
+                  allianz: makeDetail("Protection corporelle du conducteur", "allianz", "Allianz", true, "Capital garanti en cas de blessure du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "500 000 €" }], defaultSources),
+                  generali: makeDetail("Protection corporelle du conducteur", "generali", "Generali", true, "Protection intermédiaire du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "750 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Assistance 0 km",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Assistance 0 km", "axa", "Axa", true, "Dépannage et remorquage dès le domicile.", [], defaultSources),
+                  allianz: makeDetail("Assistance 0 km", "allianz", "Allianz", true, "Assistance depuis le lieu de panne, y compris domicile.", [], defaultSources),
+                  generali: makeDetail("Assistance 0 km", "generali", "Generali", false, "Assistance uniquement à partir de 25 km du domicile.", [], defaultSources),
+                },
+              },
+              {
+                label: "Véhicule de remplacement",
+                values: { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "15 jours" }, generali: { type: "text", value: "21 jours" } },
+                details: {
+                  axa: makeDetail("Véhicule de remplacement", "axa", "Axa", true, "Mise à disposition d'un véhicule de remplacement.", [{ id: "sl-1", label: "Durée max", value: "30 jours" }, { id: "sl-2", label: "Catégorie", value: "Équivalente" }], defaultSources),
+                  allianz: makeDetail("Véhicule de remplacement", "allianz", "Allianz", true, "Véhicule de remplacement en cas d'immobilisation.", [{ id: "sl-1", label: "Durée max", value: "15 jours" }], defaultSources),
+                  generali: makeDetail("Véhicule de remplacement", "generali", "Generali", true, "Prêt de véhicule en cas de sinistre.", [{ id: "sl-1", label: "Durée max", value: "21 jours" }], defaultSources),
+                },
+              },
+              {
+                label: "Franchise sinistre responsable",
+                values: { axa: { type: "text", value: "500 €" }, allianz: { type: "text", value: "750 €" }, generali: { type: "text", value: "500 €" } },
+                details: {
+                  axa: makeDetail("Franchise sinistre responsable", "axa", "Axa", true, "Montant restant à charge en cas de sinistre responsable.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
+                  allianz: makeDetail("Franchise sinistre responsable", "allianz", "Allianz", true, "Franchise applicable aux sinistres dont l'assuré est responsable.", [{ id: "sl-1", label: "Franchise standard", value: "750 €" }], defaultSources),
+                  generali: makeDetail("Franchise sinistre responsable", "generali", "Generali", true, "Franchise en cas de responsabilité.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Vol et tentative de vol",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Vol et tentative de vol", "axa", "Axa", true, "Indemnisation en cas de vol ou tentative de vol du véhicule.", [{ id: "sl-1", label: "Plafond", value: "Valeur vénale" }], defaultSources, "50 000 €", "300 €"),
-              allianz: makeDetail("Vol et tentative de vol", "allianz", "Allianz", true, "Couverture vol incluant les accessoires.", [{ id: "sl-1", label: "Plafond accessoires", value: "1 500 €" }], defaultSources, "60 000 €", "400 €"),
-              generali: makeDetail("Vol et tentative de vol", "generali", "Generali", true, "Garantie vol de base.", [{ id: "sl-1", label: "Franchise", value: "10% valeur vénale" }], defaultSources, "40 000 €", "250 €"),
-            },
-          },
-          {
-            label: "Bris de glace",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Bris de glace", "axa", "Axa", true, "Remplacement ou réparation de tous les vitrages du véhicule.", [{ id: "sl-1", label: "Franchise réparation", value: "0 €" }, { id: "sl-2", label: "Franchise remplacement", value: "50 €" }], defaultSources, "10 000 €", "0 €"),
-              allianz: makeDetail("Bris de glace", "allianz", "Allianz", true, "Couverture bris de glace pare-brise, lunette arrière et vitres latérales.", [{ id: "sl-1", label: "Franchise", value: "75 €" }], defaultSources, "15 000 €", "75 €"),
-              generali: makeDetail("Bris de glace", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
-            },
-          },
-          {
-            label: "Incendie, explosion, tempête",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Incendie, explosion, tempête", "axa", "Axa", true, "Protection contre incendie, explosion et événements climatiques.", [{ id: "sl-1", label: "Franchise tempête", value: "250 €" }], defaultSources, "200 000 €", "250 €"),
-              allianz: makeDetail("Incendie, explosion, tempête", "allianz", "Allianz", true, "Garantie étendue incendie et événements naturels.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources, "150 000 €", "300 €"),
-              generali: makeDetail("Incendie, explosion, tempête", "generali", "Generali", true, "Couverture de base incendie et tempête.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Catastrophes naturelles",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Garantie légale catastrophes naturelles.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
-              allianz: makeDetail("Catastrophes naturelles", "allianz", "Allianz", true, "Conformément à la réglementation en vigueur.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
-              generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Couverture obligatoire.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Protection juridique",
-            values: { axa: { type: "check" }, allianz: { type: "cross" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Protection juridique", "axa", "Axa", true, "Assistance juridique en cas de litige lié au véhicule.", [{ id: "sl-1", label: "Plafond honoraires", value: "15 000 €" }], defaultSources),
-              allianz: makeDetail("Protection juridique", "allianz", "Allianz", false, "Non incluse. Disponible en option.", [], defaultSources),
-              generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique incluse dans la formule.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Garanties conducteur",
-        rows: [
-          {
-            label: "Protection corporelle du conducteur",
-            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "750 000 €" } },
-            details: {
-              axa: makeDetail("Protection corporelle du conducteur", "axa", "Axa", true, "Indemnisation des dommages corporels subis par le conducteur.", [{ id: "sl-1", label: "Capital décès", value: "1 000 000 €" }, { id: "sl-2", label: "Frais de soins", value: "Illimité" }], defaultSources),
-              allianz: makeDetail("Protection corporelle du conducteur", "allianz", "Allianz", true, "Capital garanti en cas de blessure du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "500 000 €" }], defaultSources),
-              generali: makeDetail("Protection corporelle du conducteur", "generali", "Generali", true, "Protection intermédiaire du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "750 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Assistance 0 km",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Assistance 0 km", "axa", "Axa", true, "Dépannage et remorquage dès le domicile.", [], defaultSources),
-              allianz: makeDetail("Assistance 0 km", "allianz", "Allianz", true, "Assistance depuis le lieu de panne, y compris domicile.", [], defaultSources),
-              generali: makeDetail("Assistance 0 km", "generali", "Generali", false, "Assistance uniquement à partir de 25 km du domicile.", [], defaultSources),
-            },
-          },
-          {
-            label: "Véhicule de remplacement",
-            values: { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "15 jours" }, generali: { type: "text", value: "21 jours" } },
-            details: {
-              axa: makeDetail("Véhicule de remplacement", "axa", "Axa", true, "Mise à disposition d'un véhicule de remplacement.", [{ id: "sl-1", label: "Durée max", value: "30 jours" }, { id: "sl-2", label: "Catégorie", value: "Équivalente" }], defaultSources),
-              allianz: makeDetail("Véhicule de remplacement", "allianz", "Allianz", true, "Véhicule de remplacement en cas d'immobilisation.", [{ id: "sl-1", label: "Durée max", value: "15 jours" }], defaultSources),
-              generali: makeDetail("Véhicule de remplacement", "generali", "Generali", true, "Prêt de véhicule en cas de sinistre.", [{ id: "sl-1", label: "Durée max", value: "21 jours" }], defaultSources),
-            },
-          },
-          {
-            label: "Franchise sinistre responsable",
-            values: { axa: { type: "text", value: "500 €" }, allianz: { type: "text", value: "750 €" }, generali: { type: "text", value: "500 €" } },
-            details: {
-              axa: makeDetail("Franchise sinistre responsable", "axa", "Axa", true, "Montant restant à charge en cas de sinistre responsable.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
-              allianz: makeDetail("Franchise sinistre responsable", "allianz", "Allianz", true, "Franchise applicable aux sinistres dont l'assuré est responsable.", [{ id: "sl-1", label: "Franchise standard", value: "750 €" }], defaultSources),
-              generali: makeDetail("Franchise sinistre responsable", "generali", "Generali", true, "Franchise en cas de responsabilité.", [{ id: "sl-1", label: "Franchise standard", value: "500 €" }], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Services inclus",
-        rows: [
-          {
-            label: "Gestion de flotte en ligne",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Gestion de flotte en ligne", "axa", "Axa", true, "Plateforme en ligne pour gérer l'ensemble de la flotte.", [], defaultSources),
-              allianz: makeDetail("Gestion de flotte en ligne", "allianz", "Allianz", true, "Espace client dédié à la gestion de flotte.", [], defaultSources),
-              generali: makeDetail("Gestion de flotte en ligne", "generali", "Generali", true, "Outil de suivi de flotte basique.", [], defaultSources),
-            },
-          },
-          {
-            label: "Carte verte dématérialisée",
-            values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Carte verte dématérialisée", "axa", "Axa", true, "Cartes vertes disponibles au format numérique.", [], defaultSources),
-              allianz: makeDetail("Carte verte dématérialisée", "allianz", "Allianz", true, "Attestation d'assurance dématérialisée.", [], defaultSources),
-              generali: makeDetail("Carte verte dématérialisée", "generali", "Generali", false, "Uniquement en format papier.", [], defaultSources),
-            },
-          },
-          {
-            label: "Reporting sinistralité",
-            values: { axa: { type: "text", value: "Trimestriel" }, allianz: { type: "text", value: "Mensuel" }, generali: { type: "text", value: "Annuel" } },
-            details: {
-              axa: makeDetail("Reporting sinistralité", "axa", "Axa", true, "Rapports de sinistralité détaillés fournis trimestriellement.", [{ id: "sl-1", label: "Fréquence", value: "Trimestriel" }], defaultSources),
-              allianz: makeDetail("Reporting sinistralité", "allianz", "Allianz", true, "Suivi mensuel de la sinistralité de la flotte.", [{ id: "sl-1", label: "Fréquence", value: "Mensuel" }], defaultSources),
-              generali: makeDetail("Reporting sinistralité", "generali", "Generali", true, "Bilan annuel de sinistralité.", [{ id: "sl-1", label: "Fréquence", value: "Annuel" }], defaultSources),
-            },
+            title: "Services inclus",
+            rows: [
+              {
+                label: "Gestion de flotte en ligne",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Gestion de flotte en ligne", "axa", "Axa", true, "Plateforme en ligne pour gérer l'ensemble de la flotte.", [], defaultSources),
+                  allianz: makeDetail("Gestion de flotte en ligne", "allianz", "Allianz", true, "Espace client dédié à la gestion de flotte.", [], defaultSources),
+                  generali: makeDetail("Gestion de flotte en ligne", "generali", "Generali", true, "Outil de suivi de flotte basique.", [], defaultSources),
+                },
+              },
+              {
+                label: "Carte verte dématérialisée",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Carte verte dématérialisée", "axa", "Axa", true, "Cartes vertes disponibles au format numérique.", [], defaultSources),
+                  allianz: makeDetail("Carte verte dématérialisée", "allianz", "Allianz", true, "Attestation d'assurance dématérialisée.", [], defaultSources),
+                  generali: makeDetail("Carte verte dématérialisée", "generali", "Generali", false, "Uniquement en format papier.", [], defaultSources),
+                },
+              },
+              {
+                label: "Reporting sinistralité",
+                values: { axa: { type: "text", value: "Trimestriel" }, allianz: { type: "text", value: "Mensuel" }, generali: { type: "text", value: "Annuel" } },
+                details: {
+                  axa: makeDetail("Reporting sinistralité", "axa", "Axa", true, "Rapports de sinistralité détaillés fournis trimestriellement.", [{ id: "sl-1", label: "Fréquence", value: "Trimestriel" }], defaultSources),
+                  allianz: makeDetail("Reporting sinistralité", "allianz", "Allianz", true, "Suivi mensuel de la sinistralité de la flotte.", [{ id: "sl-1", label: "Fréquence", value: "Mensuel" }], defaultSources),
+                  generali: makeDetail("Reporting sinistralité", "generali", "Generali", true, "Bilan annuel de sinistralité.", [{ id: "sl-1", label: "Fréquence", value: "Annuel" }], defaultSources),
+                },
+              },
+            ],
           },
         ],
       },
@@ -1058,86 +1273,91 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
     ],
-    sections: [
+    products: [
       {
-        title: "Couvertures RC Professionnelle",
-        rows: [
+        title: "RC Pro",
+        subGroups: [
           {
-            label: "Fautes professionnelles",
-            values: { axa: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Couverture des erreurs, omissions et fautes dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
-              allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Protection contre les réclamations liées à des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
-            },
+            title: "Couvertures",
+            rows: [
+              {
+                label: "Fautes professionnelles",
+                values: { axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Couverture des erreurs, omissions et fautes dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+                  allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Protection contre les réclamations liées à des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Atteinte aux droits de propriété intellectuelle",
+                values: { axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire ou atteinte aux droits d'auteur.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
+                  allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI dans le cadre de l'activité professionnelle.", [{ id: "sl-1", label: "Sous-limite", value: "200 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Perte de données client",
+                values: { axa: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte, altération ou destruction de données confiées par les clients.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
+                  allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert dans la formule Standard. Disponible en option Cyber.", [], defaultSources),
+                },
+              },
+              {
+                label: "Violation du RGPD",
+                values: { axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation des données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+                  allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture des conséquences financières d'une non-conformité RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Sous-traitance",
+                values: { axa: { type: "text", value: "Couverte" }, allianz: { type: "text", value: "Exclue" } },
+                details: {
+                  axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Les prestations réalisées par des sous-traitants sont couvertes.", [], defaultSources),
+                  allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue de la garantie. Seules les prestations directes sont couvertes.", [], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Atteinte aux droits de propriété intellectuelle",
-            values: { axa: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire ou atteinte aux droits d'auteur.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
-              allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI dans le cadre de l'activité professionnelle.", [{ id: "sl-1", label: "Sous-limite", value: "200 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Perte de données client",
-            values: { axa: { type: "check" }, allianz: { type: "cross" } },
-            details: {
-              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte, altération ou destruction de données confiées par les clients.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
-              allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert dans la formule Standard. Disponible en option Cyber.", [], defaultSources),
-            },
-          },
-          {
-            label: "Violation du RGPD",
-            values: { axa: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation des données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
-              allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture des conséquences financières d'une non-conformité RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Sous-traitance",
-            values: { axa: { type: "text", value: "Couverte" }, allianz: { type: "text", value: "Exclue" } },
-            details: {
-              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Les prestations réalisées par des sous-traitants sont couvertes.", [], defaultSources),
-              allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue de la garantie. Seules les prestations directes sont couvertes.", [], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Limites et franchises",
-        rows: [
-          {
-            label: "Plafond par sinistre",
-            values: { axa: { type: "text", value: "500 000 €" }, allianz: { type: "text", value: "500 000 €" } },
-            details: {
-              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation pour un sinistre unique.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
-              allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite d'engagement par événement dommageable.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Plafond annuel",
-            values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
-            details: {
-              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Montant maximum d'indemnisation sur une année d'assurance.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
-              allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement maximum annuel toutes garanties confondues.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Franchise",
-            values: { axa: { type: "text", value: "1 000 €" }, allianz: { type: "text", value: "1 500 €" } },
-            details: {
-              axa: makeDetail("Franchise", "axa", "Axa", true, "Montant restant à la charge de l'assuré par sinistre.", [{ id: "sl-1", label: "Franchise fixe", value: "1 000 €" }], defaultSources),
-              allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise applicable par sinistre déclaré.", [{ id: "sl-1", label: "Franchise fixe", value: "1 500 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Défense pénale",
-            values: { axa: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense en cas de poursuites pénales liées à l'activité.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }, { id: "sl-2", label: "Frais d'expert judiciaire", value: "5 000 €" }], defaultSources),
-              allianz: makeDetail("Défense pénale", "allianz", "Allianz", true, "Assistance juridique et prise en charge de la défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
-            },
+            title: "Limites et franchises",
+            rows: [
+              {
+                label: "Plafond par sinistre",
+                values: { axa: { type: "text", value: "500 000 €" }, allianz: { type: "text", value: "500 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation pour un sinistre unique.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+                  allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite d'engagement par événement dommageable.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Plafond annuel",
+                values: { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Montant maximum d'indemnisation sur une année d'assurance.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
+                  allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement maximum annuel toutes garanties confondues.", [{ id: "sl-1", label: "Plafond annuel global", value: "1 000 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Franchise",
+                values: { axa: { type: "text", value: "1 000 €" }, allianz: { type: "text", value: "1 500 €" } },
+                details: {
+                  axa: makeDetail("Franchise", "axa", "Axa", true, "Montant restant à la charge de l'assuré par sinistre.", [{ id: "sl-1", label: "Franchise fixe", value: "1 000 €" }], defaultSources),
+                  allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise applicable par sinistre déclaré.", [{ id: "sl-1", label: "Franchise fixe", value: "1 500 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Défense pénale",
+                values: { axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense en cas de poursuites pénales liées à l'activité.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }, { id: "sl-2", label: "Frais d'expert judiciaire", value: "5 000 €" }], defaultSources),
+                  allianz: makeDetail("Défense pénale", "allianz", "Allianz", true, "Assistance juridique et prise en charge de la défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
+                },
+              },
+            ],
           },
         ],
       },
@@ -1201,95 +1421,100 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
     ],
-    sections: [
+    products: [
       {
-        title: "Couvertures RC Professionnelle",
-        rows: [
+        title: "RC Pro",
+        subGroups: [
           {
-            label: "Fautes professionnelles",
-            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs, omissions et manquements dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
-              generali: makeDetail("Fautes professionnelles", "generali", "Generali", true, "Protection contre les réclamations clients.", [{ id: "sl-1", label: "Plafond par sinistre", value: "400 000 €" }], defaultSources),
-              allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Couverture des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
-            },
+            title: "Couvertures",
+            rows: [
+              {
+                label: "Fautes professionnelles",
+                values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs, omissions et manquements dans l'exercice professionnel.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+                  generali: makeDetail("Fautes professionnelles", "generali", "Generali", true, "Protection contre les réclamations clients.", [{ id: "sl-1", label: "Plafond par sinistre", value: "400 000 €" }], defaultSources),
+                  allianz: makeDetail("Fautes professionnelles", "allianz", "Allianz", true, "Couverture des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Atteinte aux droits de propriété intellectuelle",
+                values: { axa: { type: "check" }, generali: { type: "cross" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire.", [{ id: "sl-1", label: "Sous-limite PI", value: "250 000 €" }], defaultSources),
+                  generali: makeDetail("Atteinte aux droits de propriété intellectuelle", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
+                  allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI intégrée.", [{ id: "sl-1", label: "Sous-limite PI", value: "200 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Perte de données client",
+                values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte ou destruction de données.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
+                  generali: makeDetail("Perte de données client", "generali", "Generali", true, "Couverture des données client incluant les frais de reconstitution.", [{ id: "sl-1", label: "Sous-limite", value: "100 000 €" }], defaultSources),
+                  allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert. Option Cyber disponible.", [], defaultSources),
+                },
+              },
+              {
+                label: "Violation du RGPD",
+                values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation de données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+                  generali: makeDetail("Violation du RGPD", "generali", "Generali", true, "Accompagnement juridique et frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "80 000 €" }], defaultSources),
+                  allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture RGPD standard.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Sous-traitance",
+                values: { axa: { type: "text", value: "Couverte" }, generali: { type: "text", value: "Limitée" }, allianz: { type: "text", value: "Exclue" } },
+                details: {
+                  axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Prestations réalisées par des sous-traitants couvertes sans restriction.", [], defaultSources),
+                  generali: makeDetail("Sous-traitance", "generali", "Generali", true, "Sous-traitance couverte jusqu'à 30% du CA.", [{ id: "sl-1", label: "Limite sous-traitance", value: "30% du CA" }], defaultSources),
+                  allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue.", [], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Atteinte aux droits de propriété intellectuelle",
-            values: { axa: { type: "check" }, generali: { type: "cross" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Atteinte aux droits de propriété intellectuelle", "axa", "Axa", true, "Couverture en cas de contrefaçon involontaire.", [{ id: "sl-1", label: "Sous-limite PI", value: "250 000 €" }], defaultSources),
-              generali: makeDetail("Atteinte aux droits de propriété intellectuelle", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
-              allianz: makeDetail("Atteinte aux droits de propriété intellectuelle", "allianz", "Allianz", true, "Protection PI intégrée.", [{ id: "sl-1", label: "Sous-limite PI", value: "200 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Perte de données client",
-            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
-            details: {
-              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Indemnisation en cas de perte ou destruction de données.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }, { id: "sl-2", label: "Frais de notification", value: "50 000 €" }], defaultSources),
-              generali: makeDetail("Perte de données client", "generali", "Generali", true, "Couverture des données client incluant les frais de reconstitution.", [{ id: "sl-1", label: "Sous-limite", value: "100 000 €" }], defaultSources),
-              allianz: makeDetail("Perte de données client", "allianz", "Allianz", false, "Non couvert. Option Cyber disponible.", [], defaultSources),
-            },
-          },
-          {
-            label: "Violation du RGPD",
-            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "check" } },
-            details: {
-              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Prise en charge des frais liés à une violation de données personnelles.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
-              generali: makeDetail("Violation du RGPD", "generali", "Generali", true, "Accompagnement juridique et frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "80 000 €" }], defaultSources),
-              allianz: makeDetail("Violation du RGPD", "allianz", "Allianz", true, "Couverture RGPD standard.", [{ id: "sl-1", label: "Frais de défense", value: "75 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Sous-traitance",
-            values: { axa: { type: "text", value: "Couverte" }, generali: { type: "text", value: "Limitée" }, allianz: { type: "text", value: "Exclue" } },
-            details: {
-              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Prestations réalisées par des sous-traitants couvertes sans restriction.", [], defaultSources),
-              generali: makeDetail("Sous-traitance", "generali", "Generali", true, "Sous-traitance couverte jusqu'à 30% du CA.", [{ id: "sl-1", label: "Limite sous-traitance", value: "30% du CA" }], defaultSources),
-              allianz: makeDetail("Sous-traitance", "allianz", "Allianz", false, "La sous-traitance est exclue.", [], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Limites et franchises",
-        rows: [
-          {
-            label: "Plafond par sinistre",
-            values: { axa: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "400 000 €" }, allianz: { type: "text", value: "500 000 €" } },
-            details: {
-              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
-              generali: makeDetail("Plafond par sinistre", "generali", "Generali", true, "Plafond standard par événement.", [{ id: "sl-1", label: "Plafond", value: "400 000 €" }], defaultSources),
-              allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Plafond annuel",
-            values: { axa: { type: "text", value: "1 500 000 €" }, generali: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
-            details: {
-              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Engagement maximum annuel toutes garanties.", [{ id: "sl-1", label: "Plafond annuel", value: "1 500 000 €" }], defaultSources),
-              generali: makeDetail("Plafond annuel", "generali", "Generali", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
-              allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement annuel.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Franchise",
-            values: { axa: { type: "text", value: "1 000 €" }, generali: { type: "text", value: "1 500 €" }, allianz: { type: "text", value: "1 200 €" } },
-            details: {
-              axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
-              generali: makeDetail("Franchise", "generali", "Generali", true, "Franchise applicable.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
-              allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 200 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Défense pénale",
-            values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
-            details: {
-              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }], defaultSources),
-              generali: makeDetail("Défense pénale", "generali", "Generali", true, "Assistance juridique pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
-              allianz: makeDetail("Défense pénale", "allianz", "Allianz", false, "Non inclus. Option disponible.", [], defaultSources),
-            },
+            title: "Limites et franchises",
+            rows: [
+              {
+                label: "Plafond par sinistre",
+                values: { axa: { type: "text", value: "500 000 €" }, generali: { type: "text", value: "400 000 €" }, allianz: { type: "text", value: "500 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Montant maximum d'indemnisation par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+                  generali: makeDetail("Plafond par sinistre", "generali", "Generali", true, "Plafond standard par événement.", [{ id: "sl-1", label: "Plafond", value: "400 000 €" }], defaultSources),
+                  allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Limite par sinistre.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Plafond annuel",
+                values: { axa: { type: "text", value: "1 500 000 €" }, generali: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "1 000 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Engagement maximum annuel toutes garanties.", [{ id: "sl-1", label: "Plafond annuel", value: "1 500 000 €" }], defaultSources),
+                  generali: makeDetail("Plafond annuel", "generali", "Generali", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+                  allianz: makeDetail("Plafond annuel", "allianz", "Allianz", true, "Engagement annuel.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Franchise",
+                values: { axa: { type: "text", value: "1 000 €" }, generali: { type: "text", value: "1 500 €" }, allianz: { type: "text", value: "1 200 €" } },
+                details: {
+                  axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
+                  generali: makeDetail("Franchise", "generali", "Generali", true, "Franchise applicable.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
+                  allianz: makeDetail("Franchise", "allianz", "Allianz", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 200 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Défense pénale",
+                values: { axa: { type: "check" }, generali: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Défense pénale", "axa", "Axa", true, "Prise en charge des frais de défense pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "75 000 €" }], defaultSources),
+                  generali: makeDetail("Défense pénale", "generali", "Generali", true, "Assistance juridique pénale.", [{ id: "sl-1", label: "Plafond honoraires", value: "50 000 €" }], defaultSources),
+                  allianz: makeDetail("Défense pénale", "allianz", "Allianz", false, "Non inclus. Option disponible.", [], defaultSources),
+                },
+              },
+            ],
           },
         ],
       },
@@ -1338,86 +1563,91 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
     ],
-    sections: [
+    products: [
       {
-        title: "Couvertures RC Professionnelle",
-        rows: [
+        title: "RC Pro",
+        subGroups: [
           {
-            label: "Fautes professionnelles",
-            values: { axa: { type: "check" }, chubb: { type: "check" } },
-            details: {
-              axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs et omissions couvertes.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
-              chubb: makeDetail("Fautes professionnelles", "chubb", "Chubb", true, "Couverture large des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "750 000 €" }], defaultSources),
-            },
+            title: "Couvertures",
+            rows: [
+              {
+                label: "Fautes professionnelles",
+                values: { axa: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Fautes professionnelles", "axa", "Axa", true, "Erreurs et omissions couvertes.", [{ id: "sl-1", label: "Plafond par sinistre", value: "500 000 €" }], defaultSources),
+                  chubb: makeDetail("Fautes professionnelles", "chubb", "Chubb", true, "Couverture large des manquements professionnels.", [{ id: "sl-1", label: "Plafond par sinistre", value: "750 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Atteinte à la propriété intellectuelle",
+                values: { axa: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Atteinte à la propriété intellectuelle", "axa", "Axa", true, "Contrefaçon involontaire couverte.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
+                  chubb: makeDetail("Atteinte à la propriété intellectuelle", "chubb", "Chubb", true, "Protection étendue de la PI.", [{ id: "sl-1", label: "Sous-limite", value: "500 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Perte de données client",
+                values: { axa: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Perte de données client", "axa", "Axa", true, "Couverture des données avec frais de notification.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }], defaultSources),
+                  chubb: makeDetail("Perte de données client", "chubb", "Chubb", true, "Protection complète incluant reconstitution et notification.", [{ id: "sl-1", label: "Sous-limite", value: "300 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Violation du RGPD",
+                values: { axa: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Frais de défense RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
+                  chubb: makeDetail("Violation du RGPD", "chubb", "Chubb", true, "Couverture RGPD étendue incluant frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "150 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Sous-traitance",
+                values: { axa: { type: "text", value: "Couverte" }, chubb: { type: "text", value: "Couverte" } },
+                details: {
+                  axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Sous-traitants couverts.", [], defaultSources),
+                  chubb: makeDetail("Sous-traitance", "chubb", "Chubb", true, "Sous-traitance couverte y compris offshore.", [], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Atteinte à la propriété intellectuelle",
-            values: { axa: { type: "check" }, chubb: { type: "check" } },
-            details: {
-              axa: makeDetail("Atteinte à la propriété intellectuelle", "axa", "Axa", true, "Contrefaçon involontaire couverte.", [{ id: "sl-1", label: "Sous-limite", value: "250 000 €" }], defaultSources),
-              chubb: makeDetail("Atteinte à la propriété intellectuelle", "chubb", "Chubb", true, "Protection étendue de la PI.", [{ id: "sl-1", label: "Sous-limite", value: "500 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Perte de données client",
-            values: { axa: { type: "check" }, chubb: { type: "check" } },
-            details: {
-              axa: makeDetail("Perte de données client", "axa", "Axa", true, "Couverture des données avec frais de notification.", [{ id: "sl-1", label: "Sous-limite", value: "150 000 €" }], defaultSources),
-              chubb: makeDetail("Perte de données client", "chubb", "Chubb", true, "Protection complète incluant reconstitution et notification.", [{ id: "sl-1", label: "Sous-limite", value: "300 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Violation du RGPD",
-            values: { axa: { type: "check" }, chubb: { type: "check" } },
-            details: {
-              axa: makeDetail("Violation du RGPD", "axa", "Axa", true, "Frais de défense RGPD.", [{ id: "sl-1", label: "Frais de défense", value: "100 000 €" }], defaultSources),
-              chubb: makeDetail("Violation du RGPD", "chubb", "Chubb", true, "Couverture RGPD étendue incluant frais de notification.", [{ id: "sl-1", label: "Frais de défense", value: "150 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Sous-traitance",
-            values: { axa: { type: "text", value: "Couverte" }, chubb: { type: "text", value: "Couverte" } },
-            details: {
-              axa: makeDetail("Sous-traitance", "axa", "Axa", true, "Sous-traitants couverts.", [], defaultSources),
-              chubb: makeDetail("Sous-traitance", "chubb", "Chubb", true, "Sous-traitance couverte y compris offshore.", [], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Limites et franchises",
-        rows: [
-          {
-            label: "Plafond par sinistre",
-            values: { axa: { type: "text", value: "500 000 €" }, chubb: { type: "text", value: "750 000 €" } },
-            details: {
-              axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Plafond standard.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
-              chubb: makeDetail("Plafond par sinistre", "chubb", "Chubb", true, "Plafond élevé Premium.", [{ id: "sl-1", label: "Plafond", value: "750 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Plafond annuel",
-            values: { axa: { type: "text", value: "1 000 000 €" }, chubb: { type: "text", value: "2 000 000 €" } },
-            details: {
-              axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
-              chubb: makeDetail("Plafond annuel", "chubb", "Chubb", true, "Plafond annuel élevé.", [{ id: "sl-1", label: "Plafond annuel", value: "2 000 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Franchise",
-            values: { axa: { type: "text", value: "1 000 €" }, chubb: { type: "text", value: "1 500 €" } },
-            details: {
-              axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
-              chubb: makeDetail("Franchise", "chubb", "Chubb", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Défense pénale",
-            values: { axa: { type: "check" }, chubb: { type: "check" } },
-            details: {
-              axa: makeDetail("Défense pénale", "axa", "Axa", true, "Frais de défense pénale couverts.", [{ id: "sl-1", label: "Plafond", value: "75 000 €" }], defaultSources),
-              chubb: makeDetail("Défense pénale", "chubb", "Chubb", true, "Défense pénale étendue.", [{ id: "sl-1", label: "Plafond", value: "150 000 €" }], defaultSources),
-            },
+            title: "Limites et franchises",
+            rows: [
+              {
+                label: "Plafond par sinistre",
+                values: { axa: { type: "text", value: "500 000 €" }, chubb: { type: "text", value: "750 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Plafond standard.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources),
+                  chubb: makeDetail("Plafond par sinistre", "chubb", "Chubb", true, "Plafond élevé Premium.", [{ id: "sl-1", label: "Plafond", value: "750 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Plafond annuel",
+                values: { axa: { type: "text", value: "1 000 000 €" }, chubb: { type: "text", value: "2 000 000 €" } },
+                details: {
+                  axa: makeDetail("Plafond annuel", "axa", "Axa", true, "Plafond annuel global.", [{ id: "sl-1", label: "Plafond annuel", value: "1 000 000 €" }], defaultSources),
+                  chubb: makeDetail("Plafond annuel", "chubb", "Chubb", true, "Plafond annuel élevé.", [{ id: "sl-1", label: "Plafond annuel", value: "2 000 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Franchise",
+                values: { axa: { type: "text", value: "1 000 €" }, chubb: { type: "text", value: "1 500 €" } },
+                details: {
+                  axa: makeDetail("Franchise", "axa", "Axa", true, "Franchise fixe.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
+                  chubb: makeDetail("Franchise", "chubb", "Chubb", true, "Franchise par sinistre.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Défense pénale",
+                values: { axa: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Défense pénale", "axa", "Axa", true, "Frais de défense pénale couverts.", [{ id: "sl-1", label: "Plafond", value: "75 000 €" }], defaultSources),
+                  chubb: makeDetail("Défense pénale", "chubb", "Chubb", true, "Défense pénale étendue.", [{ id: "sl-1", label: "Plafond", value: "150 000 €" }], defaultSources),
+                },
+              },
+            ],
           },
         ],
       },
@@ -1470,122 +1700,438 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
     ],
-    sections: [
+    products: [
       {
-        title: "Couverture des locaux",
-        rows: [
+        title: "Multirisque",
+        subGroups: [
           {
-            label: "Incendie et explosion",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Incendie et explosion", "axa", "Axa", true, "Couverture complète incendie, explosion, implosion.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
-              maif: makeDetail("Incendie et explosion", "maif", "MAIF", true, "Protection incendie avec remplacement à neuf.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
-              generali: makeDetail("Incendie et explosion", "generali", "Generali", true, "Garantie incendie standard.", [{ id: "sl-1", label: "Valeur à neuf", value: "Non — vétusté déduite" }], defaultSources),
-            },
+            title: "Couverture des locaux",
+            rows: [
+              {
+                label: "Incendie et explosion",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Incendie et explosion", "axa", "Axa", true, "Couverture complète incendie, explosion, implosion.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
+                  maif: makeDetail("Incendie et explosion", "maif", "MAIF", true, "Protection incendie avec remplacement à neuf.", [{ id: "sl-1", label: "Valeur à neuf", value: "Oui" }], defaultSources),
+                  generali: makeDetail("Incendie et explosion", "generali", "Generali", true, "Garantie incendie standard.", [{ id: "sl-1", label: "Valeur à neuf", value: "Non — vétusté déduite" }], defaultSources),
+                },
+              },
+              {
+                label: "Dégâts des eaux",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Dégâts des eaux", "axa", "Axa", true, "Fuites, débordements, infiltrations couverts.", [], defaultSources),
+                  maif: makeDetail("Dégâts des eaux", "maif", "MAIF", true, "Couverture étendue incluant recherche de fuite.", [], defaultSources),
+                  generali: makeDetail("Dégâts des eaux", "generali", "Generali", true, "Dégâts des eaux courants.", [], defaultSources),
+                },
+              },
+              {
+                label: "Vol et vandalisme",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Vol et vandalisme", "axa", "Axa", true, "Vol par effraction et vandalisme couverts.", [{ id: "sl-1", label: "Plafond contenu", value: "50 000 €" }], defaultSources),
+                  maif: makeDetail("Vol et vandalisme", "maif", "MAIF", true, "Protection vol avec revalorisation annuelle.", [{ id: "sl-1", label: "Plafond contenu", value: "75 000 €" }], defaultSources),
+                  generali: makeDetail("Vol et vandalisme", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
+                },
+              },
+              {
+                label: "Catastrophes naturelles",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Régime CatNat obligatoire.", [], defaultSources),
+                  maif: makeDetail("Catastrophes naturelles", "maif", "MAIF", true, "Régime CatNat avec accompagnement dédié.", [], defaultSources),
+                  generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Régime CatNat obligatoire.", [], defaultSources),
+                },
+              },
+              {
+                label: "Bris de glace",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "text", value: "Option" } },
+                details: {
+                  axa: makeDetail("Bris de glace", "axa", "Axa", true, "Vitrines, enseignes et glaces incluses.", [], defaultSources),
+                  maif: makeDetail("Bris de glace", "maif", "MAIF", true, "Bris de glace étendu aux enseignes lumineuses.", [], defaultSources),
+                  generali: makeDetail("Bris de glace", "generali", "Generali", true, "Disponible en option.", [], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Dégâts des eaux",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Dégâts des eaux", "axa", "Axa", true, "Fuites, débordements, infiltrations couverts.", [], defaultSources),
-              maif: makeDetail("Dégâts des eaux", "maif", "MAIF", true, "Couverture étendue incluant recherche de fuite.", [], defaultSources),
-              generali: makeDetail("Dégâts des eaux", "generali", "Generali", true, "Dégâts des eaux courants.", [], defaultSources),
-            },
+            title: "Responsabilité civile",
+            rows: [
+              {
+                label: "RC exploitation",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("RC exploitation", "axa", "Axa", true, "Responsabilité civile dans le cadre de l'activité.", [{ id: "sl-1", label: "Plafond RC", value: "3 000 000 €" }], defaultSources),
+                  maif: makeDetail("RC exploitation", "maif", "MAIF", true, "RC professionnelle et exploitation.", [{ id: "sl-1", label: "Plafond RC", value: "5 000 000 €" }], defaultSources),
+                  generali: makeDetail("RC exploitation", "generali", "Generali", true, "RC exploitation standard.", [{ id: "sl-1", label: "Plafond RC", value: "2 000 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "RC après livraison",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("RC après livraison", "axa", "Axa", true, "Couverture des dommages après travaux.", [], defaultSources),
+                  maif: makeDetail("RC après livraison", "maif", "MAIF", true, "Garantie post-intervention.", [], defaultSources),
+                  generali: makeDetail("RC après livraison", "generali", "Generali", false, "Non inclus. Avenant disponible.", [], defaultSources),
+                },
+              },
+              {
+                label: "Protection juridique",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
+                details: {
+                  axa: makeDetail("Protection juridique", "axa", "Axa", true, "Accompagnement juridique et prise en charge des frais.", [{ id: "sl-1", label: "Plafond", value: "15 000 €" }], defaultSources),
+                  maif: makeDetail("Protection juridique", "maif", "MAIF", true, "Protection juridique étendue.", [{ id: "sl-1", label: "Plafond", value: "25 000 €" }], defaultSources),
+                  generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique de base.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
+                },
+              },
+            ],
           },
           {
-            label: "Vol et vandalisme",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Vol et vandalisme", "axa", "Axa", true, "Vol par effraction et vandalisme couverts.", [{ id: "sl-1", label: "Plafond contenu", value: "50 000 €" }], defaultSources),
-              maif: makeDetail("Vol et vandalisme", "maif", "MAIF", true, "Protection vol avec revalorisation annuelle.", [{ id: "sl-1", label: "Plafond contenu", value: "75 000 €" }], defaultSources),
-              generali: makeDetail("Vol et vandalisme", "generali", "Generali", false, "Non inclus dans la formule Standard.", [], defaultSources),
-            },
-          },
-          {
-            label: "Catastrophes naturelles",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Régime CatNat obligatoire.", [], defaultSources),
-              maif: makeDetail("Catastrophes naturelles", "maif", "MAIF", true, "Régime CatNat avec accompagnement dédié.", [], defaultSources),
-              generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Régime CatNat obligatoire.", [], defaultSources),
-            },
-          },
-          {
-            label: "Bris de glace",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "text", value: "Option" } },
-            details: {
-              axa: makeDetail("Bris de glace", "axa", "Axa", true, "Vitrines, enseignes et glaces incluses.", [], defaultSources),
-              maif: makeDetail("Bris de glace", "maif", "MAIF", true, "Bris de glace étendu aux enseignes lumineuses.", [], defaultSources),
-              generali: makeDetail("Bris de glace", "generali", "Generali", true, "Disponible en option.", [], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Responsabilité civile",
-        rows: [
-          {
-            label: "RC exploitation",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("RC exploitation", "axa", "Axa", true, "Responsabilité civile dans le cadre de l'activité.", [{ id: "sl-1", label: "Plafond RC", value: "3 000 000 €" }], defaultSources),
-              maif: makeDetail("RC exploitation", "maif", "MAIF", true, "RC professionnelle et exploitation.", [{ id: "sl-1", label: "Plafond RC", value: "5 000 000 €" }], defaultSources),
-              generali: makeDetail("RC exploitation", "generali", "Generali", true, "RC exploitation standard.", [{ id: "sl-1", label: "Plafond RC", value: "2 000 000 €" }], defaultSources),
-            },
-          },
-          {
-            label: "RC après livraison",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("RC après livraison", "axa", "Axa", true, "Couverture des dommages après travaux.", [], defaultSources),
-              maif: makeDetail("RC après livraison", "maif", "MAIF", true, "Garantie post-intervention.", [], defaultSources),
-              generali: makeDetail("RC après livraison", "generali", "Generali", false, "Non inclus. Avenant disponible.", [], defaultSources),
-            },
-          },
-          {
-            label: "Protection juridique",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "check" } },
-            details: {
-              axa: makeDetail("Protection juridique", "axa", "Axa", true, "Accompagnement juridique et prise en charge des frais.", [{ id: "sl-1", label: "Plafond", value: "15 000 €" }], defaultSources),
-              maif: makeDetail("Protection juridique", "maif", "MAIF", true, "Protection juridique étendue.", [{ id: "sl-1", label: "Plafond", value: "25 000 €" }], defaultSources),
-              generali: makeDetail("Protection juridique", "generali", "Generali", true, "Protection juridique de base.", [{ id: "sl-1", label: "Plafond", value: "10 000 €" }], defaultSources),
-            },
-          },
-        ],
-      },
-      {
-        title: "Services et franchises",
-        rows: [
-          {
-            label: "Franchise générale",
-            values: { axa: { type: "text", value: "500 €" }, maif: { type: "text", value: "300 €" }, generali: { type: "text", value: "400 €" } },
-            details: {
-              axa: makeDetail("Franchise générale", "axa", "Axa", true, "Franchise applicable par sinistre.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
-              maif: makeDetail("Franchise générale", "maif", "MAIF", true, "Franchise basse.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources),
-              generali: makeDetail("Franchise générale", "generali", "Generali", true, "Franchise standard.", [{ id: "sl-1", label: "Franchise", value: "400 €" }], defaultSources),
-            },
-          },
-          {
-            label: "Assistance 24h/24",
-            values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
-            details: {
-              axa: makeDetail("Assistance 24h/24", "axa", "Axa", true, "Numéro d'urgence et intervention rapide.", [], defaultSources),
-              maif: makeDetail("Assistance 24h/24", "maif", "MAIF", true, "Service d'urgence avec intervention sous 2h.", [], defaultSources),
-              generali: makeDetail("Assistance 24h/24", "generali", "Generali", false, "Non inclus dans cette formule.", [], defaultSources),
-            },
-          },
-          {
-            label: "Valeur à neuf",
-            values: { axa: { type: "text", value: "25 ans" }, maif: { type: "text", value: "Illimitée" }, generali: { type: "text", value: "10 ans" } },
-            details: {
-              axa: makeDetail("Valeur à neuf", "axa", "Axa", true, "Remplacement valeur à neuf si bien < 25 ans.", [], defaultSources),
-              maif: makeDetail("Valeur à neuf", "maif", "MAIF", true, "Remplacement à neuf sans limite d'ancienneté.", [], defaultSources),
-              generali: makeDetail("Valeur à neuf", "generali", "Generali", true, "Remplacement à neuf limité à 10 ans.", [], defaultSources),
-            },
+            title: "Services et franchises",
+            rows: [
+              {
+                label: "Franchise générale",
+                values: { axa: { type: "text", value: "500 €" }, maif: { type: "text", value: "300 €" }, generali: { type: "text", value: "400 €" } },
+                details: {
+                  axa: makeDetail("Franchise générale", "axa", "Axa", true, "Franchise applicable par sinistre.", [{ id: "sl-1", label: "Franchise", value: "500 €" }], defaultSources),
+                  maif: makeDetail("Franchise générale", "maif", "MAIF", true, "Franchise basse.", [{ id: "sl-1", label: "Franchise", value: "300 €" }], defaultSources),
+                  generali: makeDetail("Franchise générale", "generali", "Generali", true, "Franchise standard.", [{ id: "sl-1", label: "Franchise", value: "400 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Assistance 24h/24",
+                values: { axa: { type: "check" }, maif: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Assistance 24h/24", "axa", "Axa", true, "Numéro d'urgence et intervention rapide.", [], defaultSources),
+                  maif: makeDetail("Assistance 24h/24", "maif", "MAIF", true, "Service d'urgence avec intervention sous 2h.", [], defaultSources),
+                  generali: makeDetail("Assistance 24h/24", "generali", "Generali", false, "Non inclus dans cette formule.", [], defaultSources),
+                },
+              },
+              {
+                label: "Valeur à neuf",
+                values: { axa: { type: "text", value: "25 ans" }, maif: { type: "text", value: "Illimitée" }, generali: { type: "text", value: "10 ans" } },
+                details: {
+                  axa: makeDetail("Valeur à neuf", "axa", "Axa", true, "Remplacement valeur à neuf si bien < 25 ans.", [], defaultSources),
+                  maif: makeDetail("Valeur à neuf", "maif", "MAIF", true, "Remplacement à neuf sans limite d'ancienneté.", [], defaultSources),
+                  generali: makeDetail("Valeur à neuf", "generali", "Generali", true, "Remplacement à neuf limité à 10 ans.", [], defaultSources),
+                },
+              },
+            ],
           },
         ],
       },
     ],
+  },
+  "cot-7": {
+    products: [
+      {
+        title: "Santé collective",
+        subGroups: [
+          {
+            title: "Hospitalisation",
+            rows: [
+              {
+                label: "Frais de séjour",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "150% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Frais de séjour", "alan", "Alan", true, "Prise en charge des frais de séjour hospitalier.", [{ id: "sl-1", label: "Base", value: "100% BR" }], defaultSources),
+                  malakoff: makeDetail("Frais de séjour", "malakoff", "Malakoff Humanis", true, "Prise en charge majorée des frais de séjour.", [{ id: "sl-1", label: "Base", value: "150% BR" }], defaultSources),
+                  generali: makeDetail("Frais de séjour", "generali", "Generali", true, "Remboursement frais de séjour.", [{ id: "sl-1", label: "Base", value: "100% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Chambre particulière",
+                values: { alan: { type: "text", value: "80 €/jour" }, malakoff: { type: "text", value: "60 €/jour" }, generali: { type: "text", value: "70 €/jour" } },
+                details: {
+                  alan: makeDetail("Chambre particulière", "alan", "Alan", true, "Forfait chambre individuelle.", [{ id: "sl-1", label: "Plafond", value: "80 €/jour" }], defaultSources),
+                  malakoff: makeDetail("Chambre particulière", "malakoff", "Malakoff Humanis", true, "Indemnité chambre seule.", [{ id: "sl-1", label: "Plafond", value: "60 €/jour" }], defaultSources),
+                  generali: makeDetail("Chambre particulière", "generali", "Generali", true, "Forfait chambre particulière.", [{ id: "sl-1", label: "Plafond", value: "70 €/jour" }], defaultSources),
+                },
+              },
+              {
+                label: "Honoraires chirurgicaux",
+                values: { alan: { type: "text", value: "200% BR" }, malakoff: { type: "text", value: "250% BR" }, generali: { type: "text", value: "200% BR" } },
+                details: {
+                  alan: makeDetail("Honoraires chirurgicaux", "alan", "Alan", true, "Dépassements d'honoraires chirurgicaux.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                  malakoff: makeDetail("Honoraires chirurgicaux", "malakoff", "Malakoff Humanis", true, "Prise en charge étendue des dépassements.", [{ id: "sl-1", label: "Base", value: "250% BR" }], defaultSources),
+                  generali: makeDetail("Honoraires chirurgicaux", "generali", "Generali", true, "Honoraires chirurgicaux.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Soins courants",
+            rows: [
+              {
+                label: "Consultations généralistes",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "100% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Consultations généralistes", "alan", "Alan", true, "Consultations médecin traitant.", [], defaultSources),
+                  malakoff: makeDetail("Consultations généralistes", "malakoff", "Malakoff Humanis", true, "Consultations généralistes dans le parcours de soins.", [], defaultSources),
+                  generali: makeDetail("Consultations généralistes", "generali", "Generali", true, "Consultations médecin.", [], defaultSources),
+                },
+              },
+              {
+                label: "Consultations spécialistes",
+                values: { alan: { type: "text", value: "200% BR" }, malakoff: { type: "text", value: "150% BR" }, generali: { type: "text", value: "180% BR" } },
+                details: {
+                  alan: makeDetail("Consultations spécialistes", "alan", "Alan", true, "Dépassements d'honoraires spécialistes.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                  malakoff: makeDetail("Consultations spécialistes", "malakoff", "Malakoff Humanis", true, "Consultations spécialistes avec dépassements.", [{ id: "sl-1", label: "Base", value: "150% BR" }], defaultSources),
+                  generali: makeDetail("Consultations spécialistes", "generali", "Generali", true, "Honoraires spécialistes.", [{ id: "sl-1", label: "Base", value: "180% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Pharmacie",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "100% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Pharmacie", "alan", "Alan", true, "Médicaments remboursés par la Sécu.", [], defaultSources),
+                  malakoff: makeDetail("Pharmacie", "malakoff", "Malakoff Humanis", true, "Pharmacie prescrite.", [], defaultSources),
+                  generali: makeDetail("Pharmacie", "generali", "Generali", true, "Médicaments remboursés.", [], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Optique et dentaire",
+            rows: [
+              {
+                label: "Monture + verres",
+                values: { alan: { type: "text", value: "200 €/an" }, malakoff: { type: "text", value: "150 €/an" }, generali: { type: "text", value: "180 €/an" } },
+                details: {
+                  alan: makeDetail("Monture + verres", "alan", "Alan", true, "Forfait annuel optique.", [{ id: "sl-1", label: "Plafond", value: "200 €/an" }], defaultSources),
+                  malakoff: makeDetail("Monture + verres", "malakoff", "Malakoff Humanis", true, "Forfait optique.", [{ id: "sl-1", label: "Plafond", value: "150 €/an" }], defaultSources),
+                  generali: makeDetail("Monture + verres", "generali", "Generali", true, "Forfait optique annuel.", [{ id: "sl-1", label: "Plafond", value: "180 €/an" }], defaultSources),
+                },
+              },
+              {
+                label: "Prothèses dentaires",
+                values: { alan: { type: "text", value: "300% BR" }, malakoff: { type: "text", value: "250% BR" }, generali: { type: "text", value: "200% BR" } },
+                details: {
+                  alan: makeDetail("Prothèses dentaires", "alan", "Alan", true, "Prothèses dentaires remboursées.", [{ id: "sl-1", label: "Base", value: "300% BR" }], defaultSources),
+                  malakoff: makeDetail("Prothèses dentaires", "malakoff", "Malakoff Humanis", true, "Couverture prothèses.", [{ id: "sl-1", label: "Base", value: "250% BR" }], defaultSources),
+                  generali: makeDetail("Prothèses dentaires", "generali", "Generali", true, "Prothèses dentaires.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Orthodontie",
+                values: { alan: { type: "check" }, malakoff: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  alan: makeDetail("Orthodontie", "alan", "Alan", true, "Orthodontie acceptée par la Sécu.", [{ id: "sl-1", label: "Forfait", value: "600 €/an" }], defaultSources),
+                  malakoff: makeDetail("Orthodontie", "malakoff", "Malakoff Humanis", true, "Orthodontie enfants et adultes.", [{ id: "sl-1", label: "Forfait", value: "400 €/an" }], defaultSources),
+                  generali: makeDetail("Orthodontie", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Actes hors nomenclature Sécu",
+        origin: "deterministic",
+        values: { alan: { type: "inclus" }, malakoff: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          alan: makeExclusionDetail("Actes hors nomenclature", "alan", "Alan", true, "deterministic", "excl-d1", "Certains actes hors nomenclature pris en charge dans le cadre du forfait bien-être.", [], defaultSources),
+          malakoff: makeExclusionDetail("Actes hors nomenclature", "malakoff", "Malakoff Humanis", false, "deterministic", "excl-d1", "Actes non remboursés par la Sécurité sociale exclus.", [], defaultSources),
+          generali: makeExclusionDetail("Actes hors nomenclature", "generali", "Generali", false, "deterministic", "excl-d1", "Exclusion des actes hors nomenclature.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Médecines douces",
+        origin: "ai",
+        values: { alan: { type: "inclus" }, malakoff: { type: "exclu-text", value: "Limité" }, generali: { type: "exclu" } },
+        details: {
+          alan: makeExclusionDetail("Médecines douces", "alan", "Alan", true, "ai", "excl-d2", "Ostéopathie, acupuncture, naturopathie incluses.", [{ id: "sl-1", label: "Forfait", value: "4 séances/an" }], defaultSources),
+          malakoff: makeExclusionDetail("Médecines douces", "malakoff", "Malakoff Humanis", false, "ai", "excl-d2", "Ostéopathie uniquement, limitée à 2 séances/an.", [{ id: "sl-1", label: "Plafond", value: "2 séances/an" }], defaultSources),
+          generali: makeExclusionDetail("Médecines douces", "generali", "Generali", false, "ai", "excl-d2", "Médecines alternatives non couvertes.", [], defaultSources),
+        },
+      },
+    ],
+    rateProducts: [
+      {
+        title: "Cotisations par régime",
+        rateUnit: "eur_per_person_month",
+        employerShareFieldId: "partEmployeur",
+        subGroups: [
+          {
+            title: "Cadres",
+            rows: [
+              { label: "Isolé", dynamicFieldId: "cadresIsole", rates: { alan: 82.50, malakoff: 78.30, generali: 85.00 } },
+              { label: "Duo", dynamicFieldId: "cadresDuo", rates: { alan: 165.00, malakoff: 156.60, generali: 170.00 } },
+              { label: "Famille", dynamicFieldId: "cadresFamille", rates: { alan: 214.50, malakoff: 203.60, generali: 221.00 } },
+            ],
+          },
+          {
+            title: "Non-cadres",
+            rows: [
+              { label: "Isolé", dynamicFieldId: "nonCadresIsole", rates: { alan: 62.00, malakoff: 59.80, generali: 64.50 } },
+              { label: "Duo", dynamicFieldId: "nonCadresDuo", rates: { alan: 124.00, malakoff: 119.60, generali: 129.00 } },
+              { label: "Famille", dynamicFieldId: "nonCadresFamille", rates: { alan: 161.20, malakoff: 155.50, generali: 167.70 } },
+            ],
+          },
+        ],
+      },
+    ],
+    dynamicFields: [
+      { id: "cadresIsole", label: "Isolé", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "cadresDuo", label: "Duo", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "cadresFamille", label: "Famille", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "nonCadresIsole", label: "Isolé", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "nonCadresDuo", label: "Duo", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "nonCadresFamille", label: "Famille", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "partEmployeur", label: "Part employeur (%)", sectionKey: "repartition", sectionLabel: "Répartition cotisation", type: "number" },
+    ],
+    dynamicFieldValues: { partEmployeur: 50 },
+  },
+  "cot-6": {
+    products: [
+      {
+        title: "Prévoyance / AT",
+        subGroups: [
+          {
+            title: "Garanties décès",
+            rows: [
+              {
+                label: "Capital décès toute cause",
+                values: { generali: { type: "text", value: "300% TA + 200% TB" }, axa: { type: "text", value: "250% TA + 200% TB" }, allianz: { type: "text", value: "300% TA + 250% TB" } },
+                details: {
+                  generali: makeDetail("Capital décès toute cause", "generali", "Generali", true, "Capital versé en cas de décès quelle qu'en soit la cause.", [{ id: "sl-1", label: "Tranche A", value: "300% du salaire" }, { id: "sl-2", label: "Tranche B", value: "200% du salaire" }], defaultSources),
+                  axa: makeDetail("Capital décès toute cause", "axa", "Axa", true, "Capital décès versé aux bénéficiaires désignés.", [{ id: "sl-1", label: "Tranche A", value: "250% du salaire" }, { id: "sl-2", label: "Tranche B", value: "200% du salaire" }], defaultSources),
+                  allianz: makeDetail("Capital décès toute cause", "allianz", "Allianz", true, "Garantie décès avec doublement en cas d'accident.", [{ id: "sl-1", label: "Tranche A", value: "300% du salaire" }, { id: "sl-2", label: "Tranche B", value: "250% du salaire" }], defaultSources),
+                },
+              },
+              {
+                label: "Rente éducation",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  generali: makeDetail("Rente éducation", "generali", "Generali", true, "Rente versée aux enfants à charge jusqu'à 26 ans si poursuite d'études.", [{ id: "sl-1", label: "Montant", value: "12% du salaire / enfant" }], defaultSources),
+                  axa: makeDetail("Rente éducation", "axa", "Axa", true, "Rente éducation jusqu'à 25 ans.", [{ id: "sl-1", label: "Montant", value: "10% du salaire / enfant" }], defaultSources),
+                  allianz: makeDetail("Rente éducation", "allianz", "Allianz", false, "Non incluse. Option disponible.", [], defaultSources),
+                },
+              },
+              {
+                label: "Rente de conjoint",
+                values: { generali: { type: "text", value: "60% du salaire" }, axa: { type: "text", value: "50% du salaire" }, allianz: { type: "text", value: "60% du salaire" } },
+                details: {
+                  generali: makeDetail("Rente de conjoint", "generali", "Generali", true, "Rente viagère au conjoint survivant.", [{ id: "sl-1", label: "Taux", value: "60% du salaire" }], defaultSources),
+                  axa: makeDetail("Rente de conjoint", "axa", "Axa", true, "Rente temporaire au conjoint.", [{ id: "sl-1", label: "Taux", value: "50% du salaire" }], defaultSources),
+                  allianz: makeDetail("Rente de conjoint", "allianz", "Allianz", true, "Rente viagère au conjoint.", [{ id: "sl-1", label: "Taux", value: "60% du salaire" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Incapacité et invalidité",
+            rows: [
+              {
+                label: "Indemnités journalières",
+                values: { generali: { type: "text", value: "90% du salaire" }, axa: { type: "text", value: "85% du salaire" }, allianz: { type: "text", value: "90% du salaire" } },
+                details: {
+                  generali: makeDetail("Indemnités journalières", "generali", "Generali", true, "IJ versées après franchise de 90 jours.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }, { id: "sl-2", label: "Durée max", value: "1 095 jours" }], defaultSources),
+                  axa: makeDetail("Indemnités journalières", "axa", "Axa", true, "IJ versées dès le 91e jour d'arrêt.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }, { id: "sl-2", label: "Durée max", value: "1 095 jours" }], defaultSources),
+                  allianz: makeDetail("Indemnités journalières", "allianz", "Allianz", true, "IJ avec maintien de 90% du salaire net.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }], defaultSources),
+                },
+              },
+              {
+                label: "Invalidité permanente",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Invalidité permanente", "generali", "Generali", true, "Rente d'invalidité selon catégorie.", [{ id: "sl-1", label: "Cat. 1", value: "40% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "80% du salaire" }], defaultSources),
+                  axa: makeDetail("Invalidité permanente", "axa", "Axa", true, "Rente d'invalidité.", [{ id: "sl-1", label: "Cat. 1", value: "36% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "75% du salaire" }], defaultSources),
+                  allianz: makeDetail("Invalidité permanente", "allianz", "Allianz", true, "Rente d'invalidité.", [{ id: "sl-1", label: "Cat. 1", value: "40% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "80% du salaire" }], defaultSources),
+                },
+              },
+              {
+                label: "Doublement accident",
+                values: { generali: { type: "check" }, axa: { type: "cross" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Doublement accident", "generali", "Generali", true, "Capital doublé en cas de décès ou invalidité par accident.", [], defaultSources),
+                  axa: makeDetail("Doublement accident", "axa", "Axa", false, "Non inclus dans la formule.", [], defaultSources),
+                  allianz: makeDetail("Doublement accident", "allianz", "Allianz", true, "Doublement du capital en cas d'accident.", [], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle de l'assuré",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Faute intentionnelle de l'assuré", "generali", "Generali", false, "deterministic", "excl-d1", "Exclusion légale des actes intentionnels.", [], defaultSources),
+          axa: makeExclusionDetail("Faute intentionnelle de l'assuré", "axa", "Axa", false, "deterministic", "excl-d1", "Exclusion conforme au Code des assurances.", [], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle de l'assuré", "allianz", "Allianz", false, "deterministic", "excl-d1", "Actes volontaires exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Guerre et émeute",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Guerre et émeute", "generali", "Generali", false, "deterministic", "excl-d2", "Faits de guerre, guerre civile, émeutes.", [], defaultSources),
+          axa: makeExclusionDetail("Guerre et émeute", "axa", "Axa", false, "deterministic", "excl-d2", "Événements de guerre et assimilés.", [], defaultSources),
+          allianz: makeExclusionDetail("Guerre et émeute", "allianz", "Allianz", false, "deterministic", "excl-d2", "Risques de guerre exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Sports à risque pratiqués hors cadre professionnel",
+        origin: "ai",
+        values: { generali: { type: "exclu" }, axa: { type: "inclus" }, allianz: { type: "exclu-text", value: "Rachat possible" } },
+        details: {
+          generali: makeExclusionDetail("Sports à risque", "generali", "Generali", false, "ai", "excl-a1", "Pratique de sports dangereux hors activité professionnelle exclue.", [], defaultSources),
+          axa: makeExclusionDetail("Sports à risque", "axa", "Axa", true, "ai", "excl-a1", "Sports à risque couverts sans surcoût dans la formule Confort.", [], defaultSources),
+          allianz: makeExclusionDetail("Sports à risque", "allianz", "Allianz", false, "ai", "excl-a1", "Exclusion standard, rachat possible via avenant.", [{ id: "sl-1", label: "Surprime", value: "+15%" }], defaultSources),
+        },
+      },
+    ],
+    rateProducts: [
+      {
+        title: "Cotisations par catégorie",
+        subGroups: [
+          {
+            title: "Masse salariale 2025",
+            rows: [
+              {
+                label: "Cadres (tranche A)",
+                dynamicFieldId: "payroll-cadres-ta",
+                rates: { generali: 0.0185, axa: 0.0172, allianz: 0.0190 },
+              },
+              {
+                label: "Cadres (tranche B)",
+                dynamicFieldId: "payroll-cadres-tb",
+                rates: { generali: 0.0220, axa: 0.0215, allianz: 0.0230 },
+              },
+              {
+                label: "Non-cadres (tranche A)",
+                dynamicFieldId: "payroll-noncadres-ta",
+                rates: { generali: 0.0110, axa: 0.0105, allianz: 0.0115 },
+              },
+              {
+                label: "Non-cadres (tranche B)",
+                dynamicFieldId: "payroll-noncadres-tb",
+                rates: { generali: 0.0145, axa: 0.0138, allianz: 0.0150 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    dynamicFields: [
+      { id: "payroll-cadres-ta", label: "Cadres (tranche A)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-cadres-tb", label: "Cadres (tranche B)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-noncadres-ta", label: "Non-cadres (tranche A)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-noncadres-tb", label: "Non-cadres (tranche B)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number" },
+    ],
+    dynamicFieldValues: {},
   },
 };
 
@@ -1598,7 +2144,9 @@ export function getComparisonData(cotationId: string): ComparisonData | undefine
 export type ContextPill = {
   id: string;
   label: string;
-  source: "extracted" | "manual" | "missing";
+  source: "extracted" | "ai" | "manual" | "missing";
+  /** For missing pills: explains why this info would improve the analysis */
+  hint?: string;
 };
 
 export type AnalysisSyntheseItem = {
@@ -1611,10 +2159,14 @@ export type AnalysisData = {
   synthese: AnalysisSyntheseItem[];
   contextPills: ContextPill[];
   hasFullContext: boolean;
+  /** Free text above the context pills */
+  contextNoteBefore?: string;
+  /** Free text below the context pills */
+  contextNoteAfter?: string;
   resumeExecutif: string;
   conditionsFinancieres: { analysisBefore: string; analysisAfter: string };
   analyseParOffre: Array<{ insurerId: string; insurerName: string; pointsForts: string[]; pointsFaibles: string[] }>;
-  garantiesCles: Array<{ label: string; values: Record<string, { status: "covered" | "not_covered"; keyInfo?: string }> }>;
+  garantiesCles: Array<{ label: string; type?: "guarantee" | "exclusion"; values: Record<string, { status: "covered" | "not_covered"; keyInfo?: string }> }>;
 };
 
 const analysisDataMap: Record<string, AnalysisData> = {
@@ -1662,8 +2214,8 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-2", label: "Activité : conseil IT", source: "extracted" },
       { id: "cp-3", label: "12 salariés", source: "extracted" },
       { id: "cp-4", label: "Sinistralité 3 ans : 0", source: "manual" },
-      { id: "cp-5", label: "Sous-traitance", source: "missing" },
-      { id: "cp-6", label: "Activité à l'international", source: "missing" },
+      { id: "cp-5", label: "Sous-traitance", source: "missing", hint: "Impacte le perimetre de couverture RC" },
+      { id: "cp-6", label: "Activité à l'international", source: "missing", hint: "Determine la zone geographique de garantie" },
     ],
     hasFullContext: false,
     resumeExecutif: "L'analyse comparative des trois offres RC Pro pour Marble Tech SAS révèle des positionnements différenciés. Axa propose le tarif le plus compétitif avec la formule Essentielle à 810,52 €/an, tandis qu'Allianz offre la couverture la plus complète avec une protection cyber incluse dès la formule de base.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la protection juridique incluse et la couverture monde entier. Cependant, la franchise plus élevée (1 000 €) et le délai de carence sur la cyber constituent des points de vigilance.\n\nRecommandation : compte tenu du profil technologique de Marble Tech et du besoin en couverture cyber, l'offre Allianz présente le meilleur alignement avec les besoins exprimés. L'offre Axa reste pertinente si le budget est la priorité, sous réserve de souscrire l'option cyber.",
@@ -1719,12 +2271,12 @@ const analysisDataMap: Record<string, AnalysisData> = {
       },
     ],
     garantiesCles: [
-      { label: "RC Professionnelle", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, generali: { status: "covered", keyInfo: "2 000 000 €" }, allianz: { status: "covered", keyInfo: "3 000 000 €" } } },
-      { label: "Protection cyber", values: { axa: { status: "not_covered", keyInfo: "Option" }, generali: { status: "covered", keyInfo: "Carence 30j" }, allianz: { status: "covered", keyInfo: "Incluse" } } },
-      { label: "Protection juridique", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
-      { label: "Sous-traitants", values: { axa: { status: "covered", keyInfo: "Tous" }, generali: { status: "covered", keyInfo: "UE uniquement" }, allianz: { status: "covered", keyInfo: "UE uniquement" } } },
-      { label: "Couverture monde entier", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
-      { label: "Perte d'exploitation", values: { axa: { status: "not_covered" }, generali: { status: "covered", keyInfo: "Premium" }, allianz: { status: "covered" } } },
+      { label: "RC Professionnelle", type: "guarantee", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, generali: { status: "covered", keyInfo: "2 000 000 €" }, allianz: { status: "covered", keyInfo: "3 000 000 €" } } },
+      { label: "Protection cyber", type: "guarantee", values: { axa: { status: "not_covered", keyInfo: "Option" }, generali: { status: "covered", keyInfo: "Carence 30j" }, allianz: { status: "covered", keyInfo: "Incluse" } } },
+      { label: "Protection juridique", type: "guarantee", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
+      { label: "Sous-traitants", type: "exclusion", values: { axa: { status: "covered", keyInfo: "Tous" }, generali: { status: "covered", keyInfo: "UE uniquement" }, allianz: { status: "covered", keyInfo: "UE uniquement" } } },
+      { label: "Couverture monde entier", type: "exclusion", values: { axa: { status: "not_covered" }, generali: { status: "covered" }, allianz: { status: "covered" } } },
+      { label: "Perte d'exploitation", type: "guarantee", values: { axa: { status: "not_covered" }, generali: { status: "covered", keyInfo: "Premium" }, allianz: { status: "covered" } } },
     ],
   },
   "cot-2": {
@@ -1771,8 +2323,8 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-2", label: "Usage professionnel", source: "extracted" },
       { id: "cp-3", label: "Sinistralité 3 ans : 12%", source: "extracted" },
       { id: "cp-4", label: "Bonus-malus moyen : 0.76", source: "manual" },
-      { id: "cp-5", label: "Zone de circulation", source: "missing" },
-      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing" },
+      { id: "cp-5", label: "Zone de circulation", source: "missing", hint: "Affine le calcul du risque routier" },
+      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et les options d'assurance" },
     ],
     hasFullContext: false,
     resumeExecutif: `L'analyse comparative des trois offres pour la flotte de 44 véhicules d'ACME Corp révèle des différences significatives en termes de couverture et de tarification. Allianz propose le meilleur rapport qualité-prix sur la formule Tiers étendu (3 300 €/an), tandis qu'Axa offre la couverture la plus complète en Tous risques malgré un tarif plus élevé.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la prise en charge de l'usure véhicule dans sa formule Premium. Cependant, l'absence de couverture dommages tous accidents en formule Standard constitue une limitation importante pour une flotte professionnelle.\n\nRecommandation : pour une flotte de cette taille avec un taux de sinistralité de 12%, la formule Tous risques Axa ou Allianz est préconisée. Le choix final dépendra de l'arbitrage entre la franchise (500 € Axa vs 750 € Allianz) et le tarif annuel.`,
@@ -1875,6 +2427,206 @@ const analysisDataMap: Record<string, AnalysisData> = {
           axa: { status: "covered", keyInfo: "Sous 48h" },
           allianz: { status: "covered", keyInfo: "Sous 72h" },
           generali: { status: "covered", keyInfo: "Sous 48h" },
+        },
+      },
+    ],
+  },
+  "cot-7": {
+    synthese: [
+      {
+        insurerId: "alan",
+        pointsForts: [
+          "Prise en charge des médecines douces (4 séances/an)",
+          "Meilleur forfait optique (200 €/an)",
+          "Orthodontie couverte (600 €/an)",
+          "App mobile avec téléconsultation incluse",
+        ],
+        pointsFaibles: [
+          "Tarifs légèrement supérieurs à Malakoff sur les cadres",
+          "Réseau de soins moins étendu",
+        ],
+      },
+      {
+        insurerId: "malakoff",
+        pointsForts: [
+          "Tarifs les plus compétitifs toutes catégories",
+          "Honoraires chirurgicaux les mieux couverts (250% BR)",
+          "Réseau de soins étendu (accords tiers payant)",
+        ],
+        pointsFaibles: [
+          "Forfait optique le plus bas (150 €/an)",
+          "Médecines douces limitées à l'ostéopathie (2 séances)",
+          "Pas de forfait bien-être",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Chambre particulière bien couverte (70 €/jour)",
+          "Bon niveau de couverture spécialistes (180% BR)",
+        ],
+        pointsFaibles: [
+          "Tarifs les plus élevés",
+          "Orthodontie non couverte",
+          "Médecines douces exclues",
+          "Forfait optique intermédiaire",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "Convention Syntec — IDCC 1486", source: "extracted" },
+      { id: "cp-2", label: "127 salariés (45 cadres, 82 non-cadres)", source: "extracted" },
+      { id: "cp-3", label: "Âge moyen : 38 ans", source: "extracted" },
+      { id: "cp-4", label: "Effectifs par régime", source: "missing", hint: "Nécessaire pour calculer le coût total annuel" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres de santé collective pour Dupont SA (Convention Syntec, 127 salariés) met en évidence des positionnements différenciés.\n\nMalakoff Humanis propose les tarifs les plus compétitifs avec un écart de 5 à 7% par rapport aux concurrents, tout en offrant la meilleure couverture en hospitalisation (150% BR frais de séjour, 250% BR honoraires chirurgicaux).\n\nAlan se distingue par son approche digitale et ses garanties bien-être (médecines douces, téléconsultation incluse, forfait optique le plus élevé), pour un surcoût modéré.\n\nGenerali présente les tarifs les plus élevés avec un niveau de couverture intermédiaire, notamment l'absence d'orthodontie et de médecines douces.\n\nRecommandation : renseigner les effectifs par régime pour obtenir le coût total annuel et finaliser la comparaison.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les assureurs cotent en euros par personne et par mois, ventilés par collège (cadres/non-cadres) et régime (isolé/duo/famille). Les écarts de tarifs sont significatifs : Malakoff est systématiquement le moins cher (-5 à 7%), Alan se positionne en milieu de gamme, et Generali est le plus cher (+3 à 8% vs Malakoff).",
+      analysisAfter: "Pour finaliser la comparaison financière, il est indispensable de renseigner la répartition des effectifs par régime (isolé/duo/famille) et par collège. Le coût total annuel dépend directement de cette ventilation. La part employeur (fixée à 50% par défaut) peut être ajustée selon la politique de l'entreprise.",
+    },
+    analyseParOffre: [
+      { insurerId: "alan", insurerName: "Alan", pointsForts: ["Approche 100% digitale avec app mobile", "Médecines douces incluses (4 séances/an)", "Meilleur forfait optique (200 €/an)", "Téléconsultation 24/7 incluse"], pointsFaibles: ["Tarifs supérieurs à Malakoff", "Réseau de soins moins étendu"] },
+      { insurerId: "malakoff", insurerName: "Malakoff Humanis", pointsForts: ["Tarifs les plus compétitifs", "Meilleure couverture hospitalisation", "Réseau tiers payant étendu"], pointsFaibles: ["Forfait optique le plus bas", "Médecines douces limitées", "Interface de gestion vieillissante"] },
+      { insurerId: "generali", insurerName: "Generali", pointsForts: ["Bonne couverture chambre particulière", "Spécialistes à 180% BR"], pointsFaibles: ["Tarifs les plus élevés", "Pas d'orthodontie", "Pas de médecines douces"] },
+    ],
+    garantiesCles: [
+      { label: "Chambre particulière", values: { alan: { status: "covered", keyInfo: "80 €/jour" }, malakoff: { status: "covered", keyInfo: "60 €/jour" }, generali: { status: "covered", keyInfo: "70 €/jour" } } },
+      { label: "Honoraires chirurgicaux", values: { alan: { status: "covered", keyInfo: "200% BR" }, malakoff: { status: "covered", keyInfo: "250% BR" }, generali: { status: "covered", keyInfo: "200% BR" } } },
+      { label: "Optique", values: { alan: { status: "covered", keyInfo: "200 €/an" }, malakoff: { status: "covered", keyInfo: "150 €/an" }, generali: { status: "covered", keyInfo: "180 €/an" } } },
+      { label: "Orthodontie", values: { alan: { status: "covered", keyInfo: "600 €/an" }, malakoff: { status: "covered", keyInfo: "400 €/an" }, generali: { status: "not_covered" } } },
+      { label: "Médecines douces", values: { alan: { status: "covered", keyInfo: "4 séances" }, malakoff: { status: "covered", keyInfo: "2 séances" }, generali: { status: "not_covered" } } },
+    ],
+  },
+  "cot-6": {
+    synthese: [
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Garanties décès complètes avec rente éducation incluse",
+          "Doublement du capital en cas d'accident",
+          "Indemnités journalières à 90% du salaire",
+        ],
+        pointsFaibles: [
+          "Taux de cotisation intermédiaire (1,85%)",
+          "Sports à risque exclus sans possibilité de rachat",
+        ],
+      },
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Taux de cotisation le plus compétitif (1,72%)",
+          "Sports à risque couverts sans surcoût",
+          "Rente éducation incluse",
+        ],
+        pointsFaibles: [
+          "Pas de doublement accident",
+          "Rente de conjoint limitée à 50% vs 60% chez les concurrents",
+          "Indemnités journalières plafonnées à 85%",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Capital décès le plus élevé (300% TA + 250% TB)",
+          "Doublement du capital en cas d'accident",
+          "Indemnités journalières à 90%",
+        ],
+        pointsFaibles: [
+          "Taux de cotisation le plus élevé (1,90%)",
+          "Pas de rente éducation en standard",
+          "Rachat sports à risque avec surprime de 15%",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "Convention Syntec — IDCC 1486", source: "extracted" },
+      { id: "cp-2", label: "52 salariés (32 cadres, 20 non-cadres)", source: "extracted" },
+      { id: "cp-3", label: "Âge moyen : 34 ans", source: "extracted" },
+      { id: "cp-4", label: "Masse salariale cadres TA", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+      { id: "cp-5", label: "Masse salariale cadres TB", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+      { id: "cp-6", label: "Masse salariale non-cadres", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres de prévoyance / AT pour LegalPlace SAS (Convention Syntec) fait ressortir des positionnements différenciés.\n\nAxa propose le taux de cotisation le plus compétitif à 1,72% de la masse salariale, avec une couverture des sports à risque sans surcoût. Cependant, les niveaux de garanties décès et IJ sont légèrement inférieurs aux concurrents.\n\nAllianz offre les garanties décès les plus généreuses (300% TA + 250% TB) avec doublement accident, mais au taux le plus élevé (1,90%) et sans rente éducation en standard.\n\nGenerali se positionne en milieu de gamme (1,85%) avec un bon équilibre entre niveau de garanties et tarification.\n\nRecommandation : compléter la masse salariale par catégorie pour obtenir les montants de cotisation en euros et finaliser l'arbitrage.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les assureurs cotent en pourcentage de la masse salariale, ce qui rend la comparaison directe en euros impossible sans les données de paie. Les taux s'échelonnent de 1,72% (Axa) à 1,90% (Allianz), soit un écart de 0,18 point. Sur une masse salariale hypothétique de 2,5 M€, cela représente un différentiel annuel de 4 500 €.",
+      analysisAfter: "Pour finaliser la comparaison tarifaire, il est indispensable de renseigner la masse salariale ventilée par catégorie (cadres TA/TB, non-cadres TA/TB). Les taux diffèrent selon les tranches et une simulation globale est nécessaire.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "generali",
+        insurerName: "Generali",
+        pointsForts: [
+          "Bon équilibre garanties / tarif",
+          "Rente éducation et rente de conjoint incluses",
+          "Doublement du capital en cas d'accident",
+        ],
+        pointsFaibles: [
+          "Sports à risque exclus",
+          "Taux intermédiaire (1,85%)",
+        ],
+      },
+      {
+        insurerId: "axa",
+        insurerName: "Axa",
+        pointsForts: [
+          "Taux le plus compétitif (1,72%)",
+          "Sports à risque couverts",
+          "Rente éducation incluse",
+        ],
+        pointsFaibles: [
+          "Capital décès inférieur (250% TA vs 300%)",
+          "Pas de doublement accident",
+          "Rente de conjoint à 50% seulement",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        insurerName: "Allianz",
+        pointsForts: [
+          "Capital décès le plus élevé (300% TA + 250% TB)",
+          "Doublement accident inclus",
+          "IJ à 90% du salaire",
+        ],
+        pointsFaibles: [
+          "Taux le plus élevé (1,90%)",
+          "Pas de rente éducation",
+          "Rachat sports à risque avec surprime",
+        ],
+      },
+    ],
+    garantiesCles: [
+      {
+        label: "Capital décès",
+        values: {
+          generali: { status: "covered", keyInfo: "300% TA + 200% TB" },
+          axa: { status: "covered", keyInfo: "250% TA + 200% TB" },
+          allianz: { status: "covered", keyInfo: "300% TA + 250% TB" },
+        },
+      },
+      {
+        label: "Rente éducation",
+        values: {
+          generali: { status: "covered" },
+          axa: { status: "covered" },
+          allianz: { status: "not_covered", keyInfo: "Option" },
+        },
+      },
+      {
+        label: "Indemnités journalières",
+        values: {
+          generali: { status: "covered", keyInfo: "90%" },
+          axa: { status: "covered", keyInfo: "85%" },
+          allianz: { status: "covered", keyInfo: "90%" },
+        },
+      },
+      {
+        label: "Doublement accident",
+        values: {
+          generali: { status: "covered" },
+          axa: { status: "not_covered" },
+          allianz: { status: "covered" },
         },
       },
     ],
@@ -2001,10 +2753,16 @@ export function mockRegenerateSection(
 
 // ─── Client profile data ─────────────────────────────────────────────
 
+export type BesoinItem = {
+  id: string;
+  value: string;
+  source: "ai" | "manual";
+};
+
 export type ClientProfileData = {
   clientLabel: string;
   clientSiren: string;
-  besoinsClient: string[];
+  besoinsClient: BesoinItem[];
 };
 
 const clientProfileMap: Record<string, ClientProfileData> = {
@@ -2012,18 +2770,38 @@ const clientProfileMap: Record<string, ClientProfileData> = {
     clientLabel: "Marble Tech SAS",
     clientSiren: "00007U26464",
     besoinsClient: [
-      "Couverture RC Pro étendue aux sous-traitants",
-      "Protection cyber incluse",
+      { id: "b-1", value: "Couverture RC Pro étendue aux sous-traitants", source: "ai" },
+      { id: "b-2", value: "Protection cyber incluse", source: "ai" },
+      { id: "b-7", value: "Franchise max 1 000€ par sinistre", source: "manual" },
+      { id: "b-8", value: "Besoin d'une couverture monde entier (missions clients a l'international)", source: "manual" },
+    ],
+  },
+  "cot-6": {
+    clientLabel: "LegalPlace SAS",
+    clientSiren: "82012457800019",
+    besoinsClient: [
+      { id: "b-10", value: "Garanties décès et invalidité conformes à la CCN Syntec", source: "ai" },
+      { id: "b-11", value: "Maintien de salaire à 90% minimum en cas d'arrêt", source: "ai" },
+      { id: "b-12", value: "Portabilité des droits pour les salariés sortants", source: "manual" },
     ],
   },
   "cot-2": {
     clientLabel: "ACME Corp SAS",
     clientSiren: "84392017300024",
     besoinsClient: [
-      "Couverture tous risques sur l'ensemble du parc",
-      "Franchise plafonnée à 500 €/sinistre maximum",
-      "Assistance 0 km obligatoire (véhicules utilitaires inclus)",
-      "Véhicule de remplacement sous 48h en cas d'immobilisation",
+      { id: "b-3", value: "Couverture tous risques sur l'ensemble du parc", source: "ai" },
+      { id: "b-4", value: "Franchise plafonnée à 500 €/sinistre maximum", source: "ai" },
+      { id: "b-5", value: "Assistance 0 km obligatoire (véhicules utilitaires inclus)", source: "ai" },
+      { id: "b-6", value: "Véhicule de remplacement sous 48h en cas d'immobilisation", source: "manual" },
+    ],
+  },
+  "cot-7": {
+    clientLabel: "Dupont SA",
+    clientSiren: "91234567800012",
+    besoinsClient: [
+      { id: "b-13", value: "Couverture santé conforme aux minimums CCN Syntec", source: "ai" },
+      { id: "b-14", value: "Prise en charge optique et dentaire renforcée", source: "ai" },
+      { id: "b-15", value: "Part employeur à 60% minimum", source: "manual" },
     ],
   },
 };
@@ -2040,24 +2818,34 @@ export function buildContextPills(
   profile: ClientProfileData,
   basePills: ContextPill[],
 ): { pills: ContextPill[]; hasFullContext: boolean } {
-  const pills = basePills.map((pill) => {
-    // If a missing pill relates to a field the user has now filled, promote it to manual
-    if (pill.source === "missing") {
-      const lbl = pill.label.toLowerCase();
-      if (lbl.includes("besoin") && profile.besoinsClient.filter(Boolean).length > 0) {
-        return { ...pill, source: "manual" as const };
-      }
+  // besoinsClient is the source of truth — it now contains extracted items too.
+  // Start fresh: build pills from besoinsClient, then append missing base pills
+  // that haven't been addressed yet.
+  const pills: ContextPill[] = [];
+  const usedLabels = new Set<string>();
+
+  // 1. Add all besoins as pills, preserving their source (ai or manual)
+  profile.besoinsClient.filter((b) => b.value.trim()).forEach((besoin, idx) => {
+    const key = besoin.value.toLowerCase();
+    if (!usedLabels.has(key)) {
+      pills.push({ id: `besoin-${idx}`, label: besoin.value, source: besoin.source });
+      usedLabels.add(key);
     }
-    return pill;
   });
 
-  // Add besoin items as manual pills if not already represented
-  const existingLabels = new Set(pills.map((p) => p.label.toLowerCase()));
-  profile.besoinsClient.filter(Boolean).forEach((besoin, idx) => {
-    if (!existingLabels.has(besoin.toLowerCase())) {
-      pills.push({ id: `besoin-${idx}`, label: besoin, source: "manual" });
+  // 2. Keep "missing" base pills that haven't been filled by a besoin
+  const hasBesoins = pills.length > 0;
+  for (const pill of basePills) {
+    if (pill.source === "missing") {
+      const lbl = pill.label.toLowerCase();
+      // Promote besoin-related missing pills if user has provided besoins
+      if (lbl.includes("besoin") && hasBesoins) continue;
+      if (!usedLabels.has(lbl)) {
+        pills.push(pill);
+        usedLabels.add(lbl);
+      }
     }
-  });
+  }
 
   const hasFullContext = pills.every((p) => p.source !== "missing");
   return { pills, hasFullContext };
@@ -2128,6 +2916,26 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "maif", "generali"],
     createdBy: "Delphine",
     date: "10/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-6",
+    cotationId: "cot-6",
+    client: "LegalPlace SAS",
+    products: ["Prévoyance / AT"],
+    insurerIds: ["generali", "axa", "allianz"],
+    createdBy: "Delphine",
+    date: "12/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-7",
+    cotationId: "cot-7",
+    client: "Dupont SA",
+    products: ["Santé collective"],
+    insurerIds: ["alan", "malakoff", "generali"],
+    createdBy: "Delphine",
+    date: "14/04/2026",
     status: "done",
   },
 ];

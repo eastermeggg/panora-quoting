@@ -19,11 +19,12 @@ import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import { AnalysisTab } from "@/components/quoting/AnalysisTab";
+import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
+import { DevoirConseilWizard } from "@/components/quoting/DevoirConseilWizard";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  FileSignature,
   Loader2,
   FileSearch,
   CheckCircle2,
@@ -41,7 +42,7 @@ function ComparisonListView() {
   const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
   const done = comparisonTasks.filter((t) => t.status === "done");
 
-  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: string[] }) => {
+  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
     const cotationId = "cot-1";
     // Update client profile with wizard besoins
     updateClientProfile(cotationId, {
@@ -251,7 +252,9 @@ function getCellDetail(
   insurers: InsurerData[],
 ): CellDetail | null {
   if (cellId.type === "guarantee" && data) {
-    const section = data.sections[cellId.sectionIndex];
+    // Flatten products → subGroups into a flat section list for backward-compatible indexing
+    const flatSections = data.products?.flatMap((p) => p.subGroups) ?? data.sections ?? [];
+    const section = flatSections[cellId.sectionIndex];
     if (!section) return null;
     const row = section.rows[cellId.rowIndex];
     if (!row) return null;
@@ -286,8 +289,8 @@ function getCellDetail(
       pricingRows: ins.pricing.map((formula, idx) => ({
         id: `pr-${idx}`,
         offerLabel: formula.formula,
-        price: formula.annual,
-        conditions: formula.monthly,
+        price: formula.details[0]?.value ?? "",
+        conditions: formula.details[1]?.value ?? "",
       })),
       sources: [],
     };
@@ -339,10 +342,14 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mutableProfile, setMutableProfile] = useState<ClientProfileData>(
-    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] }
+    () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
   );
   const [isStreaming, setIsStreaming] = useState(false);
-  const hasClientProfile = mutableProfile.besoinsClient.filter(Boolean).length > 0;
+  const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<import("@/data/mock").DynamicFieldValues>(
+    () => getComparisonData(cotParamId)?.dynamicFieldValues ?? {}
+  );
+  const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
 
   const openProfile = useCallback(() => {
     setSelectedCell(null);
@@ -389,27 +396,32 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     if (cellId.type === "guarantee") {
       setComparisonResult((prev) => {
         if (!prev) return prev;
-        const sections = prev.sections.map((section, sIdx) => {
-          if (sIdx !== cellId.sectionIndex) return section;
-          const rows = section.rows.map((row, rIdx) => {
-            if (rIdx !== cellId.rowIndex) return row;
-            // Update the cell value based on covered toggle
-            const currentCell = row.values[cellId.insurerId];
-            let newCell = currentCell;
-            if (updatedDetail.covered && currentCell?.type === "cross") {
-              newCell = { type: "check" };
-            } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
-              newCell = { type: "cross" };
-            }
-            return {
-              ...row,
-              values: { ...row.values, [cellId.insurerId]: newCell },
-              details: { ...row.details, [cellId.insurerId]: updatedDetail },
-            };
-          });
-          return { ...section, rows };
-        });
-        return { ...prev, sections };
+        // Update through nested products → subGroups using flat sectionIndex
+        let flatIdx = 0;
+        const products = (prev.products ?? []).map((product) => ({
+          ...product,
+          subGroups: product.subGroups.map((sg) => {
+            const currentIdx = flatIdx++;
+            if (currentIdx !== cellId.sectionIndex) return sg;
+            const rows = sg.rows.map((row, rIdx) => {
+              if (rIdx !== cellId.rowIndex) return row;
+              const currentCell = row.values[cellId.insurerId];
+              let newCell = currentCell;
+              if (updatedDetail.covered && currentCell?.type === "cross") {
+                newCell = { type: "check" };
+              } else if (!updatedDetail.covered && currentCell?.type !== "cross") {
+                newCell = { type: "cross" };
+              }
+              return {
+                ...row,
+                values: { ...row.values, [cellId.insurerId]: newCell },
+                details: { ...row.details, [cellId.insurerId]: updatedDetail },
+              };
+            });
+            return { ...sg, rows };
+          }),
+        }));
+        return { ...prev, products };
       });
     } else if (cellId.type === "price") {
       // Update mutableInsurers pricing from all pricingRows
@@ -417,10 +429,12 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         prev.map((ins) => {
           if (ins.id !== cellId.insurerId) return ins;
           if (!updatedDetail.pricingRows) return ins;
-          const pricing = updatedDetail.pricingRows.map((row, idx) => ({
+          const pricing = updatedDetail.pricingRows.map((row) => ({
             formula: row.offerLabel,
-            annual: row.price,
-            monthly: row.conditions,
+            details: [
+              { label: "Prime annuelle", value: row.price },
+              { label: "Prime mensuelle", value: row.conditions },
+            ],
           }));
           return { ...ins, pricing };
         })
@@ -561,13 +575,13 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
-        <button
-          onClick={() => console.log("TODO: Finaliser la proposition")}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
-        >
-          <FileSignature className="w-4 h-4" />
-          Finaliser la proposition
-        </button>
+        <FinaliserDropdown
+          clientName={mutableProfile.clientLabel || followupData?.cotation.client}
+          presentationUrl={`/presentation/${cotParamId}`}
+          onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
+          onDownloadEtudePDF={() => console.log("TODO: Telecharger etude PDF")}
+          onDownloadSynthesePDF={() => console.log("TODO: Telecharger synthese PDF")}
+        />
       </div>
 
       {agentPhase !== "ready" ? (
@@ -595,7 +609,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Synthese / Analyse
+              Synthese
             </button>
           </div>
 
@@ -623,11 +637,15 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   isStreaming={isStreaming}
                   onStreamingDone={() => setIsStreaming(false)}
                   hasClientProfile={hasClientProfile}
+                  dynamicFieldValues={dynamicFieldValues}
                 />
               </div>
               {isProfileOpen ? (
                 <ClientProfilePanel
                   profile={mutableProfile}
+                  dynamicFields={comparisonResult?.dynamicFields}
+                  dynamicFieldValues={dynamicFieldValues}
+                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
                   contextPills={mutableAnalysis?.contextPills}
                   onSave={handleProfileSave}
                   onClose={() => setIsProfileOpen(false)}
@@ -660,6 +678,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                 isStreaming={isStreaming}
                 onStreamingDone={() => setIsStreaming(false)}
                 hasClientProfile={hasClientProfile}
+                isPanelOpen={isProfileOpen}
               />
               {isProfileOpen && (
                 <ClientProfilePanel
@@ -667,11 +686,27 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   contextPills={mutableAnalysis?.contextPills}
                   onSave={handleProfileSave}
                   onClose={() => setIsProfileOpen(false)}
+                  dynamicFields={comparisonResult?.dynamicFields}
+                  dynamicFieldValues={dynamicFieldValues}
+                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
                 />
               )}
             </div>
           )}
         </>
+      )}
+
+      {devoirWizardOpen && (
+        <DevoirConseilWizard
+          onClose={() => setDevoirWizardOpen(false)}
+          onSubmit={(data) => {
+            console.log("Devoir de conseil generated:", data);
+            setDevoirWizardOpen(false);
+          }}
+          insurers={mutableInsurers}
+          profile={mutableProfile}
+          template={{ id: "tpl-1", name: "Modèle DDA standard — Howden", updatedAt: "02/04/2026" }}
+        />
       )}
     </div>
   );

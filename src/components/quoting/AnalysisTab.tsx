@@ -2,12 +2,16 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import { Check, X as XIcon, HelpCircle, FileDown, Copy, Plus, Sparkles, RotateCcw, Loader2, Send, Trash2, Search } from "lucide-react";
-import type { AnalysisData, InsurerData, SectionId, SectionMeta, ComparisonData, CellDetail } from "@/data/mock";
+import { Check, X as XIcon, Plus, Sparkles, Loader2, Send, Trash2, Search, ChevronDown, ChevronRight, GripVertical, CheckCircle2, AlertCircle, Diamond } from "lucide-react";
+import type { AnalysisData, InsurerData, SectionId, SectionMeta, ComparisonData, CellDetail, ContextPill } from "@/data/mock";
 import { DEFAULT_SECTION_PROMPTS, mockRegenerateSection } from "@/data/mock";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
+import { BesoinTag } from "@/components/ui/BesoinTag";
 
 type GarantieCellId = { rowIndex: number; insurerId: string };
+
+/** A generic section entry — either a built-in section or a custom text section */
+type SectionEntry = { type: "builtin"; id: SectionId } | { type: "custom"; id: string; title: string; content: string };
 
 interface AnalysisTabProps {
   analysisData: AnalysisData | undefined;
@@ -21,6 +25,8 @@ interface AnalysisTabProps {
   onStreamingDone?: () => void;
   /** When false, shows empty state prompting user to complete the client profile */
   hasClientProfile?: boolean;
+  /** When true, hides TOC and adjusts layout for side panel */
+  isPanelOpen?: boolean;
 }
 
 /** Splits "810,52 €/an" into { amount, period } */
@@ -36,31 +42,43 @@ function EditableBlock({
   value,
   onCommit,
   className,
+  placeholder,
 }: {
   value: string;
   onCommit: (value: string) => void;
   className?: string;
+  placeholder?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [showPlaceholder, setShowPlaceholder] = useState(!value.trim());
 
   const commit = () => {
     if (!ref.current) return;
     const text = ref.current.innerText?.trim() ?? "";
+    setShowPlaceholder(!text);
     if (text !== value) onCommit(text);
   };
 
   return (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      className={`outline-none whitespace-pre-wrap rounded-[4px] focus:ring-1 focus:ring-panora-green/30 px-1 -mx-1 ${className ?? ""}`}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") e.currentTarget.blur();
-      }}
-    >
-      {value}
+    <div className="relative">
+      {showPlaceholder && placeholder && (
+        <span className="absolute left-1 top-0 text-panora-text-muted/50 pointer-events-none select-none" style={{ fontSize: "inherit", lineHeight: "inherit" }}>
+          {placeholder}
+        </span>
+      )}
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        className={`outline-none whitespace-pre-wrap ${className ?? ""}`}
+        onFocus={() => setShowPlaceholder(false)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") e.currentTarget.blur();
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -157,7 +175,7 @@ function StreamingBlock({
   return (
     <div className={`whitespace-pre-wrap ${className ?? ""}`}>
       {displayed}
-      {showCursor && <span className="inline-block w-[5px] h-[13px] bg-[#8b5cf6]/60 ml-[1px] animate-pulse rounded-sm align-middle" />}
+      {showCursor && <span className="inline-block w-[5px] h-[13px] bg-panora-green/50 ml-[1px] animate-pulse rounded-sm align-middle" />}
     </div>
   );
 }
@@ -165,7 +183,7 @@ function StreamingBlock({
 // ─── Horizontal rule ────────────────────────────────────────────────
 
 function Hr() {
-  return <hr className="border-panora-border my-0" />;
+  return <hr className="border-panora-border mt-0 mb-8" />;
 }
 
 // ─── Section Header ─────────────────────────────────────────────────
@@ -177,13 +195,15 @@ function SectionHeader({
   onToggleTarget,
   onTitleChange,
   onDelete,
+  dragHandleProps,
 }: {
   title: string;
-  meta: SectionMeta;
-  isTargeted: boolean;
-  onToggleTarget: () => void;
+  meta?: SectionMeta;
+  isTargeted?: boolean;
+  onToggleTarget?: () => void;
   onTitleChange: (title: string) => void;
   onDelete: () => void;
+  dragHandleProps?: { onMouseDown: (e: React.MouseEvent) => void };
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
@@ -194,13 +214,19 @@ function SectionHeader({
   };
 
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div
+          {...(dragHandleProps ?? {})}
+          className={`flex items-center justify-center w-4 h-4 shrink-0 ${dragHandleProps ? "cursor-grab active:cursor-grabbing" : ""}`}
+        >
+          <GripVertical className="w-4 h-4 text-panora-text-muted/40 group-hover:text-panora-text-muted transition-colors" />
+        </div>
         <h2
           ref={titleRef}
           contentEditable
           suppressContentEditableWarning
-          className="text-[18px] font-serif font-semibold text-panora-text outline-none rounded-[4px] focus:ring-1 focus:ring-panora-green/30 px-1 -mx-1"
+          className="text-[18px] font-serif font-semibold text-panora-text outline-none"
           onBlur={commitTitle}
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
@@ -209,31 +235,19 @@ function SectionHeader({
         >
           {title}
         </h2>
-        {meta.isEdited && (
+        {meta?.isEdited && (
           <span className="text-[11px] bg-panora-secondary text-panora-text-muted px-2 py-0.5 rounded-full shrink-0">
             Modifie
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1 shrink-0 ml-2">
+      <div className="flex items-center gap-0.5 shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={onDelete}
-          className="flex items-center justify-center w-7 h-7 rounded-[6px] text-panora-text-muted hover:text-[#952617] hover:bg-[#fde8e8] transition-colors opacity-0 group-hover:opacity-100"
+          className="flex items-center justify-center w-7 h-7 rounded-[6px] text-panora-text-muted hover:text-[#952617] hover:bg-[#fde8e8] transition-colors"
           title="Supprimer cette section"
         >
           <Trash2 className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={onToggleTarget}
-          className={`flex items-center gap-1.5 text-[12px] px-2 py-1 rounded-[6px] transition-colors ${
-            isTargeted
-              ? "text-panora-green font-medium bg-panora-green/10"
-              : "text-panora-text-muted hover:text-panora-text hover:bg-panora-bg opacity-0 group-hover:opacity-100"
-          }`}
-          title={isTargeted ? "Retirer du scope" : "Cibler cette section"}
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          {isTargeted ? "Cible" : "Cibler"}
         </button>
       </div>
     </div>
@@ -297,7 +311,8 @@ function AddGuaranteePopover({
 
   // Build list of all guarantees + exclusions from comparison data
   const allItems: AvailableGuarantee[] = [];
-  for (const section of comparisonData.sections) {
+  const flatSections = comparisonData.products?.flatMap((p) => p.subGroups) ?? comparisonData.sections ?? [];
+  for (const section of flatSections) {
     for (const row of section.rows) {
       if (!existingLabels.has(row.label)) {
         allItems.push({ label: row.label, source: "guarantee", sectionTitle: section.title });
@@ -362,6 +377,84 @@ function AddGuaranteePopover({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Pricing card (Figma-matched) ────────────────────────────────────
+
+function PricingVariante({
+  formula,
+  defaultOpen,
+}: {
+  formula: { formula: string; details: Array<{ label: string; value: string }> };
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-[5px] w-full h-6 text-left text-[12px] font-medium text-panora-text-muted tracking-[0.12px] leading-6"
+      >
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+        )}
+        <span className="truncate">
+          {formula.formula}
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1 mt-1">
+          {formula.details.map((detail, i) => {
+            const { amount, period } = splitPrice(detail.value);
+            return (
+              <div key={i} className="flex items-baseline justify-between">
+                <span className="text-[13px] leading-5 text-panora-text-muted">{detail.label}</span>
+                <span className="whitespace-nowrap">
+                  <span className="text-[13px] font-medium leading-5 text-panora-text">{amount}</span>
+                  {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PricingCards({ insurers }: { insurers: InsurerData[] }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      {insurers.map((ins) => {
+        const pricing = ins.pricing ?? [];
+        return (
+          <div key={ins.id} className="border border-panora-border rounded-[10px] overflow-hidden bg-white">
+            <div className="flex items-center gap-3 px-3.5 py-3 bg-[#faf8f5] border-b border-panora-border">
+              <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-8 h-8 rounded-[8px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]" />
+              <span className="text-[13px] font-semibold text-panora-text tracking-[-0.1px]">{ins.name}</span>
+            </div>
+            {pricing.length === 0 ? (
+              <div className="p-3">
+                <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
+              </div>
+            ) : (
+              pricing.map((formula, fIdx) => (
+                <div
+                  key={fIdx}
+                  className={`p-3 ${fIdx < pricing.length - 1 ? "border-b border-panora-border" : ""}`}
+                >
+                  <PricingVariante formula={formula} defaultOpen={fIdx === 0} />
+                </div>
+              ))
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -485,6 +578,76 @@ function FloatingPromptBar({
   );
 }
 
+// ─── Contexte client section — read-only display, shortcuts to panel ──
+
+function ContexteClientSection({
+  contextPills,
+  onOpenProfile,
+  noteBefore,
+  onNoteBeforeChange,
+}: {
+  contextPills: ContextPill[];
+  onOpenProfile: () => void;
+  noteBefore?: string;
+  onNoteBeforeChange?: (value: string) => void;
+}) {
+  const visiblePills = contextPills.filter((p) => p.source !== "missing");
+
+  // In the synthèse, all pills render as neutral (no AI indicator)
+  // AI/extracted source is only visible in the ClientProfilePanel
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <GripVertical className="w-4 h-4 text-panora-text-muted/40 shrink-0" />
+        <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
+      </div>
+
+      <div className="space-y-4">
+        {/* Introduction paragraph */}
+        <EditableBlock
+          value={noteBefore || ""}
+          className="text-[13px] leading-6 text-panora-text"
+          placeholder="Presenter le contexte du client et les enjeux de cette comparaison..."
+          onCommit={(v) => onNoteBeforeChange?.(v)}
+        />
+
+        {/* Besoins client pills */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[13px] font-medium text-panora-text">Besoins client</span>
+            <button
+              onClick={onOpenProfile}
+              className="text-[12px] font-medium text-panora-green hover:text-panora-green/80 transition-colors px-2 py-0.5 rounded-[4px] border border-panora-green/20 hover:bg-panora-green/5"
+            >
+              Modifier
+            </button>
+          </div>
+          {visiblePills.length === 0 ? (
+            <p className="text-[13px] text-panora-text-muted">
+              Aucun besoin renseigne.{" "}
+              <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">
+                Completer le profil
+              </button>
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-[11px] items-start">
+              {visiblePills.map((pill) => (
+                <BesoinTag
+                  key={pill.id}
+                  value={pill.label}
+                  source="manual"
+                  compact
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Initial section states helper ──────────────────────────────────
 
 function initSectionStates(): Record<SectionId, SectionMeta> {
@@ -499,15 +662,23 @@ function initSectionStates(): Record<SectionId, SectionMeta> {
 
 // ─── Main component ─────────────────────────────────────────────────
 
-export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData, onSwitchToComparison, onOpenProfile, onUpdateAnalysis, isStreaming, onStreamingDone, hasClientProfile = true }: AnalysisTabProps) {
+export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData, onSwitchToComparison, onOpenProfile, onUpdateAnalysis, isStreaming, onStreamingDone, hasClientProfile = true, isPanelOpen = false }: AnalysisTabProps) {
   const [sectionStates, setSectionStates] = useState<Record<SectionId, SectionMeta>>(initSectionStates);
   const [targetSections, setTargetSections] = useState<SectionId[]>([]);
   const [streamingSection, setStreamingSection] = useState<SectionId | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [sectionTitles, setSectionTitles] = useState<Record<SectionId, string>>(SECTION_LABELS);
-  const [hiddenSections, setHiddenSections] = useState<Set<SectionId>>(new Set());
+  const [hiddenSections, setHiddenSections] = useState<Set<string>>(new Set());
   const [selectedGarantie, setSelectedGarantie] = useState<GarantieCellId | null>(null);
   const [showAddGuarantee, setShowAddGuarantee] = useState(false);
+
+  // Ordered list of sections (built-in + custom text)
+  const [sectionOrder, setSectionOrder] = useState<SectionEntry[]>([
+    { type: "builtin", id: "resume" },
+    { type: "builtin", id: "financier" },
+    { type: "builtin", id: "offre_analyse" },
+    { type: "builtin", id: "garanties" },
+  ]);
 
   // ─── Handlers ───────────────────────────────────────────────────
 
@@ -517,9 +688,79 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
     );
   }, []);
 
-  const handleDeleteSection = useCallback((sectionId: SectionId) => {
-    setHiddenSections((prev) => new Set(prev).add(sectionId));
-    setTargetSections((prev) => prev.filter((id) => id !== sectionId));
+  const handleDeleteSection = useCallback((sectionKey: string) => {
+    // For custom sections, remove from order entirely
+    setSectionOrder((prev) => {
+      const entry = prev.find((e) => (e.type === "builtin" ? e.id : e.id) === sectionKey);
+      if (entry?.type === "custom") return prev.filter((e) => e.id !== sectionKey);
+      return prev;
+    });
+    // For built-in sections, hide them (can be restored)
+    setHiddenSections((prev) => new Set(prev).add(sectionKey));
+    setTargetSections((prev) => prev.filter((id) => id !== sectionKey));
+  }, []);
+
+  // Drag-and-drop state for section reordering
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dropIdx, setDropIdx] = useState<number | null>(null);
+  const dragStartY = useRef(0);
+  const dragElRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDragStart = useCallback((index: number, e: React.MouseEvent) => {
+    setDragIdx(index);
+    setDropIdx(index);
+    dragStartY.current = e.clientY;
+
+    const onMove = (ev: MouseEvent) => {
+      // Find which section we're hovering over by checking the drop zones
+      const els = document.querySelectorAll<HTMLElement>("[data-section-drop-idx]");
+      let closest: number | null = null;
+      let closestDist = Infinity;
+      els.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        const dist = Math.abs(ev.clientY - mid);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = parseInt(el.dataset.sectionDropIdx!, 10);
+        }
+      });
+      if (closest !== null) setDropIdx(closest);
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      setDragIdx((prevDrag) => {
+        setDropIdx((prevDrop) => {
+          if (prevDrag !== null && prevDrop !== null && prevDrag !== prevDrop) {
+            setSectionOrder((prev) => {
+              const next = [...prev];
+              const [moved] = next.splice(prevDrag, 1);
+              next.splice(prevDrop, 0, moved);
+              return next;
+            });
+          }
+          return null;
+        });
+        return null;
+      });
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, []);
+
+  const handleAddTextSection = useCallback(() => {
+    const id = `custom-${Date.now()}`;
+    setSectionOrder((prev) => [...prev, { type: "custom", id, title: "Nouvelle section", content: "" }]);
+  }, []);
+
+  const handleUpdateCustomSection = useCallback((id: string, updates: { title?: string; content?: string }) => {
+    setSectionOrder((prev) => prev.map((e) => {
+      if (e.type === "custom" && e.id === id) return { ...e, ...updates };
+      return e;
+    }));
   }, []);
 
   const handleTitleChange = useCallback((sectionId: SectionId, title: string) => {
@@ -610,16 +851,24 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
   // Empty states
   if (offerCount === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-panora-bg">
-        <div className="text-center max-w-sm space-y-3">
-          <Sparkles className="w-8 h-8 text-panora-text-muted mx-auto" />
-          <p className="text-[17px] font-serif font-semibold text-panora-text">Aucune offre</p>
-          <p className="text-[14px] text-panora-text-muted leading-5">
-            Ajoutez des offres au tableau comparatif pour generer l&apos;analyse.
-          </p>
-          <button onClick={onSwitchToComparison} className="btn-primary px-4 py-2 text-[13px] font-medium">
-            Aller au tableau comparatif
-          </button>
+      <div className="flex-1 flex items-center justify-center bg-[#f5f4f1]">
+        <div className="bg-gradient-to-b from-[#f7f9ff] to-white rounded-[12px] px-7 py-6 max-w-md w-full">
+          <div className="space-y-3">
+            <div className="space-y-0.5">
+              <p className="text-[13px] font-medium text-[#162416] leading-5">
+                Ajoutez des offres au tableau comparatif pour generer l&apos;analyse.
+              </p>
+              <p className="text-[13px] text-panora-text-muted leading-5">
+                L&apos;IA pourra ensuite analyser la comparaison et vos besoins pour rediger une note claire et structuree.
+              </p>
+            </div>
+            <button
+              onClick={onSwitchToComparison}
+              className="bg-[#e4e2e4] border border-[rgba(34,32,26,0.1)] text-white rounded-[8px] px-3 py-1.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+            >
+              Aller au tableau comparatif
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -627,13 +876,16 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
 
   if (offerCount === 1) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-panora-bg">
-        <div className="text-center max-w-sm space-y-3">
-          <Sparkles className="w-8 h-8 text-panora-text-muted mx-auto" />
-          <p className="text-[17px] font-serif font-semibold text-panora-text">Offre unique</p>
-          <p className="text-[14px] text-panora-text-muted leading-5">
-            L&apos;analyse comparative necessite au moins deux offres.
-          </p>
+      <div className="flex-1 flex items-center justify-center bg-[#f5f4f1]">
+        <div className="bg-gradient-to-b from-[#f7f9ff] to-white rounded-[12px] px-7 py-6 max-w-md w-full">
+          <div className="space-y-0.5">
+            <p className="text-[13px] font-medium text-[#162416] leading-5">
+              L&apos;analyse comparative necessite au moins deux offres.
+            </p>
+            <p className="text-[13px] text-panora-text-muted leading-5">
+              Ajoutez une deuxieme offre au tableau pour permettre la comparaison.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -642,26 +894,23 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
   if (!hasClientProfile) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#f5f4f1]">
-        <div className="text-center max-w-md space-y-4">
-          <div className="w-14 h-14 rounded-full bg-[#f3f0ff] flex items-center justify-center mx-auto">
-            <Sparkles className="w-7 h-7 text-[#8b5cf6]" />
+        <div className="bg-gradient-to-b from-[#f7f9ff] to-white rounded-[12px] px-7 py-6 max-w-md w-full">
+          <div className="space-y-3">
+            <div className="space-y-0.5">
+              <p className="text-[13px] font-medium text-[#162416] leading-5">
+                Completez le profil client pour generer une analyse personnalisee.
+              </p>
+              <p className="text-[13px] text-panora-text-muted leading-5">
+                L&apos;IA pourra ensuite analyser la comparaison et vos besoins pour rediger une note claire et structuree.
+              </p>
+            </div>
+            <button
+              onClick={onOpenProfile}
+              className="bg-[#e4e2e4] border border-[rgba(34,32,26,0.1)] text-white rounded-[8px] px-3 py-1.5 text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+            >
+              Renseigner les besoins client
+            </button>
           </div>
-          <div>
-            <p className="text-[20px] font-serif font-semibold text-panora-text">Analyse non disponible</p>
-            <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
-              Pour generer la synthese comparative et l&apos;analyse detaillee, completez le profil client avec les besoins specifiques de votre client.
-            </p>
-          </div>
-          <button
-            onClick={onOpenProfile}
-            className="btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium mx-auto"
-          >
-            <Sparkles className="w-4 h-4" />
-            Completer le profil client
-          </button>
-          <p className="text-[12px] text-panora-text-muted">
-            L&apos;analyse sera generee automatiquement une fois le profil complété.
-          </p>
         </div>
       </div>
     );
@@ -677,488 +926,488 @@ export function AnalysisTab({ analysisData, insurers, offerCount, comparisonData
 
   const { contextPills, resumeExecutif, conditionsFinancieres, analyseParOffre, garantiesCles } = analysisData;
 
+  const tocItems = [
+    { id: "contexte", label: "Contexte client" },
+    ...sectionOrder
+      .filter((e) => !hiddenSections.has(e.id))
+      .map((e) => ({
+        id: e.id,
+        label: e.type === "custom" ? e.title : sectionTitles[e.id as SectionId],
+      })),
+  ];
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeTocId, setActiveTocId] = useState<string>("contexte");
+
+  // IntersectionObserver to track which section is in view
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    if (!root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the first entry that is intersecting from top
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.id.replace("section-", "");
+            setActiveTocId(id);
+            break;
+          }
+        }
+      },
+      { root, rootMargin: "-10% 0px -70% 0px", threshold: 0 },
+    );
+
+    // Observe all section anchors
+    const sectionIds = tocItems.map((t) => `section-${t.id}`);
+    for (const sid of sectionIds) {
+      const el = document.getElementById(sid);
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [tocItems.map((t) => t.id).join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const scrollContent = (
-    <div className="flex-1 overflow-y-auto bg-[#f5f4f1]">
-      <div className="max-w-[820px] mx-auto my-8 relative">
-        {/* ── Floating actions (right gutter) ── */}
-        <div className="absolute -right-[140px] top-0 w-[120px] space-y-2 hidden xl:block">
-          <button
-            onClick={() => console.log("TODO: Exporter")}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-          >
-            <FileDown className="w-3.5 h-3.5" />
-            Exporter
-          </button>
-          <button
-            onClick={() => console.log("TODO: Copier")}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            Copier
-          </button>
+    <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto bg-[#f5f4f1] ${(isStreaming || streamingSection) ? "streaming-bg" : ""}`}>
+      <div className={`relative mx-auto my-8 flex gap-0 ${isPanelOpen ? "max-w-[860px] px-8" : "max-w-[1200px]"}`}>
+        {/* Left TOC sidebar — hidden when panel is open */}
+        {!isPanelOpen && (
+        <div className="w-[210px] shrink-0 sticky top-8 self-start hidden xl:block pt-6 pl-2">
+          <nav className="space-y-0.5">
+            {tocItems.map((item) => {
+              const isActive = activeTocId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    const el = document.getElementById(`section-${item.id}`);
+                    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-[6px] text-left transition-colors ${
+                    isActive ? "" : "hover:bg-panora-secondary"
+                  }`}
+                >
+                  <Diamond
+                    className={`w-4 h-4 shrink-0 transition-colors ${
+                      isActive ? "text-panora-green fill-panora-green" : "text-panora-text-muted/40"
+                    }`}
+                  />
+                  <span
+                    className={`text-[13px] leading-5 truncate transition-colors ${
+                      isActive
+                        ? "font-medium text-panora-text-primary"
+                        : "text-panora-text-muted"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
+        )}
 
         {/* Document page */}
+        <div className="flex-1 max-w-[860px]">
         <div className="bg-white rounded-[12px] border border-panora-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] relative">
-          <div className="px-10 py-10 space-y-10">
+          <div className="px-10 py-8 space-y-8">
 
             {/* ── Title ── */}
-            <div className="flex items-start justify-between pb-2">
-              <div>
-                <p className="text-[12px] font-medium text-[#8b5cf6] tracking-wide uppercase mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Analyse IA
-                </p>
-                <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9">
-                  Synthese comparative
-                </h1>
-                <p className="text-[14px] text-panora-text-muted mt-2 leading-5">
-                  {insurers.length} offres analysees &middot; Cliquez sur un texte pour le modifier directement
-                </p>
-              </div>
-              {/* Inline fallback for narrow screens */}
-              <div className="flex items-center gap-2 shrink-0 ml-4 xl:hidden">
-                <button
-                  onClick={() => console.log("TODO: Exporter")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors"
-                >
-                  <FileDown className="w-3.5 h-3.5" />
-                  Exporter
-                </button>
-                <button
-                  onClick={() => console.log("TODO: Copier")}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-panora-text border border-panora-border rounded-[6px] bg-white hover:bg-panora-bg transition-colors"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  Copier
-                </button>
-              </div>
+            <div>
+              <div className="w-8 h-[3px] bg-panora-green rounded-full mb-4" />
+              <h1 className="text-[28px] font-serif font-semibold text-panora-text leading-9 tracking-[-0.3px]">
+                Synthese comparative
+              </h1>
+              <p className="text-[13px] text-panora-text-muted mt-1.5">
+                {insurers.length} offres analysees
+              </p>
             </div>
 
             <Hr />
 
             {/* ── Contexte client ── */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[18px] font-serif font-semibold text-panora-text">Contexte client</h2>
-                <button onClick={onOpenProfile} className="text-[12px] font-medium text-panora-green hover:underline">
-                  Modifier
-                </button>
-              </div>
-              {contextPills.length === 0 ? (
-                <p className="text-[14px] text-panora-text-muted">
-                  Aucun contexte renseigne. <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">Completer le profil</button>
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {contextPills.map((pill) => (
-                    <span
-                      key={pill.id}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] leading-4 ${
-                        pill.source === "missing"
-                          ? "border border-dashed border-[#d4d2cc] text-panora-text-muted"
-                          : "bg-panora-secondary text-panora-text"
-                      }`}
-                    >
-                      {pill.source === "missing" && <HelpCircle className="w-3 h-3" />}
-                      {pill.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <div id="section-contexte" />
+            <ContexteClientSection
+              contextPills={contextPills}
+              onOpenProfile={onOpenProfile}
+              noteBefore={analysisData?.contextNoteBefore}
+              onNoteBeforeChange={(v) => {
+                if (analysisData) onUpdateAnalysis?.({ ...analysisData, contextNoteBefore: v });
+              }}
+            />
 
-            {!hiddenSections.has("resume") && <Hr />}
+            <Hr />
 
-            {/* ── Resume executif ── */}
-            {!hiddenSections.has("resume") && <div className="group">
-              <SectionHeader
-                title={sectionTitles.resume}
-                meta={sectionStates.resume}
-                isTargeted={targetSections.includes("resume")}
-                onToggleTarget={() => toggleTargetSection("resume")}
-                onTitleChange={(t) => handleTitleChange("resume", t)}
-                onDelete={() => handleDeleteSection("resume")}
-              />
-              {sectionStates.resume.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="text-[15px] leading-7 text-panora-text">{resumeExecutif}</div>
-                </RegeneratingOverlay>
-              ) : (isStreaming || streamingSection === "resume") ? (
-                <StreamingBlock
-                  text={resumeExecutif}
-                  active
-                  delay={streamingSection === "resume" ? 0 : 0}
-                  className="text-[15px] leading-7 text-panora-text"
-                  onComplete={() => {
-                    if (streamingSection === "resume") setStreamingSection(null);
-                    if (isStreaming && !streamingSection) onStreamingDone?.();
-                  }}
-                />
-              ) : (
-                <>
-                  <EditableBlock
-                    value={resumeExecutif}
-                    className="text-[15px] leading-7 text-panora-text"
-                    onCommit={(v) => updateWithEdit("resume", { resumeExecutif: v })}
-                  />
-                </>
-              )}
-            </div>}
+            {/* ── Dynamic sections ── */}
+            {(() => {
+              const visibleSections = sectionOrder.filter((entry) => !hiddenSections.has(entry.id));
+              return visibleSections.map((entry, visIdx) => {
+                const isFirst = visIdx === 0;
+                const isLast = visIdx === visibleSections.length - 1;
+                const orderIdx = sectionOrder.indexOf(entry);
 
-            {!hiddenSections.has("financier") && <Hr />}
+                const isDragging = dragIdx === orderIdx;
+                const isDropTarget = dropIdx === orderIdx && dragIdx !== null && dragIdx !== orderIdx;
 
-            {/* ── Conditions financieres ── */}
-            {!hiddenSections.has("financier") && <div className="group">
-              <SectionHeader
-                title={sectionTitles.financier}
-                meta={sectionStates.financier}
-                isTargeted={targetSections.includes("financier")}
-                onToggleTarget={() => toggleTargetSection("financier")}
-                onTitleChange={(t) => handleTitleChange("financier", t)}
-                onDelete={() => handleDeleteSection("financier")}
-              />
-              {sectionStates.financier.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="text-[15px] leading-7 text-panora-text mb-6">{conditionsFinancieres.analysisBefore}</div>
-                  <div className="text-[15px] leading-7 text-panora-text">{conditionsFinancieres.analysisAfter}</div>
-                </RegeneratingOverlay>
-              ) : (isStreaming || streamingSection === "financier") ? (
-                <>
-                  <StreamingBlock
-                    text={conditionsFinancieres.analysisBefore}
-                    active
-                    delay={streamingSection === "financier" ? 0 : resumeExecutif.length * 8 / 3}
-                    className="text-[15px] leading-7 text-panora-text mb-6"
-                  />
-
-                  {/* Pricing cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    {insurers.map((ins) => {
-                      const pricing = ins.pricing ?? [];
-                      return (
-                        <div key={ins.id} className="border border-panora-border rounded-[8px] overflow-hidden">
-                          <div className="flex items-center gap-2 px-4 py-2.5 bg-[#faf8f5] border-b border-panora-border">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[3px]" />
-                            <span className="text-[13px] font-semibold text-panora-text">{ins.name}</span>
-                          </div>
-                          <div className="p-4">
-                            {pricing.length === 0 ? (
-                              <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {pricing.map((formula, fIdx) => {
-                                  const annual = splitPrice(formula.annual);
-                                  return (
-                                    <div key={fIdx} className={fIdx > 0 ? "pt-3 border-t border-panora-border" : ""}>
-                                      <p className="text-[12px] font-medium text-panora-text-muted uppercase tracking-wide mb-1">{formula.formula}</p>
-                                      <div className="flex items-baseline justify-between">
-                                        <span className="text-[13px] text-panora-text-muted">Annuel</span>
-                                        <span>
-                                          <span className="text-[16px] font-semibold text-panora-text">{annual.amount}</span>
-                                          {annual.period && <span className="text-[12px] text-panora-text-muted ml-0.5">{annual.period}</span>}
-                                        </span>
-                                      </div>
-                                      {formula.monthly && (
-                                        <div className="flex items-baseline justify-between mt-0.5">
-                                          <span className="text-[13px] text-panora-text-muted">Mensuel</span>
-                                          <span className="text-[13px] text-panora-text">{formula.monthly}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <StreamingBlock
-                    text={conditionsFinancieres.analysisAfter}
-                    active
-                    delay={streamingSection === "financier" ? conditionsFinancieres.analysisBefore.length * 8 / 3 : (resumeExecutif.length + conditionsFinancieres.analysisBefore.length) * 8 / 3 + 200}
-                    className="text-[15px] leading-7 text-panora-text"
-                    onComplete={() => {
-                      if (streamingSection === "financier") setStreamingSection(null);
-                    }}
-                  />
-                </>
-              ) : (
-                <>
-                  <EditableBlock
-                    value={conditionsFinancieres.analysisBefore}
-                    className="text-[15px] leading-7 text-panora-text mb-6"
-                    onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisBefore: v } })}
-                  />
-
-                  {/* Pricing cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                    {insurers.map((ins) => {
-                      const pricing = ins.pricing ?? [];
-                      return (
-                        <div key={ins.id} className="border border-panora-border rounded-[8px] overflow-hidden">
-                          <div className="flex items-center gap-2 px-4 py-2.5 bg-[#faf8f5] border-b border-panora-border">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[3px]" />
-                            <span className="text-[13px] font-semibold text-panora-text">{ins.name}</span>
-                          </div>
-                          <div className="p-4">
-                            {pricing.length === 0 ? (
-                              <p className="text-[13px] text-panora-text-muted">Aucune offre</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {pricing.map((formula, fIdx) => {
-                                  const annual = splitPrice(formula.annual);
-                                  return (
-                                    <div key={fIdx} className={fIdx > 0 ? "pt-3 border-t border-panora-border" : ""}>
-                                      <p className="text-[12px] font-medium text-panora-text-muted uppercase tracking-wide mb-1">{formula.formula}</p>
-                                      <div className="flex items-baseline justify-between">
-                                        <span className="text-[13px] text-panora-text-muted">Annuel</span>
-                                        <span>
-                                          <span className="text-[16px] font-semibold text-panora-text">{annual.amount}</span>
-                                          {annual.period && <span className="text-[12px] text-panora-text-muted ml-0.5">{annual.period}</span>}
-                                        </span>
-                                      </div>
-                                      {formula.monthly && (
-                                        <div className="flex items-baseline justify-between mt-0.5">
-                                          <span className="text-[13px] text-panora-text-muted">Mensuel</span>
-                                          <span className="text-[13px] text-panora-text">{formula.monthly}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <EditableBlock
-                    value={conditionsFinancieres.analysisAfter}
-                    className="text-[15px] leading-7 text-panora-text"
-                    onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisAfter: v } })}
-                  />
-                </>
-              )}
-            </div>}
-
-            {!hiddenSections.has("offre_analyse") && <Hr />}
-
-            {/* ── Analyse par offre ── */}
-            {!hiddenSections.has("offre_analyse") && <div className="group">
-              <SectionHeader
-                title={sectionTitles.offre_analyse}
-                meta={sectionStates.offre_analyse}
-                isTargeted={targetSections.includes("offre_analyse")}
-                onToggleTarget={() => toggleTargetSection("offre_analyse")}
-                onTitleChange={(t) => handleTitleChange("offre_analyse", t)}
-                onDelete={() => handleDeleteSection("offre_analyse")}
-              />
-              {sectionStates.offre_analyse.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="space-y-4">
-                    {analyseParOffre.map((item) => (
-                      <div key={item.insurerId} className="border border-panora-border rounded-[8px] p-4">
-                        <span className="text-[13px] font-semibold text-panora-text">{item.insurerName}</span>
+                // Custom text section
+                if (entry.type === "custom") {
+                  return (
+                    <div key={entry.id} id={`section-${entry.id}`} data-section-drop-idx={orderIdx} className={`transition-opacity ${isDragging ? "opacity-40" : ""} ${isDropTarget ? "border-t-2 border-panora-green" : ""}`}>
+                      {!isFirst && <Hr />}
+                      <div className="group">
+                        <SectionHeader
+                          title={entry.title}
+                          onTitleChange={(t) => handleUpdateCustomSection(entry.id, { title: t })}
+                          onDelete={() => handleDeleteSection(entry.id)}
+                          dragHandleProps={{ onMouseDown: (e) => handleDragStart(orderIdx, e) }}
+                        />
+                        <EditableBlock
+                          value={entry.content}
+                          className="text-[14px] leading-6 text-panora-text"
+                          placeholder="Saisissez le contenu de cette section..."
+                          onCommit={(v) => handleUpdateCustomSection(entry.id, { content: v })}
+                        />
                       </div>
-                    ))}
-                  </div>
-                </RegeneratingOverlay>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    {analyseParOffre.map((item, idx) => (
-                      <div key={item.insurerId} className="border border-panora-border rounded-[8px] overflow-hidden">
-                        {/* Insurer header */}
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-[#faf8f5] border-b border-panora-border">
-                          <InsurerLogo insurerId={item.insurerId} name={item.insurerName} size="sm" className="w-5 h-5 rounded-[3px]" />
-                          <h3 className="text-[13px] font-semibold text-panora-text">{item.insurerName}</h3>
-                        </div>
-                        {/* Points forts / faibles */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-panora-border">
-                          <div className="p-4">
-                            <p className="text-[12px] font-medium text-panora-green mb-2 flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" />
-                              Points forts
-                            </p>
-                            {(isStreaming || streamingSection === "offre_analyse") ? (
-                              <StreamingBlock
-                                text={item.pointsForts.map((s) => `• ${s}`).join("\n")}
-                                active
-                                delay={streamingSection === "offre_analyse" ? idx * 400 : 3000 + idx * 800}
-                                speed={10}
-                                className="text-[13px] leading-6 text-panora-text"
-                              />
-                            ) : (
-                              <EditableBullets
-                                items={item.pointsForts}
-                                className="text-[13px] leading-6 text-panora-text"
-                                onCommit={(lines) => {
-                                  const next = [...analyseParOffre];
-                                  next[idx] = { ...item, pointsForts: lines };
-                                  updateWithEdit("offre_analyse", { analyseParOffre: next });
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div className="p-4">
-                            <p className="text-[12px] font-medium text-[#952617] mb-2 flex items-center gap-1">
-                              <XIcon className="w-3.5 h-3.5" />
-                              Points faibles
-                            </p>
-                            {(isStreaming || streamingSection === "offre_analyse") ? (
-                              <StreamingBlock
-                                text={item.pointsFaibles.map((s) => `• ${s}`).join("\n")}
-                                active
-                                delay={streamingSection === "offre_analyse" ? idx * 400 + 200 : 3000 + idx * 800 + 400}
-                                speed={10}
-                                className="text-[13px] leading-6 text-panora-text"
-                                onComplete={idx === analyseParOffre.length - 1 ? () => {
-                                  if (streamingSection === "offre_analyse") setStreamingSection(null);
-                                } : undefined}
-                              />
-                            ) : (
-                              <EditableBullets
-                                items={item.pointsFaibles}
-                                className="text-[13px] leading-6 text-panora-text"
-                                onCommit={(lines) => {
-                                  const next = [...analyseParOffre];
-                                  next[idx] = { ...item, pointsFaibles: lines };
-                                  updateWithEdit("offre_analyse", { analyseParOffre: next });
-                                }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>}
-
-            {!hiddenSections.has("garanties") && <Hr />}
-
-            {/* ── Garanties cles ── */}
-            {!hiddenSections.has("garanties") && <div className="group">
-              <SectionHeader
-                title={sectionTitles.garanties}
-                meta={sectionStates.garanties}
-                isTargeted={targetSections.includes("garanties")}
-                onToggleTarget={() => toggleTargetSection("garanties")}
-                onTitleChange={(t) => handleTitleChange("garanties", t)}
-                onDelete={() => handleDeleteSection("garanties")}
-              />
-              {sectionStates.garanties.state === "regenerating" ? (
-                <RegeneratingOverlay>
-                  <div className="border border-panora-border rounded-[8px] p-4">
-                    <span className="text-[13px] text-panora-text-muted">Garanties cles</span>
-                  </div>
-                </RegeneratingOverlay>
-              ) : (
-                <>
-                  <div className="border border-panora-border rounded-[8px] overflow-hidden">
-                    <div className="flex border-b border-panora-border bg-[#faf8f5]">
-                      <div className="w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border">
-                        <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">Garantie</span>
-                      </div>
-                      {insurers.map((ins) => (
-                        <div key={ins.id} className="flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0">
-                          <div className="flex items-center gap-1.5">
-                            <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-4 h-4 rounded-[2px]" />
-                            <span className="text-[12px] font-medium text-panora-text">{ins.name}</span>
-                          </div>
-                        </div>
-                      ))}
                     </div>
-                    {garantiesCles.map((row, rIdx) => {
-                      const isSelected = selectedGarantie?.rowIndex === rIdx;
-                      return (
-                        <div key={rIdx} className={`flex group/row ${rIdx < garantiesCles.length - 1 ? "border-b border-panora-border" : ""}`}>
-                          <div className="w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border flex items-center justify-between">
-                            <span className="text-[13px] text-panora-text">{row.label}</span>
-                            <button
-                              onClick={() => handleDeleteGuaranteeRow(rIdx)}
-                              className="w-5 h-5 flex items-center justify-center rounded text-panora-text-muted hover:text-[#952617] opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                          {insurers.map((ins) => {
-                            const val = row.values[ins.id];
-                            const cellSelected = isSelected && selectedGarantie?.insurerId === ins.id;
-                            return (
-                              <div
-                                key={ins.id}
-                                onClick={() => setSelectedGarantie(cellSelected ? null : { rowIndex: rIdx, insurerId: ins.id })}
-                                className={`flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0 cursor-pointer transition-colors ${
-                                  cellSelected ? "bg-panora-green/5 ring-2 ring-inset ring-panora-green" : "hover:bg-panora-bg/50"
-                                }`}
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  {val?.status === "covered" ? (
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#dbeee5]">
-                                      <Check className="w-3 h-3 text-panora-green" />
-                                    </span>
-                                  ) : val?.status === "not_covered" ? (
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#fde8e8]">
-                                      <XIcon className="w-3 h-3 text-[#952617]" />
-                                    </span>
+                  );
+                }
+
+                // Built-in sections
+                const sectionId = entry.id;
+
+                const sectionHeader = (
+                  <SectionHeader
+                    title={sectionTitles[sectionId]}
+                    meta={sectionStates[sectionId]}
+                    isTargeted={targetSections.includes(sectionId)}
+                    onToggleTarget={() => toggleTargetSection(sectionId)}
+                    onTitleChange={(t) => handleTitleChange(sectionId, t)}
+                    onDelete={() => handleDeleteSection(sectionId)}
+                    dragHandleProps={{ onMouseDown: (e) => handleDragStart(orderIdx, e) }}
+                  />
+                );
+
+                if (sectionId === "resume") {
+                  return (
+                    <div key={sectionId} id={`section-${sectionId}`} data-section-drop-idx={orderIdx} className={`transition-opacity ${isDragging ? "opacity-40" : ""} ${isDropTarget ? "border-t-2 border-panora-green" : ""}`}>
+                      {!isFirst && <Hr />}
+                      <div className="group">
+                        {sectionHeader}
+                        {(isStreaming || streamingSection === "resume") ? (
+                          <StreamingBlock
+                            text={resumeExecutif}
+                            active
+                            delay={streamingSection === "resume" ? 0 : 0}
+                            className="text-[14px] leading-6 text-panora-text"
+                            onComplete={() => {
+                              if (streamingSection === "resume") setStreamingSection(null);
+                              if (isStreaming && !streamingSection) onStreamingDone?.();
+                            }}
+                          />
+                        ) : (
+                          <EditableBlock
+                            value={resumeExecutif}
+                            className="text-[14px] leading-6 text-panora-text"
+                            onCommit={(v) => updateWithEdit("resume", { resumeExecutif: v })}
+                          />
+                        )}
+                        <EditableBlock
+                          value=""
+                          className="text-[13px] leading-5 text-panora-text-muted mt-4"
+                          placeholder="Ajouter du texte..."
+                          onCommit={() => {}}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionId === "financier") {
+                  return (
+                    <div key={sectionId} id={`section-${sectionId}`} data-section-drop-idx={orderIdx} className={`transition-opacity ${isDragging ? "opacity-40" : ""} ${isDropTarget ? "border-t-2 border-panora-green" : ""}`}>
+                      {!isFirst && <Hr />}
+                      <div className="group">
+                        {sectionHeader}
+                        {(isStreaming || streamingSection === "financier") ? (
+                          <>
+                            <StreamingBlock
+                              text={conditionsFinancieres.analysisBefore}
+                              active
+                              delay={streamingSection === "financier" ? 0 : resumeExecutif.length * 8 / 3}
+                              className="text-[14px] leading-6 text-panora-text mb-6"
+                            />
+                            <PricingCards insurers={insurers} />
+                            <StreamingBlock
+                              text={conditionsFinancieres.analysisAfter}
+                              active
+                              delay={streamingSection === "financier" ? conditionsFinancieres.analysisBefore.length * 8 / 3 : (resumeExecutif.length + conditionsFinancieres.analysisBefore.length) * 8 / 3 + 200}
+                              className="text-[14px] leading-6 text-panora-text"
+                              onComplete={() => {
+                                if (streamingSection === "financier") setStreamingSection(null);
+                              }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <EditableBlock
+                              value={conditionsFinancieres.analysisBefore}
+                              className="text-[14px] leading-6 text-panora-text mb-6"
+                              onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisBefore: v } })}
+                            />
+                            <PricingCards insurers={insurers} />
+                            <EditableBlock
+                              value={conditionsFinancieres.analysisAfter}
+                              className="text-[14px] leading-6 text-panora-text"
+                              onCommit={(v) => updateWithEdit("financier", { conditionsFinancieres: { ...conditionsFinancieres, analysisAfter: v } })}
+                            />
+                          </>
+                        )}
+                        <EditableBlock
+                          value=""
+                          className="text-[13px] leading-5 text-panora-text-muted mt-4"
+                          placeholder="Ajouter du texte..."
+                          onCommit={() => {}}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (sectionId === "offre_analyse") {
+                  return (
+                    <div key={sectionId} id={`section-${sectionId}`} data-section-drop-idx={orderIdx} className={`transition-opacity ${isDragging ? "opacity-40" : ""} ${isDropTarget ? "border-t-2 border-panora-green" : ""}`}>
+                      {!isFirst && <Hr />}
+                      <div className="group">
+                        {sectionHeader}
+                        <div className="space-y-4">
+                          {analyseParOffre.map((item, idx) => (
+                            <div key={item.insurerId} className="border border-panora-border rounded-[8px] overflow-hidden">
+                              <div className="flex items-center gap-3 px-4 py-3 border-b border-panora-border">
+                                <InsurerLogo insurerId={item.insurerId} name={item.insurerName} size="sm" className="w-6 h-6 rounded-[4px]" />
+                                <h3 className="text-[13px] font-medium text-panora-text">{item.insurerName}</h3>
+                              </div>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-panora-border">
+                                <div className="p-4">
+                                  <p className="text-[13px] font-medium text-panora-green mb-2 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-[18px] h-[18px]" />
+                                    Points forts
+                                  </p>
+                                  {(isStreaming || streamingSection === "offre_analyse") ? (
+                                    <StreamingBlock
+                                      text={item.pointsForts.map((s) => `• ${s}`).join("\n")}
+                                      active
+                                      delay={streamingSection === "offre_analyse" ? idx * 400 : 3000 + idx * 800}
+                                      speed={10}
+                                      className="text-[13px] leading-6 text-panora-text"
+                                    />
                                   ) : (
-                                    <span className="text-[13px] text-panora-text-muted">—</span>
+                                    <EditableBullets
+                                      items={item.pointsForts}
+                                      className="text-[13px] leading-6 text-panora-text"
+                                      onCommit={(lines) => {
+                                        const next = [...analyseParOffre];
+                                        next[idx] = { ...item, pointsForts: lines };
+                                        updateWithEdit("offre_analyse", { analyseParOffre: next });
+                                      }}
+                                    />
                                   )}
-                                  {val?.keyInfo && (
-                                    <span className="text-[11px] text-panora-text-muted leading-4">{val.keyInfo}</span>
+                                </div>
+                                <div className="p-4">
+                                  <p className="text-[13px] font-medium text-[#cb8052] mb-2 flex items-center gap-1.5">
+                                    <AlertCircle className="w-[18px] h-[18px]" />
+                                    Points faibles
+                                  </p>
+                                  {(isStreaming || streamingSection === "offre_analyse") ? (
+                                    <StreamingBlock
+                                      text={item.pointsFaibles.map((s) => `• ${s}`).join("\n")}
+                                      active
+                                      delay={streamingSection === "offre_analyse" ? idx * 400 + 200 : 3000 + idx * 800 + 400}
+                                      speed={10}
+                                      className="text-[13px] leading-6 text-panora-text"
+                                      onComplete={idx === analyseParOffre.length - 1 ? () => {
+                                        if (streamingSection === "offre_analyse") setStreamingSection(null);
+                                      } : undefined}
+                                    />
+                                  ) : (
+                                    <EditableBullets
+                                      items={item.pointsFaibles}
+                                      className="text-[13px] leading-6 text-panora-text"
+                                      onCommit={(lines) => {
+                                        const next = [...analyseParOffre];
+                                        next[idx] = { ...item, pointsFaibles: lines };
+                                        updateWithEdit("offre_analyse", { analyseParOffre: next });
+                                      }}
+                                    />
                                   )}
                                 </div>
                               </div>
-                            );
-                          })}
+                            </div>
+                          ))}
                         </div>
-                      );
-                    })}
-                    <div className="border-t border-panora-border px-3 py-2 relative">
-                      <button
-                        onClick={() => setShowAddGuarantee(!showAddGuarantee)}
-                        className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Ajouter une garantie
-                      </button>
-                      {showAddGuarantee && comparisonData && (
-                        <AddGuaranteePopover
-                          comparisonData={comparisonData}
-                          existingLabels={new Set(garantiesCles.map((r) => r.label))}
-                          onAdd={handleAddGuarantee}
-                          onClose={() => setShowAddGuarantee(false)}
+                        <EditableBlock
+                          value=""
+                          className="text-[13px] leading-5 text-panora-text-muted mt-4"
+                          placeholder="Ajouter du texte..."
+                          onCommit={() => {}}
                         />
-                      )}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>}
+                  );
+                }
+
+                if (sectionId === "garanties") {
+                  return (
+                    <div key={sectionId} id={`section-${sectionId}`} data-section-drop-idx={orderIdx} className={`transition-opacity ${isDragging ? "opacity-40" : ""} ${isDropTarget ? "border-t-2 border-panora-green" : ""}`}>
+                      {!isFirst && <Hr />}
+                      <div className="group">
+                        {sectionHeader}
+                        {(() => {
+                          const guaranteeRows = garantiesCles.map((r, i) => ({ ...r, origIdx: i })).filter((r) => r.type !== "exclusion");
+                          const exclusionRows = garantiesCles.map((r, i) => ({ ...r, origIdx: i })).filter((r) => r.type === "exclusion");
+
+                          const renderRow = (row: typeof garantiesCles[0] & { origIdx: number }, isRowLast: boolean) => {
+                            const rIdx = row.origIdx;
+                            const isSelected = selectedGarantie?.rowIndex === rIdx;
+                            return (
+                              <div key={rIdx} className={`flex group/row ${!isRowLast ? "border-b border-panora-border" : ""}`}>
+                                <div className="w-[200px] min-w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border flex items-center justify-between">
+                                  <span className="text-[13px] text-panora-text">{row.label}</span>
+                                  <button
+                                    onClick={() => handleDeleteGuaranteeRow(rIdx)}
+                                    className="w-5 h-5 flex items-center justify-center rounded text-panora-text-muted hover:text-[#952617] opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0"
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                {insurers.map((ins) => {
+                                  const val = row.values[ins.id];
+                                  const cellSelected = isSelected && selectedGarantie?.insurerId === ins.id;
+                                  return (
+                                    <div
+                                      key={ins.id}
+                                      onClick={() => setSelectedGarantie(cellSelected ? null : { rowIndex: rIdx, insurerId: ins.id })}
+                                      className={`min-w-[120px] flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0 cursor-pointer transition-colors ${
+                                        cellSelected ? "bg-panora-green/5 ring-2 ring-inset ring-panora-green" : "hover:bg-panora-bg/50"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-1.5">
+                                        {val?.status === "covered" ? (
+                                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#dbeee5]">
+                                            <Check className="w-3 h-3 text-panora-green" />
+                                          </span>
+                                        ) : val?.status === "not_covered" ? (
+                                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#fde8e8]">
+                                            <XIcon className="w-3 h-3 text-[#952617]" />
+                                          </span>
+                                        ) : (
+                                          <span className="text-[13px] text-panora-text-muted">—</span>
+                                        )}
+                                        {val?.keyInfo && (
+                                          <span className="text-[11px] text-panora-text-muted leading-4">{val.keyInfo}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          };
+
+                          return (
+                            <div className="overflow-x-auto -mx-10 px-10">
+                              <div className="border border-panora-border rounded-[8px] overflow-hidden min-w-fit">
+                                <div className="flex border-b border-panora-border bg-[#faf8f5]">
+                                  <div className="w-[200px] min-w-[200px] shrink-0 px-3 py-2.5 border-r border-panora-border" />
+                                  {insurers.map((ins) => (
+                                    <div key={ins.id} className="min-w-[120px] flex-1 px-3 py-2.5 border-r border-panora-border last:border-r-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-4 h-4 rounded-[2px]" />
+                                        <span className="text-[12px] font-medium text-panora-text">{ins.name}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {guaranteeRows.length > 0 && (
+                                  <>
+                                    <div className="flex border-b border-panora-border bg-[#faf8f5]/60">
+                                      <div className="px-3 py-1.5">
+                                        <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">Garanties</span>
+                                      </div>
+                                    </div>
+                                    {guaranteeRows.map((row, i) => renderRow(row, i === guaranteeRows.length - 1 && exclusionRows.length === 0))}
+                                  </>
+                                )}
+                                {exclusionRows.length > 0 && (
+                                  <>
+                                    <div className="flex border-b border-t border-panora-border bg-[#fde8e8]/30">
+                                      <div className="px-3 py-1.5">
+                                        <span className="text-[11px] font-medium text-[#952617]/70 uppercase tracking-wide">Exclusions</span>
+                                      </div>
+                                    </div>
+                                    {exclusionRows.map((row, i) => renderRow(row, i === exclusionRows.length - 1))}
+                                  </>
+                                )}
+                                <div className="border-t border-panora-border px-3 py-2 relative">
+                                  <button
+                                    onClick={() => setShowAddGuarantee(!showAddGuarantee)}
+                                    className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Ajouter
+                                  </button>
+                                  {showAddGuarantee && comparisonData && (
+                                    <AddGuaranteePopover
+                                      comparisonData={comparisonData}
+                                      existingLabels={new Set(garantiesCles.map((r) => r.label))}
+                                      onAdd={handleAddGuarantee}
+                                      onClose={() => setShowAddGuarantee(false)}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              });
+            })()}
+
+            {/* ── Add section button ── */}
+            <Hr />
+            <button
+              onClick={handleAddTextSection}
+              className="flex items-center gap-1.5 text-[13px] font-medium text-panora-text-muted hover:text-panora-text transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter une section
+            </button>
+
+            {/* ── Note complementaire — end of document ── */}
+            <Hr />
+            <EditableBlock
+              value={analysisData?.contextNoteAfter || ""}
+              className="text-[13px] leading-5 text-panora-text-muted"
+              placeholder="Ajouter une note complementaire..."
+              onCommit={(v) => {
+                if (analysisData) onUpdateAnalysis?.({ ...analysisData, contextNoteAfter: v });
+              }}
+            />
 
           </div>
+        </div>
         </div>
 
       </div>
 
-      {/* Floating prompt bar — sticky to bottom of scroll container, aligned with doc */}
-      <FloatingPromptBar
-        targetSections={targetSections}
-        sectionTitles={sectionTitles}
-        onRemoveSection={(id) => setTargetSections((prev) => prev.filter((s) => s !== id))}
-        onSubmit={handlePromptSubmit}
-        onClear={() => setTargetSections([])}
-        isRegenerating={isRegenerating}
-      />
+      {/* Floating prompt bar — hidden for now */}
     </div>
   );
 
