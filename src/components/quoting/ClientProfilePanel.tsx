@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X as XIcon, ChevronDown, Sparkles, Plus } from "lucide-react";
-import type { ClientProfileData, ContextPill, BesoinItem } from "@/data/mock";
+import { X as XIcon, ChevronDown, Sparkles, Plus, PencilLine } from "lucide-react";
+import type { ClientProfileData, ContextPill, BesoinItem, DynamicField, DynamicFieldValues } from "@/data/mock";
 import { BesoinTag } from "@/components/ui/BesoinTag";
 
 interface ClientProfilePanelProps {
@@ -10,6 +10,12 @@ interface ClientProfilePanelProps {
   contextPills?: ContextPill[];
   onSave: (updated: ClientProfileData) => void;
   onClose: () => void;
+  /** Dynamic fields config for rate-based products */
+  dynamicFields?: DynamicField[];
+  /** Current dynamic field values */
+  dynamicFieldValues?: DynamicFieldValues;
+  /** Called on blur when a dynamic field value changes */
+  onDynamicFieldChange?: (fieldId: string, value: number | undefined) => void;
 }
 
 let nextId = 0;
@@ -17,7 +23,7 @@ function makeId() {
   return `besoin-panel-${++nextId}`;
 }
 
-export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: ClientProfilePanelProps) {
+export function ClientProfilePanel({ profile, contextPills, onSave, onClose, dynamicFields, dynamicFieldValues, onDynamicFieldChange }: ClientProfilePanelProps) {
   const [clientLabel] = useState(profile.clientLabel);
   const [clientSiren] = useState(profile.clientSiren);
 
@@ -241,6 +247,44 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
             )}
           </div>
         </div>
+
+        {/* Dynamic fields — payroll / headcount inputs grouped by section */}
+        {dynamicFields && dynamicFields.length > 0 && (() => {
+          // Group fields by sectionKey
+          const sections = new Map<string, { label: string; fields: DynamicField[] }>();
+          for (const field of dynamicFields) {
+            if (!sections.has(field.sectionKey)) {
+              sections.set(field.sectionKey, { label: field.sectionLabel, fields: [] });
+            }
+            sections.get(field.sectionKey)!.fields.push(field);
+          }
+
+          return (
+            <div className="space-y-3">
+              {Array.from(sections.entries()).map(([key, section]) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-[22px] h-[22px] rounded-[4px] bg-[#eae7e0] flex items-center justify-center text-[10px] text-panora-text font-bold">€</span>
+                    <label className="text-[13px] font-medium text-panora-text">{section.label}</label>
+                  </div>
+                  <p className="text-[12px] text-panora-text-muted leading-[18px]">
+                    Renseignez ces donnees pour afficher les cotisations en euros dans le comparatif.
+                  </p>
+                  <div className="space-y-0.5">
+                    {section.fields.map((field) => (
+                      <InlineFieldInput
+                        key={field.id}
+                        label={field.label}
+                        value={dynamicFieldValues?.[field.id]}
+                        onChange={(val) => onDynamicFieldChange?.(field.id, val)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Footer */}
@@ -268,6 +312,96 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Inline input matching the Figma InputInline component (right-aligned variant).
+ *  - Filled: plain text + pencil icon, no border
+ *  - Hover: subtle bg
+ *  - Editing: green border
+ *  - Empty: amber "À compléter.." placeholder */
+function InlineFieldInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | undefined;
+  onChange: (val: number | undefined) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(
+    value !== undefined ? value.toLocaleString("fr-FR") : ""
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hasFilled = value !== undefined;
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  // Sync from parent when not editing
+  useEffect(() => {
+    if (!editing) {
+      setLocalValue(value !== undefined ? value.toLocaleString("fr-FR") : "");
+    }
+  }, [value, editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const raw = localValue.replace(/[^\d]/g, "");
+    const num = raw ? parseInt(raw, 10) : undefined;
+    onChange(num);
+    setLocalValue(num !== undefined ? num.toLocaleString("fr-FR") : "");
+  };
+
+  return (
+    <div className="flex items-center gap-2 min-h-[32px]">
+      <span className="text-[13px] text-panora-text flex-1 min-w-0 truncate">{label}</span>
+
+      {editing ? (
+        /* Editing state: green border wrapper */
+        <div className="border border-[#00a272] rounded-[8px] p-[2px] shrink-0">
+          <div className="bg-white border border-[#e2dfd8] rounded-[6px] flex items-center px-2 py-1 gap-1.5">
+            <input
+              ref={inputRef}
+              type="text"
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") { setEditing(false); setLocalValue(value !== undefined ? value.toLocaleString("fr-FR") : ""); }
+              }}
+              className="w-[100px] text-[13px] font-medium text-panora-text text-right bg-transparent outline-none leading-[20px]"
+            />
+          </div>
+        </div>
+      ) : hasFilled ? (
+        /* Filled state: plain text + pencil, no border */
+        <button
+          onClick={() => setEditing(true)}
+          className="group/inline flex items-center gap-1.5 px-2 py-1 rounded-[8px] hover:bg-[rgba(34,32,26,0.05)] transition-colors shrink-0"
+        >
+          <PencilLine className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/inline:opacity-100 transition-opacity" />
+          <span className="text-[13px] font-medium text-panora-text leading-[20px]">
+            {localValue}
+          </span>
+        </button>
+      ) : (
+        /* Empty state: plain dash, no warning */
+        <button
+          onClick={() => setEditing(true)}
+          className="group/inline flex items-center gap-1.5 px-2 py-1 rounded-[8px] hover:bg-[rgba(34,32,26,0.05)] transition-colors shrink-0"
+        >
+          <PencilLine className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/inline:opacity-100 transition-opacity" />
+          <span className="text-[13px] text-panora-text-muted leading-[20px]">—</span>
+        </button>
+      )}
     </div>
   );
 }

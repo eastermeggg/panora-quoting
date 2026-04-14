@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem } from "@/data/mock";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem, DynamicFieldValues } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -25,6 +25,8 @@ interface ComparisonTableProps {
   onStreamingDone?: () => void;
   /** When false, shows empty state in synthese row prompting user to complete the profile */
   hasClientProfile?: boolean;
+  /** Current dynamic field values for rate computation */
+  dynamicFieldValues?: DynamicFieldValues;
 }
 
 function cellIdKey(c: CellIdentifier): string {
@@ -66,6 +68,16 @@ function cellIdEquals(a: CellIdentifier | null | undefined, b: CellIdentifier): 
     return a.exclusionId === b.exclusionId && a.insurerId === b.insurerId;
   }
   return false;
+}
+
+/** Format a number as French currency, e.g. 15170 → "15 170 €" */
+function formatEur(n: number): string {
+  return n.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
+}
+
+/** Format a rate as percentage, e.g. 0.0185 → "1,85%" */
+function formatRate(rate: number): string {
+  return (rate * 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
 }
 
 /** Splits "810,52 €/an" into { amount: "810,52 €", period: "/ an" } */
@@ -190,7 +202,7 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
@@ -257,6 +269,34 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           );
         })}
       </div>
+
+      {/* Dynamic fields banner — shown when rate products exist but dynamic field data is incomplete */}
+      {comparisonData?.rateProducts && comparisonData.rateProducts.length > 0 && comparisonData.dynamicFields && (() => {
+        const emptyFields = comparisonData.dynamicFields!.filter((f) => f.type === "number" && dynamicFieldValues?.[f.id] === undefined);
+        const hasRates = comparisonData.rateProducts!.some((rp) => rp.subGroups.some((sg) => sg.rows.some((r) => Object.keys(r.rates).length > 0)));
+        if (emptyFields.length === 0 || !hasRates) return null;
+        const isHeadcount = comparisonData.rateProducts!.some((rp) => rp.rateUnit === "eur_per_person_month");
+        const bannerText = isHeadcount
+          ? "Renseignez les effectifs par régime pour voir le coût total annuel."
+          : "Renseignez la masse salariale pour afficher les cotisations en euros.";
+        return (
+          <div className="border-b border-[#e8c88a] bg-[#fdf6e9] px-5 py-3 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-[#cb8052]/20 flex items-center justify-center shrink-0">
+              <span className="text-[11px] font-bold text-[#cb8052]">!</span>
+            </div>
+            <p className="text-[13px] text-[#8b6914] flex-1">
+              {bannerText}
+            </p>
+            <button
+              onClick={onOpenProfile}
+              className="text-[13px] font-medium text-[#cb8052] hover:underline shrink-0 flex items-center gap-1"
+            >
+              Compléter
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Section: Synthese IA */}
       {(syntheseData && syntheseData.length > 0) || !hasClientProfile ? (
@@ -496,6 +536,220 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           );
         });
       })()}
+
+      {/* Rate-based products (Cotisations par catégorie) */}
+      {comparisonData?.rateProducts?.map((rateProduct, rpIdx) => {
+        const rpKey = `rate-product-${rpIdx}`;
+        const rpCollapsed = collapsedSections.has(rpKey);
+        const isPerPerson = rateProduct.rateUnit === "eur_per_person_month";
+        const employerShareFieldId = rateProduct.employerShareFieldId;
+        const employerPct = employerShareFieldId ? dynamicFieldValues?.[employerShareFieldId] : undefined;
+
+        // For eur_per_person_month: compute grand total across all sub-groups
+        const grandTotals: Record<string, { total: number; partial: boolean } | null> = {};
+        if (isPerPerson) {
+          for (const ins of insurers) {
+            let sum = 0;
+            let hasAny = false;
+            let allFilled = true;
+            for (const sg of rateProduct.subGroups) {
+              for (const row of sg.rows) {
+                const rate = row.rates[ins.id];
+                const headcount = dynamicFieldValues?.[row.dynamicFieldId];
+                if (rate !== undefined && headcount !== undefined) {
+                  sum += rate * headcount * 12;
+                  hasAny = true;
+                } else if (rate !== undefined) {
+                  allFilled = false;
+                }
+              }
+            }
+            grandTotals[ins.id] = hasAny ? { total: sum, partial: !allFilled } : null;
+          }
+        }
+
+        return (
+          <div key={rpKey}>
+            <SectionHeader
+              title={rateProduct.title}
+              variant="product"
+              collapsed={rpCollapsed}
+              onToggle={() => toggleSection(rpKey)}
+            />
+            {!rpCollapsed && rateProduct.subGroups.map((sg, sgIdx) => {
+              const sgKey = `rate-sub-${rpIdx}-${sgIdx}`;
+              const sgCollapsed = collapsedSections.has(sgKey);
+
+              // Compute totals per insurer for this sub-group
+              const totals: Record<string, number | null> = {};
+              if (!isPerPerson) {
+                for (const ins of insurers) {
+                  let sum: number | null = null;
+                  for (const row of sg.rows) {
+                    const rate = row.rates[ins.id];
+                    const base = dynamicFieldValues?.[row.dynamicFieldId];
+                    if (rate !== undefined && base !== undefined) {
+                      sum = (sum ?? 0) + rate * base;
+                    }
+                  }
+                  totals[ins.id] = sum;
+                }
+              }
+
+              return (
+                <div key={sgIdx}>
+                  {sgIdx > 0 && <SectionDivider />}
+                  <SectionHeader
+                    title={sg.title}
+                    variant="sub"
+                    collapsed={sgCollapsed}
+                    onToggle={() => toggleSection(sgKey)}
+                  />
+                  {!sgCollapsed && (
+                    <>
+                      {sg.rows.map((row, rIdx) => {
+                        const base = dynamicFieldValues?.[row.dynamicFieldId];
+                        return (
+                          <div key={rIdx} className="flex border-b border-panora-border group/row">
+                            <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center">
+                              <span className="text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text">{row.label}</span>
+                            </div>
+                            {insurers.map((ins) => {
+                              const rate = row.rates[ins.id];
+
+                              if (isPerPerson) {
+                                // €/pers/mois: show rate as primary, unit label as secondary
+                                return (
+                                  <div
+                                    key={ins.id}
+                                    className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+                                  >
+                                    <div className="flex flex-col gap-0.5">
+                                      {rate !== undefined ? (
+                                        <>
+                                          <span className="text-[13px] font-medium text-panora-text">
+                                            {rate.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                          </span>
+                                          <span className="text-[11px] text-panora-text-muted">/pers/mois</span>
+                                        </>
+                                      ) : (
+                                        <span className="text-[13px] italic text-panora-text-muted">—</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Percent-based: show computed € as primary, rate as secondary
+                              const amount = rate !== undefined && base !== undefined ? rate * base : null;
+                              return (
+                                <div
+                                  key={ins.id}
+                                  className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+                                >
+                                  <div className="flex flex-col gap-0.5">
+                                    {amount !== null ? (
+                                      <span className="text-[13px] font-medium text-panora-text">
+                                        {formatEur(amount)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[13px] italic text-panora-text-muted">—</span>
+                                    )}
+                                    {rate !== undefined && (
+                                      <span className="text-[11px] text-panora-text-muted">{formatRate(rate)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+
+                      {/* Sub-group total row — only for percent-based products */}
+                      {!isPerPerson && (
+                        <div className="flex border-b border-panora-border bg-[#faf9f7]">
+                          <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center">
+                            <span className="text-[13px] font-semibold text-panora-text">Total / an</span>
+                          </div>
+                          {insurers.map((ins) => {
+                            const total = totals[ins.id];
+                            return (
+                              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                                {total !== null ? (
+                                  <span className="text-[13px] font-semibold text-panora-text">
+                                    {formatEur(total)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[13px] italic text-panora-text-muted">—</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Grand total row — for eur_per_person_month products (across all sub-groups) */}
+            {isPerPerson && !rpCollapsed && (
+              <>
+                <div className="flex border-b border-panora-border bg-[#faf9f7]">
+                  <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center">
+                    <span className="text-[13px] font-semibold text-panora-text">Coût total / an</span>
+                  </div>
+                  {insurers.map((ins) => {
+                    const gt = grandTotals[ins.id];
+                    return (
+                      <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                        {gt !== null ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[13px] font-semibold text-panora-text">
+                              {formatEur(gt.total)}
+                            </span>
+                            {gt.partial && (
+                              <span className="text-[11px] italic text-panora-text-muted">partiel — effectifs incomplets</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[13px] italic text-panora-text-muted">—</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Employer share line */}
+                {employerPct !== undefined && (
+                  <div className="flex border-b border-panora-border bg-[#faf9f7]">
+                    <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center">
+                      <span className="text-[13px] text-panora-text-muted">dont employeur ({employerPct}%)</span>
+                    </div>
+                    {insurers.map((ins) => {
+                      const gt = grandTotals[ins.id];
+                      return (
+                        <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                          {gt !== null ? (
+                            <span className="text-[13px] text-panora-text-muted">
+                              {formatEur(Math.round(gt.total * employerPct / 100))}
+                            </span>
+                          ) : (
+                            <span className="text-[13px] italic text-panora-text-muted">—</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            <SectionDivider />
+          </div>
+        );
+      })}
 
       {/* Exclusions section */}
       {comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
