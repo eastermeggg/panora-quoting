@@ -42,7 +42,7 @@ function ComparisonListView() {
   const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
   const done = comparisonTasks.filter((t) => t.status === "done");
 
-  const handleWizardSubmit = (data: { client: string; products: string[]; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
+  const handleWizardSubmit = (data: { client: string; products: string[]; principalProduct: string | null; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
     const cotationId = "cot-1";
     // Update client profile with wizard besoins
     updateClientProfile(cotationId, {
@@ -56,6 +56,7 @@ function ComparisonListView() {
       cotationId,
       client: data.client,
       products: data.products,
+      principalProduct: data.principalProduct,
       insurerIds: data.insurerIds,
       createdBy: currentUser.name,
       date: new Date().toLocaleDateString("fr-FR"),
@@ -161,11 +162,22 @@ function TaskRow({ task }: { task: ComparisonTask }) {
       {/* Products */}
       <div className="flex-1 px-4 py-4">
         <div className="flex flex-wrap gap-1.5">
-          {task.products.map((p) => (
-            <span key={p} className="inline-flex h-5 items-center px-2 rounded-full bg-panora-secondary text-[12px] text-panora-text-muted">
-              {p}
-            </span>
-          ))}
+          {task.products.map((p) => {
+            const isPrincipal = p === task.principalProduct;
+            return (
+              <span
+                key={p}
+                className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-[12px] font-medium leading-4 ${
+                  isPrincipal
+                    ? "bg-[#dbeee5] text-[#173c2d]"
+                    : "bg-panora-secondary text-panora-text-muted"
+                }`}
+              >
+                {isPrincipal && <span className="w-[6px] h-[6px] rounded-full bg-[#00a272] shrink-0" />}
+                {p}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -705,6 +717,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           }}
           insurers={mutableInsurers}
           profile={mutableProfile}
+          principalProduct={task?.principalProduct ?? task?.products[0] ?? null}
           template={{ id: "tpl-1", name: "Modèle DDA standard — Howden", updatedAt: "02/04/2026" }}
         />
       )}
