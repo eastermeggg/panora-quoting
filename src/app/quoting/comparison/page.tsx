@@ -346,6 +346,9 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   );
   const [isStreaming, setIsStreaming] = useState(false);
   const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<import("@/data/mock").DynamicFieldValues>(
+    () => getComparisonData(cotParamId)?.dynamicFieldValues ?? {}
+  );
   const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
 
   const openProfile = useCallback(() => {
@@ -634,11 +637,15 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   isStreaming={isStreaming}
                   onStreamingDone={() => setIsStreaming(false)}
                   hasClientProfile={hasClientProfile}
+                  dynamicFieldValues={dynamicFieldValues}
                 />
               </div>
               {isProfileOpen ? (
                 <ClientProfilePanel
                   profile={mutableProfile}
+                  dynamicFields={comparisonResult?.dynamicFields}
+                  dynamicFieldValues={dynamicFieldValues}
+                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
                   contextPills={mutableAnalysis?.contextPills}
                   onSave={handleProfileSave}
                   onClose={() => setIsProfileOpen(false)}
@@ -679,6 +686,9 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   contextPills={mutableAnalysis?.contextPills}
                   onSave={handleProfileSave}
                   onClose={() => setIsProfileOpen(false)}
+                  dynamicFields={comparisonResult?.dynamicFields}
+                  dynamicFieldValues={dynamicFieldValues}
+                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
                 />
               )}
             </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X as XIcon, ChevronDown, Sparkles, Plus } from "lucide-react";
-import type { ClientProfileData, ContextPill, BesoinItem } from "@/data/mock";
+import { X as XIcon, ChevronDown, Sparkles, Plus, PencilLine, Info, Target } from "lucide-react";
+import type { ClientProfileData, ContextPill, BesoinItem, DynamicField, DynamicFieldValues } from "@/data/mock";
 import { BesoinTag } from "@/components/ui/BesoinTag";
 
 interface ClientProfilePanelProps {
@@ -10,6 +10,12 @@ interface ClientProfilePanelProps {
   contextPills?: ContextPill[];
   onSave: (updated: ClientProfileData) => void;
   onClose: () => void;
+  /** Dynamic fields config for rate-based products */
+  dynamicFields?: DynamicField[];
+  /** Current dynamic field values */
+  dynamicFieldValues?: DynamicFieldValues;
+  /** Called on blur when a dynamic field value changes */
+  onDynamicFieldChange?: (fieldId: string, value: number | undefined) => void;
 }
 
 let nextId = 0;
@@ -17,7 +23,7 @@ function makeId() {
   return `besoin-panel-${++nextId}`;
 }
 
-export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: ClientProfilePanelProps) {
+export function ClientProfilePanel({ profile, contextPills, onSave, onClose, dynamicFields, dynamicFieldValues, onDynamicFieldChange }: ClientProfilePanelProps) {
   const [clientLabel] = useState(profile.clientLabel);
   const [clientSiren] = useState(profile.clientSiren);
 
@@ -106,31 +112,26 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="w-[420px] shrink-0 border-l border-panora-border bg-white flex flex-col"
+      className="w-[400px] shrink-0 border-l border-panora-border bg-panora-card flex flex-col"
     >
       {/* Header */}
-      <div className="h-[52px] shrink-0 border-b border-[#e3e3e3] flex items-center justify-between px-4">
-        <span className="text-[13px] text-panora-text-muted">Profil client</span>
+      <div className="h-12 shrink-0 border-b border-panora-border flex items-center justify-between px-5">
+        <span className="text-[13px] font-medium text-panora-text">Profil client</span>
         <button
           onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center rounded-[6px] bg-panora-secondary hover:bg-panora-drop transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-panora-drop transition-colors"
         >
-          <XIcon className="w-3.5 h-3.5 text-panora-text" />
+          <XIcon className="w-3.5 h-3.5 text-panora-text-muted" />
         </button>
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        {/* Title */}
-        <h2 className="text-[20px] font-serif font-semibold text-panora-text" style={{ letterSpacing: "-0.2px" }}>
-          Profil client
-        </h2>
-
-        {/* Client field (read-only) */}
-        <div className="space-y-1.5">
+      <div className="flex-1 overflow-y-auto">
+        {/* Client field (read-only selector) */}
+        <div className="px-5 pt-5 pb-4 space-y-1.5">
           <label className="text-[13px] font-medium text-panora-text">Client</label>
-          <div className="flex items-center gap-2.5 px-3 py-2 border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] bg-[#faf9f7] cursor-default">
-            <div className="w-6 h-6 rounded-[6px] bg-panora-green/20 border border-black/10 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-2.5 px-3 py-2 border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] bg-panora-bg cursor-default">
+            <div className="w-6 h-6 rounded-[6px] bg-panora-green/20 border border-panora-text/10 flex items-center justify-center shrink-0">
               <span className="text-[10px] font-bold text-panora-green">
                 {clientLabel.charAt(0)}
               </span>
@@ -142,10 +143,14 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
           </div>
         </div>
 
-        {/* Besoins client — single unified list */}
-        <div className="space-y-2.5">
+        <div className="h-px bg-panora-border mx-5" />
+
+        {/* Besoins client — main editable section */}
+        <div className="px-5 pt-4 pb-5">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
+            <span className="w-[22px] h-[22px] rounded-[4px] bg-panora-secondary flex items-center justify-center shrink-0">
+              <Target className="w-3 h-3 text-panora-text" />
+            </span>
             <label className="text-[13px] font-medium text-panora-text">
               Besoins client
               {filledBesoins > 0 && (
@@ -153,17 +158,17 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
               )}
             </label>
           </div>
-          <p className="text-[12px] text-panora-text-muted leading-[18px]">
+          <p className="mt-1 text-[12px] text-panora-text-muted leading-[18px] max-w-[55ch]">
             Tout element lie au client pouvant influencer le choix d&apos;une offre. Plus c&apos;est specifique, plus l&apos;analyse sera pertinente.
           </p>
 
           {/* All besoins — extracted (as ai) + manual + ai in one list */}
-          <div className="space-y-2">
+          <div className="mt-3 space-y-1.5">
             {besoins.map((besoin) => (
               editingId === besoin.id ? (
                 <div
                   key={besoin.id}
-                  className="flex items-start gap-2.5 rounded-[8px] px-3 py-2 min-h-[36px] bg-white border border-panora-green/40"
+                  className="flex items-start gap-2.5 rounded-[8px] px-3 py-2 min-h-[36px] bg-panora-card border border-panora-green/40"
                 >
                   <input
                     ref={editRef}
@@ -201,13 +206,13 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
                   addBesoin();
                 }
               }}
-              placeholder="Ajoutez un besoin client. Ex: Couverture cyber minimum 500k€..."
-              className="w-full bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2 min-h-[36px] text-[13px] text-panora-text placeholder:text-panora-text-muted/50 outline-none focus:border-panora-green transition-colors"
+              placeholder="Ajoutez un besoin client..."
+              className="w-full bg-panora-card border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2 min-h-[36px] text-[13px] text-panora-text placeholder:text-panora-text-muted/50 outline-none focus:border-panora-green transition-colors"
             />
           </div>
 
-          <div className="space-y-2">
-            {/* AI-suggested missing info for this product */}
+          {/* Suggestions & AI count — tighter grouping below the list */}
+          <div className="mt-3 space-y-2">
             {missingSuggestions.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-[12px] text-panora-text-muted">
@@ -241,33 +246,166 @@ export function ClientProfilePanel({ profile, contextPills, onSave, onClose }: C
             )}
           </div>
         </div>
+
+        {/* Dynamic fields — payroll / headcount inputs grouped by section */}
+        {dynamicFields && dynamicFields.length > 0 && (() => {
+          const sections = new Map<string, { label: string; fields: DynamicField[] }>();
+          for (const field of dynamicFields) {
+            if (!sections.has(field.sectionKey)) {
+              sections.set(field.sectionKey, { label: field.sectionLabel, fields: [] });
+            }
+            sections.get(field.sectionKey)!.fields.push(field);
+          }
+
+          return (
+            <>
+              <div className="h-px bg-panora-border mx-5" />
+              <div className="px-5 pt-4 pb-5 space-y-4">
+                {Array.from(sections.entries()).map(([key, section]) => (
+                  <div key={key}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-[22px] h-[22px] rounded-[4px] bg-panora-secondary flex items-center justify-center text-[10px] text-panora-text font-bold">€</span>
+                      <label className="text-[13px] font-medium text-panora-text">{section.label}</label>
+                      <span
+                        className="text-panora-text-muted cursor-help"
+                        title="Renseignez ces données pour afficher les cotisations en euros dans le comparatif."
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-0.5">
+                      {section.fields.map((field) => (
+                        <InlineFieldInput
+                          key={field.id}
+                          label={field.label}
+                          value={dynamicFieldValues?.[field.id]}
+                          onChange={(val) => onDynamicFieldChange?.(field.id, val)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 border-t border-panora-border px-4 py-3 space-y-3">
+      <div className="shrink-0 border-t border-panora-border px-5 py-3 flex flex-col gap-3">
         {isDirty && (
-          <div className="flex items-start gap-2 rounded-[6px] bg-[#f0faf5] border border-panora-green/20 px-3 py-2">
+          <div className="flex items-start gap-2.5 rounded-[8px] bg-panora-green-light border border-panora-green-border/40 px-3 py-2.5">
             <Sparkles className="w-3.5 h-3.5 text-panora-green shrink-0 mt-0.5" />
-            <p className="text-[12px] text-panora-text leading-4">
+            <p className="text-[12px] text-panora-text leading-[17px]">
               Enregistrez pour relancer la synthese comparative avec le contexte mis a jour.
             </p>
           </div>
         )}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-2.5">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-[13px] font-medium text-panora-text bg-panora-secondary rounded-[6px] hover:bg-panora-drop transition-colors"
+            className="px-4 py-2 text-[13px] font-medium text-panora-text bg-panora-secondary rounded-[8px] hover:bg-panora-drop transition-colors"
           >
             Annuler
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-[13px] font-medium text-white bg-[#173c2d] rounded-[6px] hover:bg-[#1a4a36] transition-colors"
+            className="btn-primary px-4 py-2 text-[13px] font-medium"
           >
             Enregistrer
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Inline input matching the Figma InputInline component (right-aligned variant).
+ *  - Filled: plain text + pencil icon, no border
+ *  - Hover: subtle bg
+ *  - Editing: green border
+ *  - Empty: amber "À compléter.." placeholder */
+function InlineFieldInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | undefined;
+  onChange: (val: number | undefined) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(
+    value !== undefined ? value.toLocaleString("fr-FR") : ""
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hasFilled = value !== undefined;
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  // Sync from parent when not editing
+  useEffect(() => {
+    if (!editing) {
+      setLocalValue(value !== undefined ? value.toLocaleString("fr-FR") : "");
+    }
+  }, [value, editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const raw = localValue.replace(/[^\d]/g, "");
+    const num = raw ? parseInt(raw, 10) : undefined;
+    onChange(num);
+    setLocalValue(num !== undefined ? num.toLocaleString("fr-FR") : "");
+  };
+
+  return (
+    <div className="flex items-center gap-2 min-h-[32px]">
+      <span className="text-[13px] text-panora-text flex-1 min-w-0 truncate">{label}</span>
+
+      {editing ? (
+        /* Editing state: green border wrapper */
+        <div className="border border-panora-green rounded-[8px] p-[2px] shrink-0">
+          <div className="bg-panora-card border border-[#e2dfd8] rounded-[6px] flex items-center px-2 py-1 gap-1.5">
+            <input
+              ref={inputRef}
+              type="text"
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") { setEditing(false); setLocalValue(value !== undefined ? value.toLocaleString("fr-FR") : ""); }
+              }}
+              className="w-[100px] text-[13px] font-medium text-panora-text text-right bg-transparent outline-none leading-[20px]"
+            />
+          </div>
+        </div>
+      ) : hasFilled ? (
+        /* Filled state: plain text + pencil, no border */
+        <button
+          onClick={() => setEditing(true)}
+          className="group/inline flex items-center gap-1.5 px-2 py-1 rounded-[8px] hover:bg-panora-drop transition-colors shrink-0"
+        >
+          <PencilLine className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/inline:opacity-100 transition-opacity" />
+          <span className="text-[13px] font-medium text-panora-text leading-[20px]">
+            {localValue}
+          </span>
+        </button>
+      ) : (
+        /* Empty state: plain dash, no warning */
+        <button
+          onClick={() => setEditing(true)}
+          className="group/inline flex items-center gap-1.5 px-2 py-1 rounded-[8px] hover:bg-panora-drop transition-colors shrink-0"
+        >
+          <PencilLine className="w-4 h-4 text-panora-text-muted opacity-0 group-hover/inline:opacity-100 transition-opacity" />
+          <span className="text-[13px] text-panora-text-muted leading-[20px]">—</span>
+        </button>
+      )}
     </div>
   );
 }

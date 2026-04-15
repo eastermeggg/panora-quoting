@@ -357,6 +357,34 @@ export const cotationsList: Cotation[] = [
       { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-RC-3302", bestPrice: "875,00 €/an" },
     ],
   },
+  {
+    id: "cot-7",
+    cotationId: "COT-2026-0151",
+    client: "Dupont SA",
+    product: "Santé collective",
+    productIcon: "shield",
+    createdAt: "14/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "alan", name: "Alan", status: "completed", reference: "ALN-SC-2201", bestPrice: "82,50 €/pers/mois" },
+      { id: "malakoff", name: "Malakoff Humanis", status: "completed", reference: "MH-SC-4410", bestPrice: "78,30 €/pers/mois" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-SC-7703", bestPrice: "85,00 €/pers/mois" },
+    ],
+  },
+  {
+    id: "cot-6",
+    cotationId: "COT-2026-0148",
+    client: "LegalPlace SAS",
+    product: "Prévoyance / AT",
+    productIcon: "shield",
+    createdAt: "12/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-AT-5501", bestPrice: "1.85%" },
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-AT-3344", bestPrice: "1.72%" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-AT-9920", bestPrice: "1.90%" },
+    ],
+  },
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -461,6 +489,128 @@ const cotationFollowupMap: Record<string, FollowupData> = {
           { label: "Franchise", value: "500 € / sinistre" },
         ],
         allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-7": {
+    cotation: cotationsList[6],
+    projectName: "Santé Collective Dupont SA 2026",
+    emailSubject: "Cotation Santé Collective - Dupont SA",
+    scenarioId: "sante-collective",
+    attachments: [
+      { name: "Kbis_Dupont_SA.pdf", size: "210 Ko", fieldsExtracted: 3 },
+      { name: "DUE_Mutuelle_Dupont.pdf", size: "450 Ko", fieldsExtracted: 5 },
+      { name: "Effectifs_2025_Dupont.pdf", size: "320 Ko", fieldsExtracted: 8 },
+    ],
+    insurers: [
+      {
+        id: "alan", name: "Alan", logo: "💜", logoColor: "#6C5CE7", hasCode: true,
+        status: "completed", reference: "ALN-SC-2201",
+        documents: ["Devis_Alan_Sante_Dupont.pdf", "Tableau_Garanties_Alan.pdf"],
+        pricing: [
+          { formula: "Formule Confort", details: [{ label: "Tarif cadre isolé", value: "82,50 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "62,00 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALN-SC-2201" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Alan", 7),
+      },
+      {
+        id: "malakoff", name: "Malakoff Humanis", logo: "🟠", logoColor: "#E67E22", hasCode: true,
+        status: "completed", reference: "MH-SC-4410",
+        documents: ["Devis_Malakoff_Sante_Dupont.pdf", "CG_Malakoff_Sante.pdf"],
+        pricing: [
+          { formula: "Formule Équilibre", details: [{ label: "Tarif cadre isolé", value: "78,30 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "59,80 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MH-SC-4410" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Malakoff Humanis", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-SC-7703",
+        documents: ["Devis_Generali_Sante_Dupont.pdf"],
+        pricing: [
+          { formula: "Formule Vitalité", details: [{ label: "Tarif cadre isolé", value: "85,00 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "64,50 €/pers/mois" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-SC-7703" },
+          { label: "Client", value: "Dupont SA" },
+          { label: "Produit", value: "Santé collective" },
+          { label: "Date d'effet", value: "01/01/2027" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+    ],
+  },
+  "cot-6": {
+    cotation: cotationsList[5],
+    projectName: "Prévoyance AT LegalPlace 2026",
+    emailSubject: "Cotation Prévoyance AT - LegalPlace SAS",
+    scenarioId: "prevoyance-at",
+    attachments: [
+      { name: "Kbis_LegalPlace.pdf", size: "220 Ko", fieldsExtracted: 3 },
+      { name: "Masse_Salariale_2025_LegalPlace.pdf", size: "890 Ko", fieldsExtracted: 6 },
+      { name: "Convention_Collective_Syntec.pdf", size: "1.5 Mo", fieldsExtracted: 4 },
+    ],
+    insurers: [
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-AT-5501",
+        documents: ["Devis_Generali_AT_LegalPlace.pdf", "Conditions_Generales_Prevoyance_Generali.pdf"],
+        pricing: [
+          { formula: "Formule Standard", details: [{ label: "Taux global", value: "1,85 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-AT-5501" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-AT-3344",
+        documents: ["Devis_Axa_AT_LegalPlace.pdf", "Tableau_Garanties_Axa_AT.pdf"],
+        pricing: [
+          { formula: "Formule Confort", details: [{ label: "Taux global", value: "1,72 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-AT-3344" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-AT-9920",
+        documents: ["Devis_Allianz_AT_LegalPlace.pdf"],
+        pricing: [
+          { formula: "Formule Essentielle", details: [{ label: "Taux global", value: "1,90 % de la MS" }, { label: "Cotisation estimée", value: "À calculer" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-AT-9920" },
+          { label: "Client", value: "LegalPlace SAS" },
+          { label: "Produit", value: "Prévoyance / AT" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "Syntec — IDCC 1486" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
       },
     ],
   },
@@ -764,11 +914,57 @@ export type ExclusionRow = {
   details?: Record<string, CellDetail>;
 };
 
+// ─── Dynamic fields & rate-based pricing ─────────────────────────────
+
+export type DynamicField = {
+  id: string;
+  label: string;
+  sectionKey: string;
+  sectionLabel: string;
+  type: "number" | "select";
+  required?: boolean;
+};
+
+export type DynamicFieldValues = Record<string, number | undefined>;
+
+/** A rate-based guarantee row where each insurer quotes a % rate.
+ *  The € amount is computed client-side: rate × payroll category. */
+export type RateRow = {
+  label: string;
+  /** Which dynamic field (by id) provides the base for computation */
+  dynamicFieldId: string;
+  /** Rate per insurer (e.g. 0.0185 for 1.85%) keyed by insurer id */
+  rates: Record<string, number>;
+  details?: Record<string, CellDetail>;
+};
+
+export type RateSubGroup = {
+  title: string;
+  rows: RateRow[];
+};
+
+export type RateUnit = "percent" | "eur_per_person_month";
+
+export type RateProduct = {
+  title: string;
+  subGroups: RateSubGroup[];
+  /** How to interpret rates: "percent" (rate × base) or "eur_per_person_month" (rate × headcount × 12). Defaults to "percent". */
+  rateUnit?: RateUnit;
+  /** Dynamic field id providing the employer share % (for eur_per_person_month products) */
+  employerShareFieldId?: string;
+};
+
 export type ComparisonData = {
   products: GuaranteeProduct[];
   /** @deprecated — use products */
   sections?: GuaranteeSection[];
   exclusions?: ExclusionRow[];
+  /** Rate-based products (Workers' Comp, Group Health, etc.) */
+  rateProducts?: RateProduct[];
+  /** Dynamic fields required for rate computation */
+  dynamicFields?: DynamicField[];
+  /** Current values for dynamic fields */
+  dynamicFieldValues?: DynamicFieldValues;
 };
 
 function makeDetail(
@@ -1626,6 +1822,317 @@ const comparisonDataMap: Record<string, ComparisonData> = {
       },
     ],
   },
+  "cot-7": {
+    products: [
+      {
+        title: "Santé collective",
+        subGroups: [
+          {
+            title: "Hospitalisation",
+            rows: [
+              {
+                label: "Frais de séjour",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "150% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Frais de séjour", "alan", "Alan", true, "Prise en charge des frais de séjour hospitalier.", [{ id: "sl-1", label: "Base", value: "100% BR" }], defaultSources),
+                  malakoff: makeDetail("Frais de séjour", "malakoff", "Malakoff Humanis", true, "Prise en charge majorée des frais de séjour.", [{ id: "sl-1", label: "Base", value: "150% BR" }], defaultSources),
+                  generali: makeDetail("Frais de séjour", "generali", "Generali", true, "Remboursement frais de séjour.", [{ id: "sl-1", label: "Base", value: "100% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Chambre particulière",
+                values: { alan: { type: "text", value: "80 €/jour" }, malakoff: { type: "text", value: "60 €/jour" }, generali: { type: "text", value: "70 €/jour" } },
+                details: {
+                  alan: makeDetail("Chambre particulière", "alan", "Alan", true, "Forfait chambre individuelle.", [{ id: "sl-1", label: "Plafond", value: "80 €/jour" }], defaultSources),
+                  malakoff: makeDetail("Chambre particulière", "malakoff", "Malakoff Humanis", true, "Indemnité chambre seule.", [{ id: "sl-1", label: "Plafond", value: "60 €/jour" }], defaultSources),
+                  generali: makeDetail("Chambre particulière", "generali", "Generali", true, "Forfait chambre particulière.", [{ id: "sl-1", label: "Plafond", value: "70 €/jour" }], defaultSources),
+                },
+              },
+              {
+                label: "Honoraires chirurgicaux",
+                values: { alan: { type: "text", value: "200% BR" }, malakoff: { type: "text", value: "250% BR" }, generali: { type: "text", value: "200% BR" } },
+                details: {
+                  alan: makeDetail("Honoraires chirurgicaux", "alan", "Alan", true, "Dépassements d'honoraires chirurgicaux.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                  malakoff: makeDetail("Honoraires chirurgicaux", "malakoff", "Malakoff Humanis", true, "Prise en charge étendue des dépassements.", [{ id: "sl-1", label: "Base", value: "250% BR" }], defaultSources),
+                  generali: makeDetail("Honoraires chirurgicaux", "generali", "Generali", true, "Honoraires chirurgicaux.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Soins courants",
+            rows: [
+              {
+                label: "Consultations généralistes",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "100% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Consultations généralistes", "alan", "Alan", true, "Consultations médecin traitant.", [], defaultSources),
+                  malakoff: makeDetail("Consultations généralistes", "malakoff", "Malakoff Humanis", true, "Consultations généralistes dans le parcours de soins.", [], defaultSources),
+                  generali: makeDetail("Consultations généralistes", "generali", "Generali", true, "Consultations médecin.", [], defaultSources),
+                },
+              },
+              {
+                label: "Consultations spécialistes",
+                values: { alan: { type: "text", value: "200% BR" }, malakoff: { type: "text", value: "150% BR" }, generali: { type: "text", value: "180% BR" } },
+                details: {
+                  alan: makeDetail("Consultations spécialistes", "alan", "Alan", true, "Dépassements d'honoraires spécialistes.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                  malakoff: makeDetail("Consultations spécialistes", "malakoff", "Malakoff Humanis", true, "Consultations spécialistes avec dépassements.", [{ id: "sl-1", label: "Base", value: "150% BR" }], defaultSources),
+                  generali: makeDetail("Consultations spécialistes", "generali", "Generali", true, "Honoraires spécialistes.", [{ id: "sl-1", label: "Base", value: "180% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Pharmacie",
+                values: { alan: { type: "text", value: "100% BR" }, malakoff: { type: "text", value: "100% BR" }, generali: { type: "text", value: "100% BR" } },
+                details: {
+                  alan: makeDetail("Pharmacie", "alan", "Alan", true, "Médicaments remboursés par la Sécu.", [], defaultSources),
+                  malakoff: makeDetail("Pharmacie", "malakoff", "Malakoff Humanis", true, "Pharmacie prescrite.", [], defaultSources),
+                  generali: makeDetail("Pharmacie", "generali", "Generali", true, "Médicaments remboursés.", [], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Optique et dentaire",
+            rows: [
+              {
+                label: "Monture + verres",
+                values: { alan: { type: "text", value: "200 €/an" }, malakoff: { type: "text", value: "150 €/an" }, generali: { type: "text", value: "180 €/an" } },
+                details: {
+                  alan: makeDetail("Monture + verres", "alan", "Alan", true, "Forfait annuel optique.", [{ id: "sl-1", label: "Plafond", value: "200 €/an" }], defaultSources),
+                  malakoff: makeDetail("Monture + verres", "malakoff", "Malakoff Humanis", true, "Forfait optique.", [{ id: "sl-1", label: "Plafond", value: "150 €/an" }], defaultSources),
+                  generali: makeDetail("Monture + verres", "generali", "Generali", true, "Forfait optique annuel.", [{ id: "sl-1", label: "Plafond", value: "180 €/an" }], defaultSources),
+                },
+              },
+              {
+                label: "Prothèses dentaires",
+                values: { alan: { type: "text", value: "300% BR" }, malakoff: { type: "text", value: "250% BR" }, generali: { type: "text", value: "200% BR" } },
+                details: {
+                  alan: makeDetail("Prothèses dentaires", "alan", "Alan", true, "Prothèses dentaires remboursées.", [{ id: "sl-1", label: "Base", value: "300% BR" }], defaultSources),
+                  malakoff: makeDetail("Prothèses dentaires", "malakoff", "Malakoff Humanis", true, "Couverture prothèses.", [{ id: "sl-1", label: "Base", value: "250% BR" }], defaultSources),
+                  generali: makeDetail("Prothèses dentaires", "generali", "Generali", true, "Prothèses dentaires.", [{ id: "sl-1", label: "Base", value: "200% BR" }], defaultSources),
+                },
+              },
+              {
+                label: "Orthodontie",
+                values: { alan: { type: "check" }, malakoff: { type: "check" }, generali: { type: "cross" } },
+                details: {
+                  alan: makeDetail("Orthodontie", "alan", "Alan", true, "Orthodontie acceptée par la Sécu.", [{ id: "sl-1", label: "Forfait", value: "600 €/an" }], defaultSources),
+                  malakoff: makeDetail("Orthodontie", "malakoff", "Malakoff Humanis", true, "Orthodontie enfants et adultes.", [{ id: "sl-1", label: "Forfait", value: "400 €/an" }], defaultSources),
+                  generali: makeDetail("Orthodontie", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Actes hors nomenclature Sécu",
+        origin: "deterministic",
+        values: { alan: { type: "inclus" }, malakoff: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          alan: makeExclusionDetail("Actes hors nomenclature", "alan", "Alan", true, "deterministic", "excl-d1", "Certains actes hors nomenclature pris en charge dans le cadre du forfait bien-être.", [], defaultSources),
+          malakoff: makeExclusionDetail("Actes hors nomenclature", "malakoff", "Malakoff Humanis", false, "deterministic", "excl-d1", "Actes non remboursés par la Sécurité sociale exclus.", [], defaultSources),
+          generali: makeExclusionDetail("Actes hors nomenclature", "generali", "Generali", false, "deterministic", "excl-d1", "Exclusion des actes hors nomenclature.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Médecines douces",
+        origin: "ai",
+        values: { alan: { type: "inclus" }, malakoff: { type: "exclu-text", value: "Limité" }, generali: { type: "exclu" } },
+        details: {
+          alan: makeExclusionDetail("Médecines douces", "alan", "Alan", true, "ai", "excl-d2", "Ostéopathie, acupuncture, naturopathie incluses.", [{ id: "sl-1", label: "Forfait", value: "4 séances/an" }], defaultSources),
+          malakoff: makeExclusionDetail("Médecines douces", "malakoff", "Malakoff Humanis", false, "ai", "excl-d2", "Ostéopathie uniquement, limitée à 2 séances/an.", [{ id: "sl-1", label: "Plafond", value: "2 séances/an" }], defaultSources),
+          generali: makeExclusionDetail("Médecines douces", "generali", "Generali", false, "ai", "excl-d2", "Médecines alternatives non couvertes.", [], defaultSources),
+        },
+      },
+    ],
+    rateProducts: [
+      {
+        title: "Cotisations par régime",
+        rateUnit: "eur_per_person_month",
+        employerShareFieldId: "partEmployeur",
+        subGroups: [
+          {
+            title: "Cadres",
+            rows: [
+              { label: "Isolé", dynamicFieldId: "cadresIsole", rates: { alan: 82.50, malakoff: 78.30, generali: 85.00 } },
+              { label: "Duo", dynamicFieldId: "cadresDuo", rates: { alan: 165.00, malakoff: 156.60, generali: 170.00 } },
+              { label: "Famille", dynamicFieldId: "cadresFamille", rates: { alan: 214.50, malakoff: 203.60, generali: 221.00 } },
+            ],
+          },
+          {
+            title: "Non-cadres",
+            rows: [
+              { label: "Isolé", dynamicFieldId: "nonCadresIsole", rates: { alan: 62.00, malakoff: 59.80, generali: 64.50 } },
+              { label: "Duo", dynamicFieldId: "nonCadresDuo", rates: { alan: 124.00, malakoff: 119.60, generali: 129.00 } },
+              { label: "Famille", dynamicFieldId: "nonCadresFamille", rates: { alan: 161.20, malakoff: 155.50, generali: 167.70 } },
+            ],
+          },
+        ],
+      },
+    ],
+    dynamicFields: [
+      { id: "cadresIsole", label: "Isolé", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "cadresDuo", label: "Duo", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "cadresFamille", label: "Famille", sectionKey: "effectifsCadres", sectionLabel: "Effectifs cadres", type: "number" },
+      { id: "nonCadresIsole", label: "Isolé", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "nonCadresDuo", label: "Duo", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "nonCadresFamille", label: "Famille", sectionKey: "effectifsNonCadres", sectionLabel: "Effectifs non-cadres", type: "number" },
+      { id: "partEmployeur", label: "Part employeur (%)", sectionKey: "repartition", sectionLabel: "Répartition cotisation", type: "number" },
+    ],
+    dynamicFieldValues: { partEmployeur: 50 },
+  },
+  "cot-6": {
+    products: [
+      {
+        title: "Prévoyance / AT",
+        subGroups: [
+          {
+            title: "Garanties décès",
+            rows: [
+              {
+                label: "Capital décès toute cause",
+                values: { generali: { type: "text", value: "300% TA + 200% TB" }, axa: { type: "text", value: "250% TA + 200% TB" }, allianz: { type: "text", value: "300% TA + 250% TB" } },
+                details: {
+                  generali: makeDetail("Capital décès toute cause", "generali", "Generali", true, "Capital versé en cas de décès quelle qu'en soit la cause.", [{ id: "sl-1", label: "Tranche A", value: "300% du salaire" }, { id: "sl-2", label: "Tranche B", value: "200% du salaire" }], defaultSources),
+                  axa: makeDetail("Capital décès toute cause", "axa", "Axa", true, "Capital décès versé aux bénéficiaires désignés.", [{ id: "sl-1", label: "Tranche A", value: "250% du salaire" }, { id: "sl-2", label: "Tranche B", value: "200% du salaire" }], defaultSources),
+                  allianz: makeDetail("Capital décès toute cause", "allianz", "Allianz", true, "Garantie décès avec doublement en cas d'accident.", [{ id: "sl-1", label: "Tranche A", value: "300% du salaire" }, { id: "sl-2", label: "Tranche B", value: "250% du salaire" }], defaultSources),
+                },
+              },
+              {
+                label: "Rente éducation",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  generali: makeDetail("Rente éducation", "generali", "Generali", true, "Rente versée aux enfants à charge jusqu'à 26 ans si poursuite d'études.", [{ id: "sl-1", label: "Montant", value: "12% du salaire / enfant" }], defaultSources),
+                  axa: makeDetail("Rente éducation", "axa", "Axa", true, "Rente éducation jusqu'à 25 ans.", [{ id: "sl-1", label: "Montant", value: "10% du salaire / enfant" }], defaultSources),
+                  allianz: makeDetail("Rente éducation", "allianz", "Allianz", false, "Non incluse. Option disponible.", [], defaultSources),
+                },
+              },
+              {
+                label: "Rente de conjoint",
+                values: { generali: { type: "text", value: "60% du salaire" }, axa: { type: "text", value: "50% du salaire" }, allianz: { type: "text", value: "60% du salaire" } },
+                details: {
+                  generali: makeDetail("Rente de conjoint", "generali", "Generali", true, "Rente viagère au conjoint survivant.", [{ id: "sl-1", label: "Taux", value: "60% du salaire" }], defaultSources),
+                  axa: makeDetail("Rente de conjoint", "axa", "Axa", true, "Rente temporaire au conjoint.", [{ id: "sl-1", label: "Taux", value: "50% du salaire" }], defaultSources),
+                  allianz: makeDetail("Rente de conjoint", "allianz", "Allianz", true, "Rente viagère au conjoint.", [{ id: "sl-1", label: "Taux", value: "60% du salaire" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Incapacité et invalidité",
+            rows: [
+              {
+                label: "Indemnités journalières",
+                values: { generali: { type: "text", value: "90% du salaire" }, axa: { type: "text", value: "85% du salaire" }, allianz: { type: "text", value: "90% du salaire" } },
+                details: {
+                  generali: makeDetail("Indemnités journalières", "generali", "Generali", true, "IJ versées après franchise de 90 jours.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }, { id: "sl-2", label: "Durée max", value: "1 095 jours" }], defaultSources),
+                  axa: makeDetail("Indemnités journalières", "axa", "Axa", true, "IJ versées dès le 91e jour d'arrêt.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }, { id: "sl-2", label: "Durée max", value: "1 095 jours" }], defaultSources),
+                  allianz: makeDetail("Indemnités journalières", "allianz", "Allianz", true, "IJ avec maintien de 90% du salaire net.", [{ id: "sl-1", label: "Franchise", value: "90 jours" }], defaultSources),
+                },
+              },
+              {
+                label: "Invalidité permanente",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Invalidité permanente", "generali", "Generali", true, "Rente d'invalidité selon catégorie.", [{ id: "sl-1", label: "Cat. 1", value: "40% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "80% du salaire" }], defaultSources),
+                  axa: makeDetail("Invalidité permanente", "axa", "Axa", true, "Rente d'invalidité.", [{ id: "sl-1", label: "Cat. 1", value: "36% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "75% du salaire" }], defaultSources),
+                  allianz: makeDetail("Invalidité permanente", "allianz", "Allianz", true, "Rente d'invalidité.", [{ id: "sl-1", label: "Cat. 1", value: "40% du salaire" }, { id: "sl-2", label: "Cat. 2-3", value: "80% du salaire" }], defaultSources),
+                },
+              },
+              {
+                label: "Doublement accident",
+                values: { generali: { type: "check" }, axa: { type: "cross" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Doublement accident", "generali", "Generali", true, "Capital doublé en cas de décès ou invalidité par accident.", [], defaultSources),
+                  axa: makeDetail("Doublement accident", "axa", "Axa", false, "Non inclus dans la formule.", [], defaultSources),
+                  allianz: makeDetail("Doublement accident", "allianz", "Allianz", true, "Doublement du capital en cas d'accident.", [], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-d1",
+        label: "Faute intentionnelle de l'assuré",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Faute intentionnelle de l'assuré", "generali", "Generali", false, "deterministic", "excl-d1", "Exclusion légale des actes intentionnels.", [], defaultSources),
+          axa: makeExclusionDetail("Faute intentionnelle de l'assuré", "axa", "Axa", false, "deterministic", "excl-d1", "Exclusion conforme au Code des assurances.", [], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle de l'assuré", "allianz", "Allianz", false, "deterministic", "excl-d1", "Actes volontaires exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d2",
+        label: "Guerre et émeute",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Guerre et émeute", "generali", "Generali", false, "deterministic", "excl-d2", "Faits de guerre, guerre civile, émeutes.", [], defaultSources),
+          axa: makeExclusionDetail("Guerre et émeute", "axa", "Axa", false, "deterministic", "excl-d2", "Événements de guerre et assimilés.", [], defaultSources),
+          allianz: makeExclusionDetail("Guerre et émeute", "allianz", "Allianz", false, "deterministic", "excl-d2", "Risques de guerre exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a1",
+        label: "Sports à risque pratiqués hors cadre professionnel",
+        origin: "ai",
+        values: { generali: { type: "exclu" }, axa: { type: "inclus" }, allianz: { type: "exclu-text", value: "Rachat possible" } },
+        details: {
+          generali: makeExclusionDetail("Sports à risque", "generali", "Generali", false, "ai", "excl-a1", "Pratique de sports dangereux hors activité professionnelle exclue.", [], defaultSources),
+          axa: makeExclusionDetail("Sports à risque", "axa", "Axa", true, "ai", "excl-a1", "Sports à risque couverts sans surcoût dans la formule Confort.", [], defaultSources),
+          allianz: makeExclusionDetail("Sports à risque", "allianz", "Allianz", false, "ai", "excl-a1", "Exclusion standard, rachat possible via avenant.", [{ id: "sl-1", label: "Surprime", value: "+15%" }], defaultSources),
+        },
+      },
+    ],
+    rateProducts: [
+      {
+        title: "Cotisations par catégorie",
+        subGroups: [
+          {
+            title: "Masse salariale 2025",
+            rows: [
+              {
+                label: "Cadres (tranche A)",
+                dynamicFieldId: "payroll-cadres-ta",
+                rates: { generali: 0.0185, axa: 0.0172, allianz: 0.0190 },
+              },
+              {
+                label: "Cadres (tranche B)",
+                dynamicFieldId: "payroll-cadres-tb",
+                rates: { generali: 0.0220, axa: 0.0215, allianz: 0.0230 },
+              },
+              {
+                label: "Non-cadres (tranche A)",
+                dynamicFieldId: "payroll-noncadres-ta",
+                rates: { generali: 0.0110, axa: 0.0105, allianz: 0.0115 },
+              },
+              {
+                label: "Non-cadres (tranche B)",
+                dynamicFieldId: "payroll-noncadres-tb",
+                rates: { generali: 0.0145, axa: 0.0138, allianz: 0.0150 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    dynamicFields: [
+      { id: "payroll-cadres-ta", label: "Cadres (tranche A)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-cadres-tb", label: "Cadres (tranche B)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-noncadres-ta", label: "Non-cadres (tranche A)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number", required: true },
+      { id: "payroll-noncadres-tb", label: "Non-cadres (tranche B)", sectionKey: "masseSalariale2025", sectionLabel: "Masse salariale 2025", type: "number" },
+    ],
+    dynamicFieldValues: {},
+  },
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -1924,6 +2431,206 @@ const analysisDataMap: Record<string, AnalysisData> = {
       },
     ],
   },
+  "cot-7": {
+    synthese: [
+      {
+        insurerId: "alan",
+        pointsForts: [
+          "Prise en charge des médecines douces (4 séances/an)",
+          "Meilleur forfait optique (200 €/an)",
+          "Orthodontie couverte (600 €/an)",
+          "App mobile avec téléconsultation incluse",
+        ],
+        pointsFaibles: [
+          "Tarifs légèrement supérieurs à Malakoff sur les cadres",
+          "Réseau de soins moins étendu",
+        ],
+      },
+      {
+        insurerId: "malakoff",
+        pointsForts: [
+          "Tarifs les plus compétitifs toutes catégories",
+          "Honoraires chirurgicaux les mieux couverts (250% BR)",
+          "Réseau de soins étendu (accords tiers payant)",
+        ],
+        pointsFaibles: [
+          "Forfait optique le plus bas (150 €/an)",
+          "Médecines douces limitées à l'ostéopathie (2 séances)",
+          "Pas de forfait bien-être",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Chambre particulière bien couverte (70 €/jour)",
+          "Bon niveau de couverture spécialistes (180% BR)",
+        ],
+        pointsFaibles: [
+          "Tarifs les plus élevés",
+          "Orthodontie non couverte",
+          "Médecines douces exclues",
+          "Forfait optique intermédiaire",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "Convention Syntec — IDCC 1486", source: "extracted" },
+      { id: "cp-2", label: "127 salariés (45 cadres, 82 non-cadres)", source: "extracted" },
+      { id: "cp-3", label: "Âge moyen : 38 ans", source: "extracted" },
+      { id: "cp-4", label: "Effectifs par régime", source: "missing", hint: "Nécessaire pour calculer le coût total annuel" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres de santé collective pour Dupont SA (Convention Syntec, 127 salariés) met en évidence des positionnements différenciés.\n\nMalakoff Humanis propose les tarifs les plus compétitifs avec un écart de 5 à 7% par rapport aux concurrents, tout en offrant la meilleure couverture en hospitalisation (150% BR frais de séjour, 250% BR honoraires chirurgicaux).\n\nAlan se distingue par son approche digitale et ses garanties bien-être (médecines douces, téléconsultation incluse, forfait optique le plus élevé), pour un surcoût modéré.\n\nGenerali présente les tarifs les plus élevés avec un niveau de couverture intermédiaire, notamment l'absence d'orthodontie et de médecines douces.\n\nRecommandation : renseigner les effectifs par régime pour obtenir le coût total annuel et finaliser la comparaison.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les assureurs cotent en euros par personne et par mois, ventilés par collège (cadres/non-cadres) et régime (isolé/duo/famille). Les écarts de tarifs sont significatifs : Malakoff est systématiquement le moins cher (-5 à 7%), Alan se positionne en milieu de gamme, et Generali est le plus cher (+3 à 8% vs Malakoff).",
+      analysisAfter: "Pour finaliser la comparaison financière, il est indispensable de renseigner la répartition des effectifs par régime (isolé/duo/famille) et par collège. Le coût total annuel dépend directement de cette ventilation. La part employeur (fixée à 50% par défaut) peut être ajustée selon la politique de l'entreprise.",
+    },
+    analyseParOffre: [
+      { insurerId: "alan", insurerName: "Alan", pointsForts: ["Approche 100% digitale avec app mobile", "Médecines douces incluses (4 séances/an)", "Meilleur forfait optique (200 €/an)", "Téléconsultation 24/7 incluse"], pointsFaibles: ["Tarifs supérieurs à Malakoff", "Réseau de soins moins étendu"] },
+      { insurerId: "malakoff", insurerName: "Malakoff Humanis", pointsForts: ["Tarifs les plus compétitifs", "Meilleure couverture hospitalisation", "Réseau tiers payant étendu"], pointsFaibles: ["Forfait optique le plus bas", "Médecines douces limitées", "Interface de gestion vieillissante"] },
+      { insurerId: "generali", insurerName: "Generali", pointsForts: ["Bonne couverture chambre particulière", "Spécialistes à 180% BR"], pointsFaibles: ["Tarifs les plus élevés", "Pas d'orthodontie", "Pas de médecines douces"] },
+    ],
+    garantiesCles: [
+      { label: "Chambre particulière", values: { alan: { status: "covered", keyInfo: "80 €/jour" }, malakoff: { status: "covered", keyInfo: "60 €/jour" }, generali: { status: "covered", keyInfo: "70 €/jour" } } },
+      { label: "Honoraires chirurgicaux", values: { alan: { status: "covered", keyInfo: "200% BR" }, malakoff: { status: "covered", keyInfo: "250% BR" }, generali: { status: "covered", keyInfo: "200% BR" } } },
+      { label: "Optique", values: { alan: { status: "covered", keyInfo: "200 €/an" }, malakoff: { status: "covered", keyInfo: "150 €/an" }, generali: { status: "covered", keyInfo: "180 €/an" } } },
+      { label: "Orthodontie", values: { alan: { status: "covered", keyInfo: "600 €/an" }, malakoff: { status: "covered", keyInfo: "400 €/an" }, generali: { status: "not_covered" } } },
+      { label: "Médecines douces", values: { alan: { status: "covered", keyInfo: "4 séances" }, malakoff: { status: "covered", keyInfo: "2 séances" }, generali: { status: "not_covered" } } },
+    ],
+  },
+  "cot-6": {
+    synthese: [
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Garanties décès complètes avec rente éducation incluse",
+          "Doublement du capital en cas d'accident",
+          "Indemnités journalières à 90% du salaire",
+        ],
+        pointsFaibles: [
+          "Taux de cotisation intermédiaire (1,85%)",
+          "Sports à risque exclus sans possibilité de rachat",
+        ],
+      },
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Taux de cotisation le plus compétitif (1,72%)",
+          "Sports à risque couverts sans surcoût",
+          "Rente éducation incluse",
+        ],
+        pointsFaibles: [
+          "Pas de doublement accident",
+          "Rente de conjoint limitée à 50% vs 60% chez les concurrents",
+          "Indemnités journalières plafonnées à 85%",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Capital décès le plus élevé (300% TA + 250% TB)",
+          "Doublement du capital en cas d'accident",
+          "Indemnités journalières à 90%",
+        ],
+        pointsFaibles: [
+          "Taux de cotisation le plus élevé (1,90%)",
+          "Pas de rente éducation en standard",
+          "Rachat sports à risque avec surprime de 15%",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "Convention Syntec — IDCC 1486", source: "extracted" },
+      { id: "cp-2", label: "52 salariés (32 cadres, 20 non-cadres)", source: "extracted" },
+      { id: "cp-3", label: "Âge moyen : 34 ans", source: "extracted" },
+      { id: "cp-4", label: "Masse salariale cadres TA", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+      { id: "cp-5", label: "Masse salariale cadres TB", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+      { id: "cp-6", label: "Masse salariale non-cadres", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres de prévoyance / AT pour LegalPlace SAS (Convention Syntec) fait ressortir des positionnements différenciés.\n\nAxa propose le taux de cotisation le plus compétitif à 1,72% de la masse salariale, avec une couverture des sports à risque sans surcoût. Cependant, les niveaux de garanties décès et IJ sont légèrement inférieurs aux concurrents.\n\nAllianz offre les garanties décès les plus généreuses (300% TA + 250% TB) avec doublement accident, mais au taux le plus élevé (1,90%) et sans rente éducation en standard.\n\nGenerali se positionne en milieu de gamme (1,85%) avec un bon équilibre entre niveau de garanties et tarification.\n\nRecommandation : compléter la masse salariale par catégorie pour obtenir les montants de cotisation en euros et finaliser l'arbitrage.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les assureurs cotent en pourcentage de la masse salariale, ce qui rend la comparaison directe en euros impossible sans les données de paie. Les taux s'échelonnent de 1,72% (Axa) à 1,90% (Allianz), soit un écart de 0,18 point. Sur une masse salariale hypothétique de 2,5 M€, cela représente un différentiel annuel de 4 500 €.",
+      analysisAfter: "Pour finaliser la comparaison tarifaire, il est indispensable de renseigner la masse salariale ventilée par catégorie (cadres TA/TB, non-cadres TA/TB). Les taux diffèrent selon les tranches et une simulation globale est nécessaire.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "generali",
+        insurerName: "Generali",
+        pointsForts: [
+          "Bon équilibre garanties / tarif",
+          "Rente éducation et rente de conjoint incluses",
+          "Doublement du capital en cas d'accident",
+        ],
+        pointsFaibles: [
+          "Sports à risque exclus",
+          "Taux intermédiaire (1,85%)",
+        ],
+      },
+      {
+        insurerId: "axa",
+        insurerName: "Axa",
+        pointsForts: [
+          "Taux le plus compétitif (1,72%)",
+          "Sports à risque couverts",
+          "Rente éducation incluse",
+        ],
+        pointsFaibles: [
+          "Capital décès inférieur (250% TA vs 300%)",
+          "Pas de doublement accident",
+          "Rente de conjoint à 50% seulement",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        insurerName: "Allianz",
+        pointsForts: [
+          "Capital décès le plus élevé (300% TA + 250% TB)",
+          "Doublement accident inclus",
+          "IJ à 90% du salaire",
+        ],
+        pointsFaibles: [
+          "Taux le plus élevé (1,90%)",
+          "Pas de rente éducation",
+          "Rachat sports à risque avec surprime",
+        ],
+      },
+    ],
+    garantiesCles: [
+      {
+        label: "Capital décès",
+        values: {
+          generali: { status: "covered", keyInfo: "300% TA + 200% TB" },
+          axa: { status: "covered", keyInfo: "250% TA + 200% TB" },
+          allianz: { status: "covered", keyInfo: "300% TA + 250% TB" },
+        },
+      },
+      {
+        label: "Rente éducation",
+        values: {
+          generali: { status: "covered" },
+          axa: { status: "covered" },
+          allianz: { status: "not_covered", keyInfo: "Option" },
+        },
+      },
+      {
+        label: "Indemnités journalières",
+        values: {
+          generali: { status: "covered", keyInfo: "90%" },
+          axa: { status: "covered", keyInfo: "85%" },
+          allianz: { status: "covered", keyInfo: "90%" },
+        },
+      },
+      {
+        label: "Doublement accident",
+        values: {
+          generali: { status: "covered" },
+          axa: { status: "not_covered" },
+          allianz: { status: "covered" },
+        },
+      },
+    ],
+  },
 };
 
 export function getAnalysisData(cotationId: string): AnalysisData | undefined {
@@ -2069,6 +2776,15 @@ const clientProfileMap: Record<string, ClientProfileData> = {
       { id: "b-8", value: "Besoin d'une couverture monde entier (missions clients a l'international)", source: "manual" },
     ],
   },
+  "cot-6": {
+    clientLabel: "LegalPlace SAS",
+    clientSiren: "82012457800019",
+    besoinsClient: [
+      { id: "b-10", value: "Garanties décès et invalidité conformes à la CCN Syntec", source: "ai" },
+      { id: "b-11", value: "Maintien de salaire à 90% minimum en cas d'arrêt", source: "ai" },
+      { id: "b-12", value: "Portabilité des droits pour les salariés sortants", source: "manual" },
+    ],
+  },
   "cot-2": {
     clientLabel: "ACME Corp SAS",
     clientSiren: "84392017300024",
@@ -2077,6 +2793,15 @@ const clientProfileMap: Record<string, ClientProfileData> = {
       { id: "b-4", value: "Franchise plafonnée à 500 €/sinistre maximum", source: "ai" },
       { id: "b-5", value: "Assistance 0 km obligatoire (véhicules utilitaires inclus)", source: "ai" },
       { id: "b-6", value: "Véhicule de remplacement sous 48h en cas d'immobilisation", source: "manual" },
+    ],
+  },
+  "cot-7": {
+    clientLabel: "Dupont SA",
+    clientSiren: "91234567800012",
+    besoinsClient: [
+      { id: "b-13", value: "Couverture santé conforme aux minimums CCN Syntec", source: "ai" },
+      { id: "b-14", value: "Prise en charge optique et dentaire renforcée", source: "ai" },
+      { id: "b-15", value: "Part employeur à 60% minimum", source: "manual" },
     ],
   },
 };
@@ -2191,6 +2916,26 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "maif", "generali"],
     createdBy: "Delphine",
     date: "10/03/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-6",
+    cotationId: "cot-6",
+    client: "LegalPlace SAS",
+    products: ["Prévoyance / AT"],
+    insurerIds: ["generali", "axa", "allianz"],
+    createdBy: "Delphine",
+    date: "12/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-7",
+    cotationId: "cot-7",
+    client: "Dupont SA",
+    products: ["Santé collective"],
+    insurerIds: ["alan", "malakoff", "generali"],
+    createdBy: "Delphine",
+    date: "14/04/2026",
     status: "done",
   },
 ];
