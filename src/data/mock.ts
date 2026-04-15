@@ -2854,6 +2854,15 @@ export function buildContextPills(
 // ─── Comparison task list ────────────────────────────────────────────
 // Persisted comparison agent tasks shown on the /quoting/comparison list page.
 
+export const PRODUCT_PRIORITY: Record<string, number> = {
+  "RC Pro": 1,
+  "RC Exploitation": 2,
+  "Décennale": 3,
+  "D&O": 4,
+  "Apres livraison": 5,
+  "Protection juridique": 6,
+};
+
 export type ComparisonTaskStatus = "in_progress" | "done";
 
 export type ComparisonTask = {
@@ -2861,6 +2870,7 @@ export type ComparisonTask = {
   cotationId: string;
   client: string;
   products: string[];
+  principalProduct: string | null;
   insurerIds: string[];
   createdBy: string;
   date: string;
@@ -2873,6 +2883,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-1",
     client: "Marble Tech SAS",
     products: ["RC Pro"],
+    principalProduct: "RC Pro",
     insurerIds: ["axa", "generali", "allianz"],
     createdBy: "Delphine",
     date: "10/03/2026",
@@ -2883,6 +2894,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-2",
     client: "Acme Corp",
     products: ["Flotte automobile"],
+    principalProduct: "Flotte automobile",
     insurerIds: ["axa", "allianz", "generali"],
     createdBy: "Delphine",
     date: "07/03/2026",
@@ -2893,6 +2905,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-5",
     client: "Digital Solutions SARL",
     products: ["RC Pro"],
+    principalProduct: "RC Pro",
     insurerIds: ["axa", "allianz"],
     createdBy: "Delphine",
     date: "04/03/2026",
@@ -2903,6 +2916,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-3",
     client: "TechVision SAS",
     products: ["RC Pro"],
+    principalProduct: "RC Pro",
     insurerIds: ["axa", "chubb"],
     createdBy: "Delphine",
     date: "10/03/2026",
@@ -2913,6 +2927,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-4",
     client: "GreenWay Industries",
     products: ["Multirisque bureaux"],
+    principalProduct: "Multirisque bureaux",
     insurerIds: ["axa", "maif", "generali"],
     createdBy: "Delphine",
     date: "10/03/2026",
@@ -2923,6 +2938,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-6",
     client: "LegalPlace SAS",
     products: ["Prévoyance / AT"],
+    principalProduct: "Prévoyance / AT",
     insurerIds: ["generali", "axa", "allianz"],
     createdBy: "Delphine",
     date: "12/04/2026",
@@ -2933,6 +2949,7 @@ export const comparisonTasks: ComparisonTask[] = [
     cotationId: "cot-7",
     client: "Dupont SA",
     products: ["Santé collective"],
+    principalProduct: "Santé collective",
     insurerIds: ["alan", "malakoff", "generali"],
     createdBy: "Delphine",
     date: "14/04/2026",
