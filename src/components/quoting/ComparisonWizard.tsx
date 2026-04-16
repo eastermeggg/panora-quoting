@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   CloudUpload,
@@ -13,6 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 import { BesoinTag } from "@/components/ui/BesoinTag";
+import { PRODUCT_PRIORITY } from "@/data/mock";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ interface ComparisonWizardProps {
   onSubmit: (data: {
     client: string;
     products: string[];
+    principalProduct: string | null;
     insurerIds: string[];
     besoinsClient: { id: string; value: string; source: "ai" | "manual" }[];
     skippedProfile: boolean;
@@ -66,7 +68,7 @@ const MOCK_DOCUMENTS_BY_OFFER: Record<
   },
 };
 
-const PRODUCTS = ["RC Pro", "RC Exploitation", "Apres livraison"];
+const PRODUCTS = ["RC Pro", "RC Exploitation", "Décennale", "D&O", "Apres livraison"];
 
 const INITIAL_AI_BESOINS: BesoinRow[] = [
   { id: "ai-1", value: "Protection cyber minimum 500 000€", source: "ai" },
@@ -87,13 +89,29 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
     { id: "B", label: "Offre B", documents: [] },
   ]);
 
-  // Step 2
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  // Step 2 — preselect RC Pro as LLM suggestion
+  const [selectedProducts, setSelectedProducts] = useState<string[]>(["RC Pro"]);
+  const [principalProduct, setPrincipalProduct] = useState<string | null>("RC Pro");
+  const [userOverride, setUserOverride] = useState(false);
 
   // Step 3
   const [besoinsClient, setBesoinsClient] =
     useState<BesoinRow[]>(INITIAL_AI_BESOINS);
   const [newBesoinInput, setNewBesoinInput] = useState("");
+
+  // Auto-detect principal product based on priority
+  useEffect(() => {
+    if (!userOverride) {
+      if (selectedProducts.length === 0) {
+        setPrincipalProduct(null);
+      } else {
+        const best = selectedProducts.reduce((a, b) =>
+          (PRODUCT_PRIORITY[a] ?? 99) <= (PRODUCT_PRIORITY[b] ?? 99) ? a : b,
+        );
+        setPrincipalProduct(best);
+      }
+    }
+  }, [selectedProducts, userOverride]);
 
   const hasDocuments = offers.some((o) => o.documents.length > 0);
   const canProceedStep1 = hasDocuments;
@@ -125,11 +143,22 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
   };
 
   const handleToggleProduct = (product: string) => {
+    const wasSelected = selectedProducts.includes(product);
     setSelectedProducts((prev) =>
-      prev.includes(product)
-        ? prev.filter((p) => p !== product)
-        : [...prev, product],
+      wasSelected ? prev.filter((p) => p !== product) : [...prev, product],
     );
+    if (wasSelected && product === principalProduct) {
+      setUserOverride(false);
+    }
+  };
+
+  const handleSetPrincipal = (product: string) => {
+    setPrincipalProduct(product);
+    setUserOverride(true);
+  };
+
+  const handleRemovePrincipal = () => {
+    setUserOverride(false);
   };
 
   const handleRemoveBesoin = (id: string) => {
@@ -153,6 +182,7 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
     onSubmit({
       client: "Marble Tech SAS",
       products: selectedProducts,
+      principalProduct,
       insurerIds,
       besoinsClient: skipProfile ? [] : besoinsClient.map((b) => ({ id: b.id, value: b.value, source: b.source })),
       skippedProfile: skipProfile,
@@ -224,7 +254,11 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
             <Step2Products
               products={PRODUCTS}
               selectedProducts={selectedProducts}
+              principalProduct={principalProduct}
+              userOverride={userOverride}
               onToggle={handleToggleProduct}
+              onSetPrincipal={handleSetPrincipal}
+              onRemovePrincipal={handleRemovePrincipal}
             />
           )}
           {step === 3 && (
@@ -408,19 +442,29 @@ function OfferCard({
 function Step2Products({
   products,
   selectedProducts,
+  principalProduct,
+  userOverride,
   onToggle,
+  onSetPrincipal,
+  onRemovePrincipal,
 }: {
   products: string[];
   selectedProducts: string[];
+  principalProduct: string | null;
+  userOverride: boolean;
   onToggle: (product: string) => void;
+  onSetPrincipal: (product: string) => void;
+  onRemovePrincipal: () => void;
 }) {
+  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+
   return (
     <div className="space-y-4">
       <h2 className="text-[20px] font-serif text-panora-text">
         Produits d&apos;assurance
       </h2>
       <p className="text-[13px] text-panora-text-muted leading-5">
-        Selectionnez les produits à comparer.
+        Sélectionnez les produits inclus dans les offres.
       </p>
 
       {/* Search input (decorative) */}
@@ -436,30 +480,85 @@ function Step2Products({
       <div className="space-y-2">
         {products.map((product) => {
           const selected = selectedProducts.includes(product);
+          const isPrincipal = product === principalProduct;
+          const isHovered = product === hoveredProduct;
+          const multipleSelected = selectedProducts.length > 1;
+          const showRemove = selected && isPrincipal && isHovered && multipleSelected;
+
           return (
-            <button
+            <div
               key={product}
-              onClick={() => onToggle(product)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[8px] border transition-colors text-left ${
+              className={`w-full flex items-center gap-3 px-4 rounded-[8px] border transition-colors h-[44px] ${
                 selected
-                  ? "border-panora-green bg-[#f0faf5]"
+                  ? "border-panora-border bg-panora-bg"
                   : "border-panora-border bg-white hover:bg-panora-bg"
               }`}
+              onMouseEnter={() => setHoveredProduct(product)}
+              onMouseLeave={() => setHoveredProduct(null)}
             >
-              <div
-                className={`w-4 h-4 rounded-[4px] flex items-center justify-center shrink-0 ${
-                  selected
-                    ? "bg-panora-green"
-                    : "bg-white border border-panora-border shadow-sm"
-                }`}
+              <button
+                onClick={() => onToggle(product)}
+                className="flex items-center gap-3 flex-1 min-w-0 text-left"
               >
-                {selected && <Check className="w-3 h-3 text-white" />}
+                <div
+                  className={`w-4 h-4 rounded-[4px] flex items-center justify-center shrink-0 ${
+                    selected
+                      ? "bg-panora-green"
+                      : "bg-white border border-panora-border shadow-sm"
+                  }`}
+                >
+                  {selected && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-[13px] text-panora-text">{product}</span>
+                {selected && isPrincipal && !showRemove && (
+                  <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-[#dbeee5] text-[12px] font-medium text-[#173c2d] leading-4">
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#00a272] shrink-0" />
+                    principal
+                  </span>
+                )}
+              </button>
+
+              {/* Hover actions */}
+              <div className="flex items-center shrink-0">
+                {showRemove && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemovePrincipal(); }}
+                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[8px] bg-[#f6e1db] text-[13px] font-medium text-[#952617] hover:bg-[#f0d2c9] transition-colors"
+                  >
+                    Retirer principal
+                  </button>
+                )}
+
+                {selected && !isPrincipal && isHovered && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSetPrincipal(product); }}
+                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[8px] bg-panora-secondary text-[13px] font-medium text-panora-text-muted hover:bg-[#e2dfd8] transition-colors"
+                  >
+                    Définir comme principal
+                  </button>
+                )}
               </div>
-              <span className="text-[13px] text-panora-text">{product}</span>
-            </button>
+            </div>
           );
         })}
       </div>
+
+      {/* Info bar */}
+      {selectedProducts.length > 0 && principalProduct && (
+        <div className="px-3 py-2 rounded-[8px] bg-panora-bg text-[12px] text-[#5c5953] leading-[18px]">
+          {userOverride ? (
+            <>
+              <span className="font-medium text-panora-text">{principalProduct}</span>
+              {" "}défini comme produit principal.
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-panora-text">{principalProduct}</span>
+              {" "}détecté comme produit principal.
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
