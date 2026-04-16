@@ -27,6 +27,8 @@ interface DevoirConseilWizardProps {
   }) => void;
   insurers: InsurerData[];
   profile: ClientProfileData;
+  /** The principal insurance product for this comparison */
+  principalProduct?: string | null;
   /** The workspace's template, if one has been uploaded in settings */
   template?: DevoirTemplate | null;
 }
@@ -46,6 +48,7 @@ export function DevoirConseilWizard({
   onSubmit,
   insurers,
   profile,
+  principalProduct = null,
   template = null,
 }: DevoirConseilWizardProps) {
   const hasTemplate = !!template;
