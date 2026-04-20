@@ -352,6 +352,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
   const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
+  const [fleetViewMode, setFleetViewMode] = useState<"garanties" | "tarifs">("garanties");
+  const isMultiEntity = !!comparisonResult?.multiEntity;
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mutableProfile, setMutableProfile] = useState<ClientProfileData>(
     () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
@@ -636,6 +638,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   insurers={mutableInsurers}
                   comparisonData={comparisonResult}
                   cotParamId={cotParamId}
+                  fleetViewMode={isMultiEntity ? fleetViewMode : undefined}
+                  onFleetViewChange={isMultiEntity ? setFleetViewMode : undefined}
                   selectedCell={selectedCell}
                   onCellSelect={(cell) => { setIsProfileOpen(false); setSelectedCell(cell); }}
                   onAddExclusion={handleAddManualExclusion}

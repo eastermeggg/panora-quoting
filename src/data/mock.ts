@@ -385,6 +385,48 @@ export const cotationsList: Cotation[] = [
       { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-AT-9920", bestPrice: "1.90%" },
     ],
   },
+  {
+    id: "cot-8",
+    cotationId: "COT-2026-0155",
+    client: "Transports Moreau SAS",
+    product: "Flotte automobile",
+    productIcon: "car",
+    createdAt: "16/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-FL-3301", bestPrice: "18 200,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-FL-9912", bestPrice: "16 800,00 €/an" },
+      { id: "maif", name: "MAIF", status: "completed", reference: "MAIF-FL-2205", bestPrice: "17 450,00 €/an" },
+    ],
+  },
+  {
+    id: "cot-9",
+    cotationId: "COT-2026-0158",
+    client: "Fonciere Belleville SCI",
+    product: "MRI",
+    productIcon: "building",
+    createdAt: "17/04/2026",
+    createdVia: "manual",
+    insurers: [
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-MRI-4401", bestPrice: "42 500,00 €/an" },
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-MRI-7712", bestPrice: "39 800,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-MRI-1155", bestPrice: "44 200,00 €/an" },
+    ],
+  },
+  {
+    id: "cot-10",
+    cotationId: "COT-2026-0162",
+    client: "Garage Dupont & Fils SARL",
+    product: "Flotte automobile (stock)",
+    productIcon: "car",
+    createdAt: "18/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-FS-4401", bestPrice: "12 600,00 €/an" },
+      { id: "allianz", name: "Allianz", status: "completed", reference: "ALZ-FS-8812", bestPrice: "13 200,00 €/an" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-FS-2205", bestPrice: "11 800,00 €/an" },
+    ],
+  },
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -817,6 +859,191 @@ const cotationFollowupMap: Record<string, FollowupData> = {
       },
     ],
   },
+  "cot-8": {
+    cotation: cotationsList[7],
+    projectName: "Flotte Auto Transports Moreau 2026",
+    emailSubject: "Renouvellement flotte automobile 2026 - Transports Moreau SAS",
+    scenarioId: "flotte-auto",
+    attachments: [
+      { name: "Etat_Parc_Moreau_2026.pdf", size: "2.1 Mo", fieldsExtracted: 12 },
+      { name: "Sinistralite_3ans_Moreau.pdf", size: "680 Ko", fieldsExtracted: 7 },
+      { name: "Cartes_Grises_Parc_Moreau.pdf", size: "4.8 Mo", fieldsExtracted: 9 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-FL-3301",
+        documents: ["Devis_Axa_Flotte_Moreau.pdf", "Conditions_Generales_Flotte_Axa.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "15 600,00 €/an" }, { label: "Prime mensuelle", value: "1 300,00 €" }] },
+          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "18 200,00 €/an" }, { label: "Prime mensuelle", value: "1 516,67 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-FL-3301" },
+          { label: "Client", value: "Transports Moreau SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Nb véhicules", value: "87" },
+          { label: "Franchise", value: "600 € / sinistre" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-FL-9912",
+        documents: ["Devis_Allianz_Flotte_Moreau.pdf", "Tableau_Garanties_Allianz.pdf"],
+        pricing: [
+          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "14 400,00 €/an" }, { label: "Prime mensuelle", value: "1 200,00 €" }] },
+          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "16 800,00 €/an" }, { label: "Prime mensuelle", value: "1 400,00 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-FL-9912" },
+          { label: "Client", value: "Transports Moreau SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Nb véhicules", value: "87" },
+          { label: "Franchise", value: "800 € / sinistre" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+      {
+        id: "maif", name: "MAIF", logo: "🟢", logoColor: "#00A859", hasCode: false,
+        status: "completed", reference: "MAIF-FL-2205",
+        documents: ["Devis_MAIF_Flotte_Moreau.pdf"],
+        pricing: [
+          { formula: "Confort", details: [{ label: "Prime annuelle", value: "15 100,00 €/an" }, { label: "Prime mensuelle", value: "1 258,33 €" }] },
+          { formula: "Intégrale", details: [{ label: "Prime annuelle", value: "17 450,00 €/an" }, { label: "Prime mensuelle", value: "1 454,17 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MAIF-FL-2205" },
+          { label: "Client", value: "Transports Moreau SAS" },
+          { label: "Produit", value: "Flotte automobile" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Nb véhicules", value: "87" },
+          { label: "Franchise", value: "500 € / sinistre" },
+        ],
+        allSteps: makeSteps("MAIF", 7),
+      },
+    ],
+  },
+  "cot-9": {
+    cotation: cotationsList[8],
+    projectName: "MRI Fonciere Belleville 2026",
+    emailSubject: "Cotation MRI patrimoine immobilier - Fonciere Belleville SCI",
+    scenarioId: "mri",
+    attachments: [
+      { name: "Releve_Patrimoine_Belleville.pdf", size: "3.2 Mo", fieldsExtracted: 15 },
+      { name: "Diagnostics_Immeubles_2025.pdf", size: "5.6 Mo", fieldsExtracted: 11 },
+      { name: "Sinistralite_5ans_Belleville.pdf", size: "890 Ko", fieldsExtracted: 8 },
+    ],
+    insurers: [
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-MRI-4401",
+        documents: ["Devis_Generali_MRI_Belleville.pdf", "Conditions_Generales_MRI_Generali.pdf"],
+        pricing: [
+          { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "36 200,00 €/an" }, { label: "Prime mensuelle", value: "3 016,67 €" }] },
+          { formula: "Premium", details: [{ label: "Prime annuelle", value: "42 500,00 €/an" }, { label: "Prime mensuelle", value: "3 541,67 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-MRI-4401" },
+          { label: "Client", value: "Fonciere Belleville SCI" },
+          { label: "Produit", value: "MRI" },
+          { label: "Date d'effet", value: "01/09/2026" },
+          { label: "Nb immeubles", value: "12" },
+          { label: "Surface totale", value: "8 450 m²" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-MRI-7712",
+        documents: ["Devis_Axa_MRI_Belleville.pdf", "Tableau_Garanties_MRI_Axa.pdf"],
+        pricing: [
+          { formula: "Standard", details: [{ label: "Prime annuelle", value: "34 500,00 €/an" }, { label: "Prime mensuelle", value: "2 875,00 €" }] },
+          { formula: "Étendue", details: [{ label: "Prime annuelle", value: "39 800,00 €/an" }, { label: "Prime mensuelle", value: "3 316,67 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-MRI-7712" },
+          { label: "Client", value: "Fonciere Belleville SCI" },
+          { label: "Produit", value: "MRI" },
+          { label: "Date d'effet", value: "01/09/2026" },
+          { label: "Nb immeubles", value: "12" },
+          { label: "Surface totale", value: "8 450 m²" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
+        status: "completed", reference: "ALZ-MRI-1155",
+        documents: ["Devis_Allianz_MRI_Belleville.pdf"],
+        pricing: [
+          { formula: "Confort", details: [{ label: "Prime annuelle", value: "38 600,00 €/an" }, { label: "Prime mensuelle", value: "3 216,67 €" }] },
+          { formula: "Intégrale", details: [{ label: "Prime annuelle", value: "44 200,00 €/an" }, { label: "Prime mensuelle", value: "3 683,33 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "ALZ-MRI-1155" },
+          { label: "Client", value: "Fonciere Belleville SCI" },
+          { label: "Produit", value: "MRI" },
+          { label: "Date d'effet", value: "01/09/2026" },
+          { label: "Nb immeubles", value: "12" },
+          { label: "Surface totale", value: "8 450 m²" },
+        ],
+        allSteps: makeSteps("Allianz", 7),
+      },
+    ],
+  },
+  "cot-10": {
+    cotation: cotationsList[9],
+    projectName: "Flotte stock Garage Dupont 2026",
+    emailSubject: "Cotation flotte stock automobile - Garage Dupont & Fils",
+    scenarioId: "fleet-stock",
+    attachments: [
+      { name: "Etat_stock_Garage_Dupont.pdf", size: "890 Ko", fieldsExtracted: 3 },
+      { name: "Sinistralite_3ans_Dupont.pdf", size: "1.4 Mo", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa",
+        name: "Axa",
+        logo: "🔴",
+        logoColor: "#FF1721",
+        hasCode: true,
+        status: "completed",
+        reference: "AXA-FS-4401",
+        documents: ["Devis_Axa_Flotte_Stock_Dupont.pdf", "Conditions_Generales_Flotte_Stock_Axa.pdf"],
+        pricing: [{ formula: "Formule Stock Intégrale", details: [{ label: "Prime annuelle TTC", value: "12 600,00 €/an" }, { label: "Franchise", value: "1 000 €/sinistre" }] }],
+        quoteInfo: [{ label: "N° devis", value: "AXA-FS-4401" }, { label: "Validité", value: "30/06/2026" }],
+        allSteps: [{ date: "18/04/2026", title: "Devis reçu", description: "Devis flotte stock reçu", status: "success" }],
+      },
+      {
+        id: "allianz",
+        name: "Allianz",
+        logo: "🔵",
+        logoColor: "#003781",
+        hasCode: true,
+        status: "completed",
+        reference: "ALZ-FS-8812",
+        documents: ["Devis_Allianz_Flotte_Stock_Dupont.pdf"],
+        pricing: [{ formula: "Formule Garage Plus", details: [{ label: "Prime annuelle TTC", value: "13 200,00 €/an" }, { label: "Franchise", value: "1 200 €/sinistre" }] }],
+        quoteInfo: [{ label: "N° devis", value: "ALZ-FS-8812" }, { label: "Validité", value: "30/06/2026" }],
+        allSteps: [{ date: "18/04/2026", title: "Devis reçu", description: "Devis flotte stock reçu", status: "success" }],
+      },
+      {
+        id: "generali",
+        name: "Generali",
+        logo: "🦁",
+        logoColor: "#C8102E",
+        hasCode: true,
+        status: "completed",
+        reference: "GEN-FS-2205",
+        documents: ["Devis_Generali_Flotte_Stock_Dupont.pdf"],
+        pricing: [{ formula: "Formule Stock Pro", details: [{ label: "Prime annuelle TTC", value: "11 800,00 €/an" }, { label: "Franchise", value: "800 €/sinistre" }] }],
+        quoteInfo: [{ label: "N° devis", value: "GEN-FS-2205" }, { label: "Validité", value: "30/06/2026" }],
+        allSteps: [{ date: "18/04/2026", title: "Devis reçu", description: "Devis flotte stock reçu", status: "success" }],
+      },
+    ],
+  },
 };
 
 export function getFollowupData(cotationId: string): FollowupData | undefined {
@@ -954,6 +1181,40 @@ export type RateProduct = {
   employerShareFieldId?: string;
 };
 
+/** An individual entity (vehicle, building, etc.) within a multi-entity product */
+export type FleetEntity = {
+  id: string;
+  /** Full display label (fallback) */
+  label: string;
+  /** Model / building name, e.g. "Renault Kangoo", "12 rue de la Paix" */
+  name?: string;
+  /** Registration plate / secondary identifier, e.g. "AB-123-CD", "Paris 2e" */
+  plate?: string;
+  /** Category grouping, e.g. "Véhicules légers", "Véhicules lourds" */
+  category: string;
+  /** Per-insurer monthly price for tarifs view */
+  pricingPerInsurer: Record<string, number>;
+};
+
+/** Multi-entity data attached to a comparison */
+export type MultiEntityData = {
+  /** Entity type label, e.g. "Véhicule", "Immeuble" */
+  entityLabel: string;
+  /** Plural label for summaries, e.g. "véhicules", "immeubles" */
+  entityLabelPlural: string;
+  /** All entities in the fleet/portfolio */
+  entities: FleetEntity[];
+  /** Per-insurer summary totals */
+  summaryPerInsurer: Record<string, {
+    totalAnnual: number;
+    avgPerEntity: number;
+    entityCount: number;
+    quoteDate: string;
+  }>;
+  /** Per-entity guarantee overrides: entityId → rowLabel → insurerId → CellValue */
+  guaranteeOverrides?: Record<string, Record<string, Record<string, CellValue>>>;
+};
+
 export type ComparisonData = {
   products: GuaranteeProduct[];
   /** @deprecated — use products */
@@ -965,6 +1226,10 @@ export type ComparisonData = {
   dynamicFields?: DynamicField[];
   /** Current values for dynamic fields */
   dynamicFieldValues?: DynamicFieldValues;
+  /** Multi-entity data for fleet/MRI products */
+  multiEntity?: MultiEntityData;
+  /** Custom label for the synthesis/conditions section (default: "Synthèse parc") */
+  synthesisLabel?: string;
 };
 
 function makeDetail(
@@ -2133,6 +2398,532 @@ const comparisonDataMap: Record<string, ComparisonData> = {
     ],
     dynamicFieldValues: {},
   },
+  "cot-8": {
+    products: [
+      {
+        title: "Flotte automobile",
+        subGroups: [
+          {
+            title: "Couvertures véhicules",
+            rows: [
+              {
+                label: "Responsabilité civile",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Responsabilité civile", "axa", "Axa", true, "Couverture RC obligatoire pour les 87 véhicules de la flotte.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "Illimité", "600 €"),
+                  allianz: makeDetail("Responsabilité civile", "allianz", "Allianz", true, "RC automobile obligatoire conforme à la législation.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "Illimité", "800 €"),
+                  maif: makeDetail("Responsabilité civile", "maif", "MAIF", true, "Garantie RC étendue incluant les dommages environnementaux.", [{ id: "sl-1", label: "Dommages corporels", value: "Illimité" }, { id: "sl-2", label: "Dommages matériels", value: "100 000 000 €" }], defaultSources, "Illimité", "500 €"),
+                },
+              },
+              {
+                label: "Dommages tous accidents",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Dommages tous accidents", "axa", "Axa", true, "Prise en charge des dommages au véhicule, quelle que soit la responsabilité.", [{ id: "sl-1", label: "Franchise", value: "600 €" }], defaultSources, "Valeur vénale", "600 €"),
+                  allianz: makeDetail("Dommages tous accidents", "allianz", "Allianz", true, "Couverture complète des dommages matériels au véhicule.", [{ id: "sl-1", label: "Franchise", value: "800 €" }], defaultSources, "Valeur vénale", "800 €"),
+                  maif: makeDetail("Dommages tous accidents", "maif", "MAIF", true, "Dommages tous accidents avec option valeur à neuf 24 mois.", [{ id: "sl-1", label: "Franchise", value: "500 €" }, { id: "sl-2", label: "Valeur à neuf", value: "24 mois" }], defaultSources, "Valeur à neuf", "500 €"),
+                },
+              },
+              {
+                label: "Vol et tentative de vol",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Vol et tentative de vol", "axa", "Axa", true, "Indemnisation en cas de vol ou tentative de vol.", [{ id: "sl-1", label: "Plafond", value: "Valeur vénale" }], defaultSources, "Valeur vénale", "600 €"),
+                  allianz: makeDetail("Vol et tentative de vol", "allianz", "Allianz", true, "Couverture vol incluant les accessoires.", [{ id: "sl-1", label: "Plafond accessoires", value: "2 000 €" }], defaultSources, "Valeur vénale", "800 €"),
+                  maif: makeDetail("Vol et tentative de vol", "maif", "MAIF", true, "Garantie vol avec prise en charge des effets personnels.", [{ id: "sl-1", label: "Effets personnels", value: "1 500 €" }], defaultSources, "Valeur vénale", "500 €"),
+                },
+              },
+              {
+                label: "Bris de glace",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Bris de glace", "axa", "Axa", true, "Remplacement ou réparation de tous les vitrages.", [{ id: "sl-1", label: "Franchise réparation", value: "0 €" }], defaultSources, "Sans plafond", "0 €"),
+                  allianz: makeDetail("Bris de glace", "allianz", "Allianz", true, "Bris de glace sans franchise.", [], defaultSources, "Sans plafond", "0 €"),
+                  maif: makeDetail("Bris de glace", "maif", "MAIF", false, "Non inclus dans la formule Confort. Disponible en option Intégrale.", [], defaultSources),
+                },
+              },
+              {
+                label: "Incendie, explosion, tempête",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Incendie, explosion, tempête", "axa", "Axa", true, "Protection contre incendie, explosion et événements climatiques.", [{ id: "sl-1", label: "Franchise tempête", value: "300 €" }], defaultSources, "200 000 €", "300 €"),
+                  allianz: makeDetail("Incendie, explosion, tempête", "allianz", "Allianz", true, "Garantie étendue incendie et événements naturels.", [{ id: "sl-1", label: "Franchise", value: "400 €" }], defaultSources, "200 000 €", "400 €"),
+                  maif: makeDetail("Incendie, explosion, tempête", "maif", "MAIF", true, "Couverture incendie et événements climatiques.", [{ id: "sl-1", label: "Franchise", value: "250 €" }], defaultSources, "200 000 €", "250 €"),
+                },
+              },
+              {
+                label: "Catastrophes naturelles",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Garantie légale catastrophes naturelles.", [{ id: "sl-1", label: "Franchise légale", value: "380 ���" }], defaultSources),
+                  allianz: makeDetail("Catastrophes naturelles", "allianz", "Allianz", true, "Conformément à la réglementation en vigueur.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+                  maif: makeDetail("Catastrophes naturelles", "maif", "MAIF", true, "Couverture obligatoire cat nat.", [{ id: "sl-1", label: "Franchise légale", value: "380 €" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Garanties conducteur & assistance",
+            rows: [
+              {
+                label: "Protection corporelle du conducteur",
+                values: { axa: { type: "text", value: "1 500 000 €" }, allianz: { type: "text", value: "1 000 000 €" }, maif: { type: "text", value: "2 000 000 €" } },
+                details: {
+                  axa: makeDetail("Protection corporelle du conducteur", "axa", "Axa", true, "Indemnisation des dommages corporels subis par le conducteur.", [{ id: "sl-1", label: "Capital décès", value: "1 500 000 €" }], defaultSources),
+                  allianz: makeDetail("Protection corporelle du conducteur", "allianz", "Allianz", true, "Capital garanti en cas de blessure du conducteur.", [{ id: "sl-1", label: "Capital décès", value: "1 000 000 €" }], defaultSources),
+                  maif: makeDetail("Protection corporelle du conducteur", "maif", "MAIF", true, "Meilleure protection conducteur du panel.", [{ id: "sl-1", label: "Capital décès", value: "2 000 000 €" }, { id: "sl-2", label: "Frais de soins", value: "Illimité" }], defaultSources),
+                },
+              },
+              {
+                label: "Assistance 0 km",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+                details: {
+                  axa: makeDetail("Assistance 0 km", "axa", "Axa", true, "Dépannage et remorquage dès le lieu de panne.", [], defaultSources),
+                  allianz: makeDetail("Assistance 0 km", "allianz", "Allianz", true, "Assistance depuis le lieu de panne, y compris domicile.", [], defaultSources),
+                  maif: makeDetail("Assistance 0 km", "maif", "MAIF", true, "Assistance 0 km avec rapatriement inclus.", [], defaultSources),
+                },
+              },
+              {
+                label: "Véhicule de remplacement",
+                values: { axa: { type: "text", value: "21 jours" }, allianz: { type: "text", value: "14 jours" }, maif: { type: "text", value: "30 jours" } },
+                details: {
+                  axa: makeDetail("Véhicule de remplacement", "axa", "Axa", true, "Mise à disposition d'un véhicule de remplacement.", [{ id: "sl-1", label: "Durée max", value: "21 jours" }], defaultSources),
+                  allianz: makeDetail("Véhicule de remplacement", "allianz", "Allianz", true, "Véhicule de remplacement en cas d'immobilisation.", [{ id: "sl-1", label: "Durée max", value: "14 jours" }], defaultSources),
+                  maif: makeDetail("Véhicule de remplacement", "maif", "MAIF", true, "Véhicule de remplacement catégorie équivalente.", [{ id: "sl-1", label: "Durée max", value: "30 jours" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Services inclus",
+            rows: [
+              {
+                label: "Gestion de flotte en ligne",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Gestion de flotte en ligne", "axa", "Axa", true, "Plateforme en ligne pour gérer l'ensemble de la flotte.", [], defaultSources),
+                  allianz: makeDetail("Gestion de flotte en ligne", "allianz", "Allianz", true, "Espace client dédié à la gestion de flotte.", [], defaultSources),
+                  maif: makeDetail("Gestion de flotte en ligne", "maif", "MAIF", false, "Gestion par téléphone et courrier uniquement.", [], defaultSources),
+                },
+              },
+              {
+                label: "Reporting sinistralité",
+                values: { axa: { type: "text", value: "Trimestriel" }, allianz: { type: "text", value: "Mensuel" }, maif: { type: "text", value: "Semestriel" } },
+                details: {
+                  axa: makeDetail("Reporting sinistralité", "axa", "Axa", true, "Rapports de sinistralité détaillés.", [{ id: "sl-1", label: "Fréquence", value: "Trimestriel" }], defaultSources),
+                  allianz: makeDetail("Reporting sinistralité", "allianz", "Allianz", true, "Suivi mensuel de la sinistralité.", [{ id: "sl-1", label: "Fréquence", value: "Mensuel" }], defaultSources),
+                  maif: makeDetail("Reporting sinistralité", "maif", "MAIF", true, "Bilan semestriel de sinistralité.", [{ id: "sl-1", label: "Fréquence", value: "Semestriel" }], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-f-d1",
+        label: "Faute intentionnelle",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, maif: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle", "axa", "Axa", false, "deterministic", "excl-f-d1", "Les dommages causés intentionnellement par l'assuré sont exclus.", [], defaultSources),
+          allianz: makeExclusionDetail("Faute intentionnelle", "allianz", "Allianz", false, "deterministic", "excl-f-d1", "Exclusion légale : tout acte intentionnel de l'assuré.", [], defaultSources),
+          maif: makeExclusionDetail("Faute intentionnelle", "maif", "MAIF", false, "deterministic", "excl-f-d1", "Dommages résultant d'une faute intentionnelle ou dolosive.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-f-d2",
+        label: "Conduite sans permis valide",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, maif: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Conduite sans permis valide", "axa", "Axa", false, "deterministic", "excl-f-d2", "Tout sinistre survenu lorsque le conducteur ne possède pas un permis valide.", [], defaultSources),
+          allianz: makeExclusionDetail("Conduite sans permis valide", "allianz", "Allianz", false, "deterministic", "excl-f-d2", "Exclusion si le conducteur n'est pas titulaire du permis requis.", [], defaultSources),
+          maif: makeExclusionDetail("Conduite sans permis valide", "maif", "MAIF", false, "deterministic", "excl-f-d2", "Conduite sans permis adapté au type de véhicule.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-f-a1",
+        label: "Usage non déclaré du véhicule",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu-text", value: "Sauf avenant" }, maif: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Usage non déclaré du v��hicule", "axa", "Axa", false, "ai", "excl-f-a1", "Utilisation du véhicule pour un usage non prévu au contrat.", [], defaultSources),
+          allianz: makeExclusionDetail("Usage non déclaré du véhicule", "allianz", "Allianz", false, "ai", "excl-f-a1", "Usage non déclaré exclu sauf avenant de régularisation.", [{ id: "sl-1", label: "Dérogation", value: "Avenant sous 15j" }], defaultSources),
+          maif: makeExclusionDetail("Usage non déclaré du véhicule", "maif", "MAIF", false, "ai", "excl-f-a1", "Tout usage professionnel non déclaré au contrat.", [], defaultSources),
+        },
+      },
+    ],
+    multiEntity: {
+      entityLabel: "Véhicule",
+      entityLabelPlural: "véhicules",
+      entities: [
+        { id: "veh-1", label: "Renault Kangoo — AB-123-CD", name: "Renault Kangoo", plate: "AB-123-CD", category: "Véhicules légers", pricingPerInsurer: { axa: 145, allianz: 158, maif: 132 } },
+        { id: "veh-2", label: "Peugeot Partner — EF-456-GH", name: "Peugeot Partner", plate: "EF-456-GH", category: "Véhicules légers", pricingPerInsurer: { axa: 138, allianz: 152, maif: 128 } },
+        { id: "veh-3", label: "Citroën Berlingo — IJ-789-KL", name: "Citroën Berlingo", plate: "IJ-789-KL", category: "Véhicules légers", pricingPerInsurer: { axa: 142, allianz: 155, maif: 130 } },
+        { id: "veh-4", label: "Ford Transit — MN-012-OP", name: "Ford Transit", plate: "MN-012-OP", category: "Véhicules légers", pricingPerInsurer: { axa: 168, allianz: 175, maif: 155 } },
+        { id: "veh-5", label: "Renault Master — QR-345-ST", name: "Renault Master", plate: "QR-345-ST", category: "Véhicules légers", pricingPerInsurer: { axa: 172, allianz: 180, maif: 160 } },
+        { id: "veh-6", label: "Iveco Daily 35S — UV-678-WX", name: "Iveco Daily 35S", plate: "UV-678-WX", category: "Véhicules lourds", pricingPerInsurer: { axa: 245, allianz: 260, maif: 228 } },
+        { id: "veh-7", label: "Mercedes Sprinter — YZ-901-AB", name: "Mercedes Sprinter", plate: "YZ-901-AB", category: "Véhicules lourds", pricingPerInsurer: { axa: 258, allianz: 272, maif: 240 } },
+        { id: "veh-8", label: "MAN TGE — CD-234-EF", name: "MAN TGE", plate: "CD-234-EF", category: "Véhicules lourds", pricingPerInsurer: { axa: 265, allianz: 278, maif: 245 } },
+      ],
+      summaryPerInsurer: {
+        axa: { totalAnnual: 19596, avgPerEntity: 2450, entityCount: 8, quoteDate: "12/03/2026" },
+        allianz: { totalAnnual: 20760, avgPerEntity: 2595, entityCount: 8, quoteDate: "14/03/2026" },
+        maif: { totalAnnual: 18216, avgPerEntity: 2277, entityCount: 8, quoteDate: "11/03/2026" },
+      },
+      guaranteeOverrides: {
+        "veh-1": {
+          "Bris de glace": { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "cross" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "1 500 000 €" }, allianz: { type: "text", value: "1 000 000 €" }, maif: { type: "text", value: "2 000 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "21 jours" }, allianz: { type: "text", value: "14 jours" }, maif: { type: "text", value: "30 jours" } },
+        },
+        "veh-2": {
+          "Bris de glace": { axa: { type: "check" }, allianz: { type: "cross" }, maif: { type: "cross" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "1 000 000 €" }, allianz: { type: "text", value: "800 000 €" }, maif: { type: "text", value: "1 500 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "14 jours" }, allianz: { type: "text", value: "7 jours" }, maif: { type: "text", value: "21 jours" } },
+        },
+        "veh-3": {
+          "Bris de glace": { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "check" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "2 000 000 €" }, allianz: { type: "text", value: "1 500 000 €" }, maif: { type: "text", value: "2 000 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "21 jours" }, maif: { type: "text", value: "30 jours" } },
+          "Dommages tous accidents": { axa: { type: "cross" }, allianz: { type: "check" }, maif: { type: "check" } },
+        },
+        "veh-4": {
+          "Bris de glace": { axa: { type: "cross" }, allianz: { type: "cross" }, maif: { type: "cross" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "1 500 000 €" }, allianz: { type: "text", value: "1 000 000 €" }, maif: { type: "text", value: "1 000 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "21 jours" }, allianz: { type: "text", value: "14 jours" }, maif: { type: "text", value: "14 jours" } },
+          "Gestion de flotte en ligne": { axa: { type: "check" }, allianz: { type: "cross" }, maif: { type: "cross" } },
+        },
+        "veh-5": {
+          "Bris de glace": { axa: { type: "check" }, allianz: { type: "check" }, maif: { type: "cross" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "1 500 000 €" }, allianz: { type: "text", value: "1 200 000 €" }, maif: { type: "text", value: "1 800 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "14 jours" }, allianz: { type: "text", value: "14 jours" }, maif: { type: "text", value: "21 jours" } },
+        },
+        "veh-6": {
+          "Bris de glace": { axa: { type: "cross" }, allianz: { type: "cross" }, maif: { type: "cross" } },
+          "Vol et tentative de vol": { axa: { type: "cross" }, allianz: { type: "check" }, maif: { type: "check" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "2 000 000 €" }, allianz: { type: "text", value: "2 000 000 €" }, maif: { type: "text", value: "3 000 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "21 jours" }, maif: { type: "text", value: "30 jours" } },
+          "Assistance 0 km": { axa: { type: "cross" }, allianz: { type: "check" }, maif: { type: "check" } },
+        },
+        "veh-7": {
+          "Bris de glace": { axa: { type: "check" }, allianz: { type: "cross" }, maif: { type: "cross" } },
+          "Vol et tentative de vol": { axa: { type: "check" }, allianz: { type: "cross" }, maif: { type: "check" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "2 500 000 €" }, allianz: { type: "text", value: "1 500 000 €" }, maif: { type: "text", value: "2 500 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "21 jours" }, allianz: { type: "text", value: "14 jours" }, maif: { type: "text", value: "30 jours" } },
+        },
+        "veh-8": {
+          "Bris de glace": { axa: { type: "cross" }, allianz: { type: "check" }, maif: { type: "cross" } },
+          "Dommages tous accidents": { axa: { type: "check" }, allianz: { type: "cross" }, maif: { type: "check" } },
+          "Protection corporelle du conducteur": { axa: { type: "text", value: "3 000 000 €" }, allianz: { type: "text", value: "2 000 000 €" }, maif: { type: "text", value: "2 500 000 €" } },
+          "Véhicule de remplacement": { axa: { type: "text", value: "30 jours" }, allianz: { type: "text", value: "21 jours" }, maif: { type: "text", value: "30 jours" } },
+          "Reporting sinistralité": { axa: { type: "text", value: "Mensuel" }, allianz: { type: "text", value: "Mensuel" }, maif: { type: "text", value: "Trimestriel" } },
+        },
+      },
+    },
+  },
+  "cot-9": {
+    products: [
+      {
+        title: "MRI",
+        subGroups: [
+          {
+            title: "Garanties principales",
+            rows: [
+              {
+                label: "Incendie / Explosion",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Incendie / Explosion", "generali", "Generali", true, "Couverture des dommages causés par un incendie ou une explosion.", [{ id: "sl-1", label: "Plafond par sinistre", value: "5 000 000 €" }], defaultSources, "5 000 000 €", "3 000 €"),
+                  axa: makeDetail("Incendie / Explosion", "axa", "Axa", true, "Garantie incendie et explosion couvrant la valeur de reconstruction.", [{ id: "sl-1", label: "Plafond par sinistre", value: "8 000 000 €" }, { id: "sl-2", label: "Frais de déblais", value: "500 000 €" }], defaultSources, "8 000 000 €", "2 500 €"),
+                  allianz: makeDetail("Incendie / Explosion", "allianz", "Allianz", true, "Protection incendie étendue aux bâtiments mitoyens.", [{ id: "sl-1", label: "Plafond par sinistre", value: "6 000 000 €" }], defaultSources, "6 000 000 ���", "3 500 €"),
+                },
+              },
+              {
+                label: "Dégât des eaux",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Dégât des eaux", "generali", "Generali", true, "Dommages causés par les eaux, y compris infiltrations.", [{ id: "sl-1", label: "Recherche de fuite", value: "Incluse" }], defaultSources, "2 000 000 €", "1 500 €"),
+                  axa: makeDetail("Dégât des eaux", "axa", "Axa", true, "Couverture étendue des dégâts des eaux.", [{ id: "sl-1", label: "Recherche de fuite", value: "15 000 €" }], defaultSources, "3 000 000 €", "1 000 €"),
+                  allianz: makeDetail("Dégât des eaux", "allianz", "Allianz", true, "Dégât des eaux avec prise en charge des frais de recherche.", [{ id: "sl-1", label: "Recherche de fuite", value: "10 000 €" }], defaultSources, "2 500 000 €", "2 000 €"),
+                },
+              },
+              {
+                label: "Vol / Vandalisme",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  generali: makeDetail("Vol / Vandalisme", "generali", "Generali", true, "Couverture vol et actes de vandalisme sur les parties communes.", [{ id: "sl-1", label: "Plafond contenu", value: "100 000 €" }], defaultSources, "500 000 €", "2 000 €"),
+                  axa: makeDetail("Vol / Vandalisme", "axa", "Axa", true, "Garantie vol et vandalisme incluant les équipements techniques.", [{ id: "sl-1", label: "Plafond équipements", value: "200 000 €" }], defaultSources, "750 000 €", "1 500 €"),
+                  allianz: makeDetail("Vol / Vandalisme", "allianz", "Allianz", false, "Non inclus dans la formule Confort. Option disponible en Intégrale.", [], defaultSources),
+                },
+              },
+              {
+                label: "Catastrophes naturelles",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Catastrophes naturelles", "generali", "Generali", true, "Garantie légale catastrophes naturelles.", [{ id: "sl-1", label: "Franchise légale", value: "1 520 €" }], defaultSources),
+                  axa: makeDetail("Catastrophes naturelles", "axa", "Axa", true, "Conformément à la réglementation en vigueur.", [{ id: "sl-1", label: "Franchise légale", value: "1 520 €" }], defaultSources),
+                  allianz: makeDetail("Catastrophes naturelles", "allianz", "Allianz", true, "Couverture obligatoire.", [{ id: "sl-1", label: "Franchise légale", value: "1 520 €" }], defaultSources),
+                },
+              },
+              {
+                label: "RC immeuble",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("RC immeuble", "generali", "Generali", true, "Responsabilité civile du propriétaire d'immeuble.", [{ id: "sl-1", label: "Plafond RC", value: "10 000 000 €" }], defaultSources, "10 000 000 €", "5 000 €"),
+                  axa: makeDetail("RC immeuble", "axa", "Axa", true, "RC propriétaire non occupant étendue.", [{ id: "sl-1", label: "Plafond RC", value: "15 000 000 €" }], defaultSources, "15 000 000 €", "3 000 €"),
+                  allianz: makeDetail("RC immeuble", "allianz", "Allianz", true, "Responsabilité civile immeuble avec défense-recours.", [{ id: "sl-1", label: "Plafond RC", value: "12 000 000 €" }], defaultSources, "12 000 000 €", "4 000 €"),
+                },
+              },
+            ],
+          },
+          {
+            title: "Garanties complémentaires",
+            rows: [
+              {
+                label: "Perte de loyers",
+                values: { generali: { type: "text", value: "24 mois" }, axa: { type: "text", value: "36 mois" }, allianz: { type: "text", value: "18 mois" } },
+                details: {
+                  generali: makeDetail("Perte de loyers", "generali", "Generali", true, "Indemnisation de la perte de loyers en cas de sinistre rendant les locaux inhabitables.", [{ id: "sl-1", label: "Durée max", value: "24 mois" }], defaultSources),
+                  axa: makeDetail("Perte de loyers", "axa", "Axa", true, "Meilleure couverture perte de loyers du panel.", [{ id: "sl-1", label: "Durée max", value: "36 mois" }, { id: "sl-2", label: "Plafond", value: "Loyer réel" }], defaultSources),
+                  allianz: makeDetail("Perte de loyers", "allianz", "Allianz", true, "Perte de loyers limitée à 18 mois.", [{ id: "sl-1", label: "Durée max", value: "18 mois" }], defaultSources),
+                },
+              },
+              {
+                label: "Bris de machines / équipements",
+                values: { generali: { type: "check" }, axa: { type: "check" }, allianz: { type: "cross" } },
+                details: {
+                  generali: makeDetail("Bris de machines / équipements", "generali", "Generali", true, "Couverture des équipements techniques (ascenseurs, chaufferie, VMC).", [{ id: "sl-1", label: "Plafond", value: "300 000 €" }], defaultSources, "300 000 €", "2 000 €"),
+                  axa: makeDetail("Bris de machines / équipements", "axa", "Axa", true, "Bris de machines couvrant l'ensemble des équipements techniques.", [{ id: "sl-1", label: "Plafond", value: "500 000 €" }], defaultSources, "500 000 €", "1 500 €"),
+                  allianz: makeDetail("Bris de machines / équipements", "allianz", "Allianz", false, "Non inclus. Option disponible en formule Intégrale.", [], defaultSources),
+                },
+              },
+              {
+                label: "Protection juridique",
+                values: { generali: { type: "check" }, axa: { type: "cross" }, allianz: { type: "check" } },
+                details: {
+                  generali: makeDetail("Protection juridique", "generali", "Generali", true, "Assistance juridique en cas de litige lié aux immeubles.", [{ id: "sl-1", label: "Plafond honoraires", value: "20 000 €" }], defaultSources),
+                  axa: makeDetail("Protection juridique", "axa", "Axa", false, "Non incluse. Disponible en option.", [], defaultSources),
+                  allianz: makeDetail("Protection juridique", "allianz", "Allianz", true, "Protection juridique incluse avec défense pénale.", [{ id: "sl-1", label: "Plafond", value: "25 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Honoraires d'expert",
+                values: { generali: { type: "text", value: "10 000 €" }, axa: { type: "text", value: "15 000 €" }, allianz: { type: "text", value: "12 000 €" } },
+                details: {
+                  generali: makeDetail("Honoraires d'expert", "generali", "Generali", true, "Prise en charge des honoraires d'expert de l'assuré.", [{ id: "sl-1", label: "Plafond", value: "10 000 €/sinistre" }], defaultSources),
+                  axa: makeDetail("Honoraires d'expert", "axa", "Axa", true, "Honoraires d'expert pour contre-expertise.", [{ id: "sl-1", label: "Plafond", value: "15 000 €/sinistre" }], defaultSources),
+                  allianz: makeDetail("Honoraires d'expert", "allianz", "Allianz", true, "Frais d'expertise de l'assuré.", [{ id: "sl-1", label: "Plafond", value: "12 000 €/sinistre" }], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-m-d1",
+        label: "Défaut d'entretien",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Défaut d'entretien", "generali", "Generali", false, "deterministic", "excl-m-d1", "Dommages résultant d'un défaut caractérisé d'entretien du bâtiment.", [], defaultSources),
+          axa: makeExclusionDetail("Défaut d'entretien", "axa", "Axa", false, "deterministic", "excl-m-d1", "Sinistres causés par un manque manifeste d'entretien.", [], defaultSources),
+          allianz: makeExclusionDetail("Défaut d'entretien", "allianz", "Allianz", false, "deterministic", "excl-m-d1", "Exclusion des dommages liés à un entretien insuffisant.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-m-d2",
+        label: "Vice de construction",
+        origin: "deterministic",
+        values: { generali: { type: "exclu" }, axa: { type: "exclu" }, allianz: { type: "exclu-text", value: "Décennale uniquement" } },
+        details: {
+          generali: makeExclusionDetail("Vice de construction", "generali", "Generali", false, "deterministic", "excl-m-d2", "Dommages résultant d'un vice de conception ou de construction.", [], defaultSources),
+          axa: makeExclusionDetail("Vice de construction", "axa", "Axa", false, "deterministic", "excl-m-d2", "Vice de construction exclu — relève de la garantie décennale.", [], defaultSources),
+          allianz: makeExclusionDetail("Vice de construction", "allianz", "Allianz", false, "deterministic", "excl-m-d2", "Exclusion des vices de construction sauf dans le cadre de la garantie décennale.", [{ id: "sl-1", label: "Exception", value: "Garantie décennale applicable" }], defaultSources),
+        },
+      },
+      {
+        id: "excl-m-a1",
+        label: "Terrains et plantations",
+        origin: "ai",
+        values: { generali: { type: "exclu" }, axa: { type: "inclus" }, allianz: { type: "exclu" } },
+        details: {
+          generali: makeExclusionDetail("Terrains et plantations", "generali", "Generali", false, "ai", "excl-m-a1", "Les dommages aux terrains, jardins et plantations ne sont pas couverts.", [], defaultSources),
+          axa: makeExclusionDetail("Terrains et plantations", "axa", "Axa", true, "ai", "excl-m-a1", "Couverture des espaces verts et plantations incluse dans la formule Étendue.", [{ id: "sl-1", label: "Plafond", value: "50 000 €" }], defaultSources),
+          allianz: makeExclusionDetail("Terrains et plantations", "allianz", "Allianz", false, "ai", "excl-m-a1", "Exclusion des dommages aux espaces extérieurs.", [], defaultSources),
+        },
+      },
+    ],
+    multiEntity: {
+      entityLabel: "Immeuble",
+      entityLabelPlural: "immeubles",
+      entities: [
+        { id: "imm-1", label: "12 rue de la Paix — Paris 2e", name: "12 rue de la Paix", plate: "Paris 2e", category: "Résidentiel", pricingPerInsurer: { generali: 420, axa: 385, allianz: 445 } },
+        { id: "imm-2", label: "8 bd Haussmann — Paris 9e", name: "8 bd Haussmann", plate: "Paris 9e", category: "Résidentiel", pricingPerInsurer: { generali: 580, axa: 540, allianz: 610 } },
+        { id: "imm-3", label: "45 av. Foch — Paris 16e", name: "45 av. Foch", plate: "Paris 16e", category: "Résidentiel", pricingPerInsurer: { generali: 720, axa: 680, allianz: 750 } },
+        { id: "imm-4", label: "3 rue du Commerce — Paris 15e", name: "3 rue du Commerce", plate: "Paris 15e", category: "Commercial", pricingPerInsurer: { generali: 890, axa: 820, allianz: 920 } },
+        { id: "imm-5", label: "22 rue de Rivoli — Paris 4e", name: "22 rue de Rivoli", plate: "Paris 4e", category: "Commercial", pricingPerInsurer: { generali: 1050, axa: 980, allianz: 1100 } },
+      ],
+      summaryPerInsurer: {
+        generali: { totalAnnual: 43920, avgPerEntity: 8784, entityCount: 5, quoteDate: "10/03/2026" },
+        axa: { totalAnnual: 40860, avgPerEntity: 8172, entityCount: 5, quoteDate: "13/03/2026" },
+        allianz: { totalAnnual: 45900, avgPerEntity: 9180, entityCount: 5, quoteDate: "15/03/2026" },
+      },
+    },
+  },
+  "cot-10": {
+    synthesisLabel: "Synthèse du stock assuré",
+    products: [
+      {
+        title: "Véhicules confiés",
+        subGroups: [
+          {
+            title: "Véhicules légers",
+            rows: [
+              {
+                label: "Capacité max (simultanée)",
+                values: { axa: { type: "text", value: "60" }, allianz: { type: "text", value: "80" }, generali: { type: "text", value: "100" } },
+                details: {
+                  axa: makeDetail("Capacité max (simultanée)", "axa", "Axa", true, "Nombre maximum de véhicules légers confiés couverts simultanément.", [{ id: "sl-1", label: "Capacité", value: "60 véhicules" }], defaultSources),
+                  allianz: makeDetail("Capacité max (simultanée)", "allianz", "Allianz", true, "Capacité maximale de stockage couverte.", [{ id: "sl-1", label: "Capacité", value: "80 véhicules" }], defaultSources),
+                  generali: makeDetail("Capacité max (simultanée)", "generali", "Generali", true, "Couverture étendue avec capacité élevée.", [{ id: "sl-1", label: "Capacité", value: "100 véhicules" }], defaultSources),
+                },
+              },
+              {
+                label: "Plafond par sinistre",
+                values: { axa: { type: "text", value: "Jusqu'à XXXX €" }, allianz: { type: "text", value: "Jusqu'à XXXX €" }, generali: { type: "text", value: "Jusqu'à XXXX €" } },
+                details: {
+                  axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Plafond d'indemnisation par sinistre pour les véhicules confiés légers.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources, "Jusqu'à XXXX €", "1 000 €"),
+                  allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Indemnisation par sinistre avec franchise réduite.", [{ id: "sl-1", label: "Franchise", value: "1 200 €" }], defaultSources, "Jusqu'à XXXX €", "1 200 €"),
+                  generali: makeDetail("Plafond par sinistre", "generali", "Generali", true, "Plafond par sinistre pour véhicules légers confiés.", [{ id: "sl-1", label: "Franchise", value: "800 €" }], defaultSources, "Jusqu'à XXXX €", "800 €"),
+                },
+              },
+            ],
+          },
+          {
+            title: "Véhicules lourds",
+            rows: [
+              {
+                label: "Capacité max (simultanée)",
+                values: { axa: { type: "text", value: "60" }, allianz: { type: "text", value: "80" }, generali: { type: "text", value: "100" } },
+                details: {
+                  axa: makeDetail("Capacité max (simultanée)", "axa", "Axa", true, "Nombre maximum de véhicules lourds confiés couverts.", [{ id: "sl-1", label: "Capacité", value: "60 véhicules" }], defaultSources),
+                  allianz: makeDetail("Capacité max (simultanée)", "allianz", "Allianz", true, "Capacité de stockage véhicules lourds.", [{ id: "sl-1", label: "Capacité", value: "80 véhicules" }], defaultSources),
+                  generali: makeDetail("Capacité max (simultanée)", "generali", "Generali", true, "Couverture large pour véhicules lourds confiés.", [{ id: "sl-1", label: "Capacité", value: "100 véhicules" }], defaultSources),
+                },
+              },
+              {
+                label: "Plafond par sinistre",
+                values: { axa: { type: "text", value: "Jusqu'à XXXX €" }, allianz: { type: "text", value: "Jusqu'à XXXX €" }, generali: { type: "text", value: "Jusqu'à XXXX €" } },
+                details: {
+                  axa: makeDetail("Plafond par sinistre", "axa", "Axa", true, "Plafond par sinistre pour véhicules lourds confiés.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources, "Jusqu'à XXXX €", "1 500 €"),
+                  allianz: makeDetail("Plafond par sinistre", "allianz", "Allianz", true, "Indemnisation par sinistre véhicules lourds.", [{ id: "sl-1", label: "Franchise", value: "1 800 €" }], defaultSources, "Jusqu'à XXXX €", "1 800 €"),
+                  generali: makeDetail("Plafond par sinistre", "generali", "Generali", true, "Plafond d'indemnisation véhicules lourds confiés.", [{ id: "sl-1", label: "Franchise", value: "1 200 €" }], defaultSources, "Jusqu'à XXXX €", "1 200 €"),
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Véhicules destinés à la vente",
+        subGroups: [
+          {
+            title: "Véhicules légers",
+            rows: [
+              {
+                label: "Valeur stock max",
+                values: { axa: { type: "text", value: "Jusqu'à XXX €" }, allianz: { type: "text", value: "Jusqu'à XXX €" }, generali: { type: "text", value: "Jusqu'à XXX €" } },
+                details: {
+                  axa: makeDetail("Valeur stock max", "axa", "Axa", true, "Valeur maximale du stock de véhicules légers destinés à la vente.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                  allianz: makeDetail("Valeur stock max", "allianz", "Allianz", true, "Couverture de la valeur totale du stock vente.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                  generali: makeDetail("Valeur stock max", "generali", "Generali", true, "Valeur maximale assurée pour le stock léger.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                },
+              },
+              {
+                label: "Capacité max (simultanée)",
+                values: { axa: { type: "text", value: "60" }, allianz: { type: "text", value: "80" }, generali: { type: "text", value: "100" } },
+                details: {
+                  axa: makeDetail("Capacité max (simultanée)", "axa", "Axa", true, "Nombre maximum de véhicules en stock vente couverts.", [{ id: "sl-1", label: "Capacité", value: "60 véhicules" }], defaultSources),
+                  allianz: makeDetail("Capacité max (simultanée)", "allianz", "Allianz", true, "Capacité de stock vente couverte.", [{ id: "sl-1", label: "Capacité", value: "80 véhicules" }], defaultSources),
+                  generali: makeDetail("Capacité max (simultanée)", "generali", "Generali", true, "Couverture stock vente étendue.", [{ id: "sl-1", label: "Capacité", value: "100 véhicules" }], defaultSources),
+                },
+              },
+              {
+                label: "Vol",
+                values: { axa: { type: "check" }, allianz: { type: "check" }, generali: { type: "text", value: "Détail case" } },
+                details: {
+                  axa: makeDetail("Vol", "axa", "Axa", true, "Couverture vol des véhicules légers en stock vente.", [{ id: "sl-1", label: "Franchise", value: "1 000 €" }], defaultSources),
+                  allianz: makeDetail("Vol", "allianz", "Allianz", true, "Garantie vol incluant tentative de vol.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }], defaultSources),
+                  generali: makeDetail("Vol", "generali", "Generali", true, "Couverture vol avec conditions spécifiques.", [{ id: "sl-1", label: "Franchise", value: "800 €" }, { id: "sl-2", label: "Condition", value: "Parking clos et surveillé" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Véhicules lourds",
+            rows: [
+              {
+                label: "Valeur stock max",
+                values: { axa: { type: "text", value: "Jusqu'à XXX €" }, allianz: { type: "text", value: "Jusqu'à XXX €" }, generali: { type: "text", value: "Jusqu'à XXX €" } },
+                details: {
+                  axa: makeDetail("Valeur stock max", "axa", "Axa", true, "Valeur maximale du stock de véhicules lourds.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                  allianz: makeDetail("Valeur stock max", "allianz", "Allianz", true, "Couverture de la valeur totale stock lourds.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                  generali: makeDetail("Valeur stock max", "generali", "Generali", true, "Valeur maximale assurée pour le stock lourd.", [{ id: "sl-1", label: "Plafond stock", value: "Jusqu'à XXX €" }], defaultSources),
+                },
+              },
+              {
+                label: "Capacité max (simultanée)",
+                values: { axa: { type: "text", value: "60" }, allianz: { type: "text", value: "80" }, generali: { type: "text", value: "100" } },
+                details: {
+                  axa: makeDetail("Capacité max (simultanée)", "axa", "Axa", true, "Nombre maximum de véhicules lourds en stock vente.", [{ id: "sl-1", label: "Capacité", value: "60 véhicules" }], defaultSources),
+                  allianz: makeDetail("Capacité max (simultanée)", "allianz", "Allianz", true, "Capacité stock vente lourds.", [{ id: "sl-1", label: "Capacité", value: "80 véhicules" }], defaultSources),
+                  generali: makeDetail("Capacité max (simultanée)", "generali", "Generali", true, "Couverture stock vente lourds étendue.", [{ id: "sl-1", label: "Capacité", value: "100 véhicules" }], defaultSources),
+                },
+              },
+              {
+                label: "Vol",
+                values: { axa: { type: "cross" }, allianz: { type: "check" }, generali: { type: "text", value: "Détail case" } },
+                details: {
+                  axa: makeDetail("Vol", "axa", "Axa", false, "Non inclus pour les véhicules lourds en stock vente.", [], defaultSources),
+                  allianz: makeDetail("Vol", "allianz", "Allianz", true, "Garantie vol véhicules lourds en stock.", [{ id: "sl-1", label: "Franchise", value: "2 000 €" }], defaultSources),
+                  generali: makeDetail("Vol", "generali", "Generali", true, "Couverture vol lourds avec conditions.", [{ id: "sl-1", label: "Franchise", value: "1 500 €" }, { id: "sl-2", label: "Condition", value: "Parking clos" }], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-fs-d1",
+        label: "Véhicule non déclaré au stock",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Véhicule non déclaré au stock", "axa", "Axa", false, "deterministic", "excl-fs-d1", "Tout véhicule non inscrit à l'inventaire du stock au moment du sinistre.", [], defaultSources),
+          allianz: makeExclusionDetail("Véhicule non déclaré au stock", "allianz", "Allianz", false, "deterministic", "excl-fs-d1", "Exclusion si le véhicule ne figure pas dans l'état de stock déclaré.", [], defaultSources),
+          generali: makeExclusionDetail("Véhicule non déclaré au stock", "generali", "Generali", false, "deterministic", "excl-fs-d1", "Véhicule absent de l'inventaire déclaré à l'assureur.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-fs-d2",
+        label: "Dépassement de capacité déclarée",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu-text", value: "Pro rata" } },
+        details: {
+          axa: makeExclusionDetail("Dépassement de capacité déclarée", "axa", "Axa", false, "deterministic", "excl-fs-d2", "Sinistre survenu alors que le stock dépasse la capacité déclarée.", [], defaultSources),
+          allianz: makeExclusionDetail("Dépassement de capacité déclarée", "allianz", "Allianz", false, "deterministic", "excl-fs-d2", "Exclusion en cas de dépassement de la capacité contractuelle.", [], defaultSources),
+          generali: makeExclusionDetail("Dépassement de capacité déclarée", "generali", "Generali", false, "deterministic", "excl-fs-d2", "Indemnisation au pro rata en cas de dépassement de capacité.", [{ id: "sl-1", label: "Règle", value: "Pro rata capacitaire" }], defaultSources),
+        },
+      },
+    ],
+  },
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -2631,6 +3422,182 @@ const analysisDataMap: Record<string, AnalysisData> = {
       },
     ],
   },
+  "cot-8": {
+    synthese: [
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Assistance 0 km incluse pour l'ensemble de la flotte",
+          "Plateforme de gestion de flotte en ligne performante",
+          "Reporting sinistralité trimestriel détaillé",
+        ],
+        pointsFaibles: [
+          "Tarif le plus élevé sur la formule Tous risques",
+          "Franchise supérieure à la MAIF (600 € vs 500 €)",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Meilleur tarif global toutes formules confondues",
+          "Bris de glace sans franchise",
+          "Reporting mensuel de la sinistralité",
+        ],
+        pointsFaibles: [
+          "Franchise la plus élevée du panel à 800 €/sinistre",
+          "Véhicule de remplacement limité à 14 jours",
+          "Protection conducteur la plus faible (1 000 000 €)",
+        ],
+      },
+      {
+        insurerId: "maif",
+        pointsForts: [
+          "Meilleure protection corporelle du conducteur (2 000 000 €)",
+          "Franchise la plus basse du panel à 500 €",
+          "Véhicule de remplacement 30 jours",
+          "Valeur à neuf 24 mois incluse",
+        ],
+        pointsFaibles: [
+          "Pas de bris de glace en formule Confort",
+          "Pas de plateforme de gestion de flotte en ligne",
+          "Reporting semestriel uniquement",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "87 véhicules", source: "extracted" },
+      { id: "cp-2", label: "Transport de marchandises", source: "extracted" },
+      { id: "cp-3", label: "Sinistralité 3 ans : 18%", source: "extracted" },
+      { id: "cp-4", label: "Zone IDF + Province", source: "extracted" },
+      { id: "cp-5", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et la catégorie de risque" },
+      { id: "cp-6", label: "Type de marchandises transportées", source: "missing", hint: "Peut impacter les garanties marchandises transportées" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: "L'analyse comparative des trois offres pour la flotte de 87 véhicules de Transports Moreau révèle des différences significatives. Allianz propose le meilleur tarif global (16 800 €/an en Tous risques) mais avec la franchise la plus élevée et une durée de véhicule de remplacement limitée.\n\nLa MAIF se distingue par la meilleure protection conducteur (2 000 000 €) et la franchise la plus basse (500 €), avec un véhicule de remplacement de 30 jours — un avantage décisif pour une flotte de transport. En revanche, l'absence de plateforme de gestion en ligne est un frein pour une flotte de cette taille.\n\nRecommandation : la MAIF offre le meilleur alignement avec les contraintes opérationnelles d'un transporteur (franchise basse, remplacement long), tandis qu'Allianz est le choix budgétaire optimal si la gestion de flotte dématérialisée est prioritaire.",
+    conditionsFinancieres: {
+      analysisBefore: "Les trois assureurs proposent chacun deux formules. L'écart entre la formule la moins chère (Allianz Tiers étendu à 14 400 €/an) et la plus chère (Axa Tous risques à 18 200 €/an) est de 3 800 €/an, soit environ 44 €/véhicule/an de différence.",
+      analysisAfter: "En rapportant le coût au nombre de véhicules, Allianz offre le coût par véhicule le plus bas à 193 €/véhicule/an en Tous risques. La MAIF se positionne en milieu de gamme à 200 €/véhicule/an avec une couverture plus protectrice (franchise basse, remplacement long).",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "axa", insurerName: "Axa",
+        pointsForts: ["Assistance 0 km incluse", "Plateforme de gestion de flotte performante", "Reporting trimestriel détaillé", "21 jours de véhicule de remplacement"],
+        pointsFaibles: ["Tarif le plus élevé (18 200 €/an en Tous risques)", "Franchise intermédiaire (600 €)", "Protection conducteur limitée à 1 500 000 €"],
+      },
+      {
+        insurerId: "allianz", insurerName: "Allianz",
+        pointsForts: ["Meilleur tarif global (16 800 €/an)", "Bris de glace sans franchise", "Reporting mensuel", "Gestion de flotte en ligne"],
+        pointsFaibles: ["Franchise la plus élevée (800 €)", "Véhicule de remplacement limité à 14 jours", "Protection conducteur la plus basse (1 000 000 €)"],
+      },
+      {
+        insurerId: "maif", insurerName: "MAIF",
+        pointsForts: ["Meilleure protection conducteur (2 000 000 €)", "Franchise la plus basse (500 €)", "30 jours de véhicule de remplacement", "Valeur à neuf 24 mois incluse"],
+        pointsFaibles: ["Bris de glace non inclus en Confort", "Pas de plateforme de gestion en ligne", "Reporting semestriel uniquement"],
+      },
+    ],
+    garantiesCles: [
+      { label: "Responsabilité civile", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
+      { label: "Dommages tous accidents", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
+      { label: "Bris de glace", values: { axa: { status: "covered" }, allianz: { status: "covered", keyInfo: "Sans franchise" }, maif: { status: "not_covered", keyInfo: "Option" } } },
+      { label: "Assistance 0 km", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
+      { label: "Véhicule de remplacement", values: { axa: { status: "covered", keyInfo: "21 jours" }, allianz: { status: "covered", keyInfo: "14 jours" }, maif: { status: "covered", keyInfo: "30 jours" } } },
+      { label: "Protection conducteur", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, allianz: { status: "covered", keyInfo: "1 000 000 €" }, maif: { status: "covered", keyInfo: "2 000 000 €" } } },
+    ],
+  },
+  "cot-9": {
+    synthese: [
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Protection juridique incluse dès la formule Essentielle",
+          "Recherche de fuite incluse sans plafond",
+        ],
+        pointsFaibles: [
+          "Plafond incendie le plus bas du panel (5 000 000 €)",
+          "Perte de loyers limitée à 24 mois",
+          "Franchise RC la plus élevée (5 000 €)",
+        ],
+      },
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Meilleur plafond incendie (8 000 000 €)",
+          "Perte de loyers couverte 36 mois — la plus longue",
+          "Bris de machines avec plafond élevé (500 000 €)",
+          "Franchise RC la plus basse (3 000 €)",
+        ],
+        pointsFaibles: [
+          "Protection juridique non incluse",
+          "Tarif intermédiaire",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Protection juridique avec défense pénale",
+          "Plafond RC élevé (12 000 000 €)",
+        ],
+        pointsFaibles: [
+          "Vol / Vandalisme non inclus en Confort",
+          "Bris de machines non inclus en Confort",
+          "Perte de loyers limitée à 18 mois",
+          "Tarif le plus élevé du panel",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-1", label: "12 immeubles", source: "extracted" },
+      { id: "cp-2", label: "8 450 m² de surface", source: "extracted" },
+      { id: "cp-3", label: "Patrimoine résidentiel + tertiaire", source: "extracted" },
+      { id: "cp-4", label: "Sinistralité 5 ans : 2 sinistres", source: "extracted" },
+      { id: "cp-5", label: "Valeur de reconstruction", source: "missing", hint: "Permet d'ajuster les plafonds incendie et cat nat" },
+      { id: "cp-6", label: "Classement ERP", source: "missing", hint: "Impacte les garanties RC et les conditions spécifiques" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: "L'analyse comparative des trois offres MRI pour le patrimoine de 12 immeubles (8 450 m²) de Foncière Belleville révèle des positionnements distincts. Axa propose la couverture la plus complète avec les meilleurs plafonds incendie (8 000 000 €) et la durée de perte de loyers la plus longue (36 mois), pour un tarif intermédiaire.\n\nGenerali offre un bon rapport qualité-prix en formule Essentielle avec l'avantage de la protection juridique incluse, mais des plafonds plus limités. Allianz est le plus cher et présente des lacunes en formule Confort (vol et bris de machines exclus).\n\nRecommandation : l'offre Axa Étendue offre le meilleur alignement avec un patrimoine immobilier diversifié de cette taille, notamment grâce aux plafonds élevés et à la couverture perte de loyers 36 mois. L'ajout de la protection juridique en option comblerait la seule lacune identifiée.",
+    conditionsFinancieres: {
+      analysisBefore: "Les primes annuelles varient de 34 500 € (Axa Standard) à 44 200 € (Allianz Intégrale), soit un écart de 9 700 €/an. Par immeuble, cela représente entre 2 875 €/an (Axa) et 3 683 €/an (Allianz).",
+      analysisAfter: "Rapporté à la surface, le coût au m² s'étend de 4,08 €/m²/an (Axa Standard) à 5,23 €/m²/an (Allianz Intégrale). Ces tarifs sont cohérents avec le marché pour un patrimoine mixte résidentiel-tertiaire en Île-de-France.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "generali", insurerName: "Generali",
+        pointsForts: ["Protection juridique incluse (20 000 €)", "Recherche de fuite incluse sans plafond", "Bris de machines couvert (300 000 €)", "Tarif compétitif en Essentielle"],
+        pointsFaibles: ["Plafond incendie le plus bas (5 000 000 €)", "Perte de loyers 24 mois seulement", "Franchise RC élevée (5 000 €)"],
+      },
+      {
+        insurerId: "axa", insurerName: "Axa",
+        pointsForts: ["Meilleur plafond incendie (8 000 000 €)", "Perte de loyers 36 mois", "Bris de machines 500 000 €", "Franchise RC la plus basse (3 000 €)", "Vol/vandalisme avec équipements techniques"],
+        pointsFaibles: ["Protection juridique non incluse (option)", "Tarif intermédiaire sur la formule Étendue"],
+      },
+      {
+        insurerId: "allianz", insurerName: "Allianz",
+        pointsForts: ["Protection juridique avec défense pénale (25 000 €)", "Plafond RC élevé (12 000 000 €)", "Honoraires d'expert 12 000 €"],
+        pointsFaibles: ["Tarif le plus élevé (44 200 €/an en Intégrale)", "Vol/vandalisme non inclus en Confort", "Bris de machines non inclus en Confort", "Perte de loyers la plus courte (18 mois)"],
+      },
+    ],
+    garantiesCles: [
+      { label: "Incendie / Explosion", values: { generali: { status: "covered", keyInfo: "5 M€" }, axa: { status: "covered", keyInfo: "8 M€" }, allianz: { status: "covered", keyInfo: "6 M€" } } },
+      { label: "Dégât des eaux", values: { generali: { status: "covered" }, axa: { status: "covered" }, allianz: { status: "covered" } } },
+      { label: "Vol / Vandalisme", values: { generali: { status: "covered" }, axa: { status: "covered" }, allianz: { status: "not_covered", keyInfo: "Option" } } },
+      { label: "RC immeuble", values: { generali: { status: "covered", keyInfo: "10 M€" }, axa: { status: "covered", keyInfo: "15 M€" }, allianz: { status: "covered", keyInfo: "12 M€" } } },
+      { label: "Perte de loyers", values: { generali: { status: "covered", keyInfo: "24 mois" }, axa: { status: "covered", keyInfo: "36 mois" }, allianz: { status: "covered", keyInfo: "18 mois" } } },
+      { label: "Protection juridique", values: { generali: { status: "covered" }, axa: { status: "not_covered" }, allianz: { status: "covered" } } },
+    ],
+  },
+  "cot-10": {
+    hasFullContext: false,
+    synthese: [
+      { insurerId: "axa", pointsForts: ["Bonne couverture des véhicules confiés", "Franchise compétitive sur les VL"], pointsFaibles: ["Pas de garantie vol sur les VL lourds en stock vente", "Capacité simultanée limitée à 60"] },
+      { insurerId: "allianz", pointsForts: ["Capacité simultanée de 80 véhicules", "Vol inclus sur toutes les catégories"], pointsFaibles: ["Franchise la plus élevée (1 200 €)", "Prime annuelle supérieure"] },
+      { insurerId: "generali", pointsForts: ["Meilleure capacité (100 véhicules)", "Franchise la plus basse (800 €)", "Prime la plus compétitive"], pointsFaibles: ["Conditions spécifiques sur le vol (parking clos)", "Pro rata en cas de dépassement capacitaire"] },
+    ],
+    contextPills: [],
+    resumeExecutif: "Comparaison de 3 offres pour l'assurance du stock automobile du Garage Dupont & Fils, couvrant les véhicules confiés (réparation) et les véhicules destinés à la vente.",
+    conditionsFinancieres: { analysisBefore: "Les primes varient de 11 800 € (Generali) à 13 200 € (Allianz).", analysisAfter: "Generali propose le meilleur rapport couverture/prix avec la capacité la plus élevée." },
+    analyseParOffre: [],
+    garantiesCles: [],
+  },
 };
 
 export function getAnalysisData(cotationId: string): AnalysisData | undefined {
@@ -2804,6 +3771,35 @@ const clientProfileMap: Record<string, ClientProfileData> = {
       { id: "b-15", value: "Part employeur à 60% minimum", source: "manual" },
     ],
   },
+  "cot-8": {
+    clientLabel: "Transports Moreau SAS",
+    clientSiren: "52341876900031",
+    besoinsClient: [
+      { id: "b-20", value: "Couverture tous risques pour les poids lourds", source: "ai" },
+      { id: "b-21", value: "Franchise plafonnée à 500 €/sinistre", source: "ai" },
+      { id: "b-22", value: "Assistance 0 km obligatoire (activité transport)", source: "ai" },
+      { id: "b-23", value: "Véhicule de remplacement sous 24h pour les utilitaires", source: "manual" },
+    ],
+  },
+  "cot-9": {
+    clientLabel: "Fonciere Belleville SCI",
+    clientSiren: "78934521600018",
+    besoinsClient: [
+      { id: "b-30", value: "Couverture incendie avec plafond minimum 5 000 000 €", source: "ai" },
+      { id: "b-31", value: "Perte de loyers couverte sur 24 mois minimum", source: "ai" },
+      { id: "b-32", value: "RC immeuble étendue aux parties communes et privatives", source: "ai" },
+      { id: "b-33", value: "Protection juridique incluse (litiges locataires fréquents)", source: "manual" },
+    ],
+  },
+  "cot-10": {
+    clientLabel: "Garage Dupont & Fils SARL",
+    clientSiren: "43215678900042",
+    besoinsClient: [
+      { id: "b-30", value: "Couverture stock véhicules confiés et destinés à la vente", source: "ai" as const },
+      { id: "b-31", value: "Capacité simultanée minimum 80 véhicules", source: "ai" as const },
+      { id: "b-32", value: "Garantie vol obligatoire sur les véhicules en stock vente", source: "manual" as const },
+    ],
+  },
 };
 
 export function getClientProfile(cotationId: string): ClientProfileData | undefined {
@@ -2953,6 +3949,39 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["alan", "malakoff", "generali"],
     createdBy: "Delphine",
     date: "14/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-8",
+    cotationId: "cot-8",
+    client: "Transports Moreau SAS",
+    products: ["Flotte automobile"],
+    principalProduct: "Flotte automobile",
+    insurerIds: ["axa", "allianz", "maif"],
+    createdBy: "Delphine",
+    date: "16/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-9",
+    cotationId: "cot-9",
+    client: "Fonciere Belleville SCI",
+    products: ["MRI"],
+    principalProduct: "MRI",
+    insurerIds: ["generali", "axa", "allianz"],
+    createdBy: "Delphine",
+    date: "17/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-10",
+    cotationId: "cot-10",
+    client: "Garage Dupont & Fils SARL",
+    products: ["Flotte automobile (stock)"],
+    principalProduct: "Flotte automobile (stock)",
+    insurerIds: ["axa", "allianz", "generali"],
+    createdBy: "Delphine",
+    date: "18/04/2026",
     status: "done",
   },
 ];

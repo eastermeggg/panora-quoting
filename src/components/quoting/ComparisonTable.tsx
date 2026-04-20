@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
-import { Check, X as XIcon, ChevronDown, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem, DynamicFieldValues } from "@/data/mock";
+import { Check, X as XIcon, ChevronDown, ChevronUp, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles, Search } from "lucide-react";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem, DynamicFieldValues, FleetEntity } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -27,6 +27,9 @@ interface ComparisonTableProps {
   hasClientProfile?: boolean;
   /** Current dynamic field values for rate computation */
   dynamicFieldValues?: DynamicFieldValues;
+  /** Fleet view mode — controlled by parent for multi-entity products */
+  fleetViewMode?: "garanties" | "tarifs";
+  onFleetViewChange?: (mode: "garanties" | "tarifs") => void;
 }
 
 function cellIdKey(c: CellIdentifier): string {
@@ -202,13 +205,31 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
   const [pricingMode, setPricingMode] = useState<"ht" | "ttc">("ttc");
   const [showAnnual, setShowAnnual] = useState(true);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  // Multi-entity state
+  const multiEntity = comparisonData?.multiEntity;
+  const isMultiEntity = !!multiEntity;
+  // Per-category selected entity
+  const [selectedEntityPerCategory, setSelectedEntityPerCategory] = useState<Record<string, string>>({});
+
+  // Group entities by category
+  const entityCategories = useMemo(() => {
+    if (!multiEntity) return [];
+    const cats: { category: string; entities: FleetEntity[] }[] = [];
+    for (const entity of multiEntity.entities) {
+      const existing = cats.find((c) => c.category === entity.category);
+      if (existing) existing.entities.push(entity);
+      else cats.push({ category: entity.category, entities: [entity] });
+    }
+    return cats;
+  }, [multiEntity]);
   const toggleSection = (key: string) => setCollapsedSections((prev) => {
     const next = new Set(prev);
     if (next.has(key)) next.delete(key); else next.add(key);
@@ -245,7 +266,32 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
     <div className="bg-white border-b border-panora-border">
       {/* Sticky insurer header row */}
       <div className="flex border-b border-panora-border sticky top-0 z-10 bg-white">
-        <div className="w-[250px] shrink-0 border-r border-panora-border" />
+        <div className="w-[250px] shrink-0 border-r border-panora-border flex items-center px-3">
+          {isMultiEntity && (
+            <div className="flex items-center gap-[2px] bg-[#eae7e0] rounded-[6px] p-[2px]">
+              <button
+                onClick={() => onFleetViewChange?.("garanties")}
+                className={`px-1.5 py-[2px] rounded-[6px] text-[12px] font-medium leading-4 transition-colors ${
+                  fleetViewMode === "garanties"
+                    ? "bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-panora-text"
+                    : "text-panora-text-muted"
+                }`}
+              >
+                Garanties
+              </button>
+              <button
+                onClick={() => onFleetViewChange?.("tarifs")}
+                className={`px-1.5 py-[2px] rounded-[6px] text-[12px] font-medium leading-4 transition-colors ${
+                  fleetViewMode === "tarifs"
+                    ? "bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-panora-text"
+                    : "text-panora-text-muted"
+                }`}
+              >
+                Tarifs
+              </button>
+            </div>
+          )}
+        </div>
         {insurers.map((ins) => {
           const offerCount = ins.pricing?.length ?? 0;
           return (
@@ -354,13 +400,28 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         </div>
       ) : null}
 
-      {/* Section: Conditions générales — single Prix row, sub-offers inside cells */}
-      <SectionHeader
-        title="Conditions générales"
+      {/* Section: Synthèse parc auto — both views for multi-entity */}
+      {isMultiEntity && multiEntity && (
+        <FleetSynthesisSection
+          multiEntity={multiEntity}
+          insurers={insurers}
+          colClass={colClass}
+          pricingMode={pricingMode}
+          setPricingMode={setPricingMode}
+          showAnnual={showAnnual}
+          setShowAnnual={setShowAnnual}
+          collapsedSections={collapsedSections}
+          toggleSection={toggleSection}
+        />
+      )}
+
+      {/* Section: Synthèse parc — single Prix row (non-fleet only, fleet uses FleetSynthesisSection) */}
+      {!isMultiEntity && <SectionHeader
+        title={comparisonData?.synthesisLabel ?? "Synthèse parc"}
         collapsed={collapsedSections.has("conditions")}
         onToggle={() => toggleSection("conditions")}
-      />
-      {!collapsedSections.has("conditions") && <div className="flex border-b border-panora-border">
+      />}
+      {!isMultiEntity && !collapsedSections.has("conditions") && <div className="flex border-b border-panora-border">
         {/* Left label */}
         <div className={`w-[250px] shrink-0 px-4 py-4 border-r border-panora-border flex flex-col gap-2.5 relative ${isPriceRowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
           <div className="flex items-center justify-between">
@@ -460,10 +521,170 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
       </div>}
 
       {/* Separator */}
-      <SectionDivider />
+      {!isMultiEntity && <SectionDivider />}
 
-      {/* Guarantee products → sub-groups → rows */}
-      {(() => {
+      {/* Multi-entity tarifs: entity rows with prices per category */}
+      {isMultiEntity && multiEntity && fleetViewMode === "tarifs" && (
+        entityCategories.map((cat, catIdx) => (
+          <div key={cat.category}>
+            {/* Category header */}
+            <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[40px] bg-[#faf8f5]">
+              <span className="text-[14px] font-semibold font-display text-panora-text tracking-[-0.2px]">{cat.category}</span>
+              <span className="text-[12px] text-panora-text-muted">({cat.entities.length})</span>
+            </div>
+            {/* Entity rows with prices */}
+            {cat.entities.map((entity) => (
+              <div key={entity.id} className="flex border-b border-panora-border">
+                <div className="w-[250px] shrink-0 px-4 py-3 border-r border-panora-border flex items-center gap-1.5">
+                  <span className="text-[13px] font-medium text-panora-text truncate">{entity.name ?? entity.label}</span>
+                  {entity.plate && <span className="text-[12px] text-panora-text-muted shrink-0">{entity.plate}</span>}
+                </div>
+                {insurers.map((ins) => {
+                  const monthlyPrice = entity.pricingPerInsurer[ins.id];
+                  if (monthlyPrice === undefined) return (
+                    <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                      <span className="text-[13px] text-panora-text-muted">—</span>
+                    </div>
+                  );
+                  const price = showAnnual ? monthlyPrice * 12 : monthlyPrice;
+                  const period = showAnnual ? "/ an" : "/ mois";
+                  return (
+                    <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                      <span className="text-[13px] font-medium text-panora-text">
+                        {formatEur(price)} <span className="font-normal text-panora-text-muted">{period}</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            <SectionDivider />
+          </div>
+        ))
+      )}
+
+      {/* Multi-entity garanties: guarantee rows repeated per category with entity selector */}
+      {isMultiEntity && multiEntity && fleetViewMode === "garanties" && comparisonData?.products?.[0] && (
+        entityCategories.map((cat, catIdx) => {
+          const catEntities = cat.entities;
+          const selectedId = selectedEntityPerCategory[cat.category] ?? catEntities[0]?.id;
+          const selectedIdx = catEntities.findIndex((e) => e.id === selectedId);
+          const currentEntity = catEntities[selectedIdx >= 0 ? selectedIdx : 0];
+
+          let flatSectionIdx = 0;
+          // Count sections from previous categories to offset correctly
+          for (let ci = 0; ci < catIdx; ci++) {
+            for (const p of comparisonData!.products) {
+              flatSectionIdx += p.subGroups.length;
+            }
+          }
+
+          return (
+            <div key={cat.category}>
+              {/* Category header with entity selector — matches product-level SectionHeader style */}
+              <div className="flex items-center gap-3 px-4 border-b border-panora-border h-[56px] bg-[#faf8f5]">
+                <span className="text-[14px] font-semibold font-display text-panora-text tracking-[-0.2px] shrink-0">{cat.category}</span>
+                <div className="flex items-center gap-2">
+                  {/* Custom dropdown with search */}
+                  <EntitySelector
+                    entities={catEntities}
+                    selectedId={currentEntity?.id ?? catEntities[0]?.id ?? ""}
+                    onSelect={(id) => setSelectedEntityPerCategory((prev) => ({ ...prev, [cat.category]: id }))}
+                  />
+                  {/* Up / down arrows — side by side */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        const prev = Math.max(0, (selectedIdx >= 0 ? selectedIdx : 0) - 1);
+                        setSelectedEntityPerCategory((p) => ({ ...p, [cat.category]: catEntities[prev].id }));
+                      }}
+                      disabled={selectedIdx <= 0}
+                      className="w-[22px] h-[22px] flex items-center justify-center rounded-[4px] disabled:opacity-30 hover:bg-[#eae7e0] transition-colors"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5 text-panora-text-muted" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const next = Math.min(catEntities.length - 1, (selectedIdx >= 0 ? selectedIdx : 0) + 1);
+                        setSelectedEntityPerCategory((p) => ({ ...p, [cat.category]: catEntities[next].id }));
+                      }}
+                      disabled={selectedIdx >= catEntities.length - 1}
+                      className="w-[22px] h-[22px] flex items-center justify-center rounded-[4px] disabled:opacity-30 hover:bg-[#eae7e0] transition-colors"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted" />
+                    </button>
+                  </div>
+                  {/* Counter */}
+                  <span className="text-[11px] text-panora-text-muted">{(selectedIdx >= 0 ? selectedIdx : 0) + 1}/{catEntities.length}</span>
+                </div>
+              </div>
+
+              {/* Guarantee rows for this category */}
+              {comparisonData!.products.map((product, pIdx) => {
+                return product.subGroups.map((subGroup, sgIdx) => {
+                  const sIdx = flatSectionIdx++;
+                  const subKey = `multi-sub-${catIdx}-${pIdx}-${sgIdx}`;
+                  const subCollapsed = collapsedSections.has(subKey);
+                  return (
+                    <div key={`${catIdx}-${pIdx}-${sgIdx}`}>
+                      <SectionHeader
+                        title={subGroup.title}
+                        variant="sub"
+                        collapsed={subCollapsed}
+                        onToggle={() => toggleSection(subKey)}
+                      />
+                      {!subCollapsed && subGroup.rows.map((row, rIdx) => {
+                        const rowKey = `gua-multi-${catIdx}-${sIdx}-${rIdx}`;
+                        const rowActive = isGuaranteeRowActive(sIdx, rIdx);
+                        const rowShown = shownRows.has(rowKey);
+                        return (
+                          <div key={rIdx} className="flex border-b border-panora-border group/row">
+                            <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
+                              <span className="text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text">{row.label}</span>
+                              <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
+                              {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
+                            </div>
+                            {insurers.map((ins) => {
+                              // Apply per-entity overrides if available
+                              const override = currentEntity ? multiEntity?.guaranteeOverrides?.[currentEntity.id]?.[row.label]?.[ins.id] : undefined;
+                              const cell = override ?? row.values[ins.id] ?? { type: "empty" as const };
+                              const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
+                              const isSelected = cellIdEquals(selectedCell, cellId);
+                              const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
+                              const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
+                              return (
+                                <ComparisonCell
+                                  key={ins.id}
+                                  isSelected={isSelected}
+                                  onClick={() => onCellSelect?.(cellId)}
+                                  className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                                >
+                                  {keyDetail ? (
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <CellBadge cell={cell} />
+                                      <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
+                                    </span>
+                                  ) : (
+                                    <CellBadge cell={cell} />
+                                  )}
+                                </ComparisonCell>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                });
+              })}
+              <SectionDivider />
+            </div>
+          );
+        })
+      )}
+
+      {/* Guarantee products → sub-groups → rows (non-fleet standard view) */}
+      {!isMultiEntity && (() => {
         let flatSectionIdx = 0;
         return comparisonData?.products?.map((product, pIdx) => {
           const productKey = `product-${pIdx}`;
@@ -751,8 +972,8 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         );
       })}
 
-      {/* Exclusions section */}
-      {comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
+      {/* Exclusions section — hidden in tarifs mode */}
+      {fleetViewMode !== "tarifs" && comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
         const deterministicRows = exclusionsByOrigin("deterministic");
         const aiRows = exclusionsByOrigin("ai");
         const manualRows = exclusionsByOrigin("manual");
@@ -876,6 +1097,216 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           </div>
         );
       })()}
+
+    </div>
+  );
+}
+
+/** Fleet/MRI synthesis section — "Synthèse parc auto" */
+function FleetSynthesisSection({
+  multiEntity,
+  insurers,
+  colClass,
+  pricingMode,
+  setPricingMode,
+  showAnnual,
+  setShowAnnual,
+  collapsedSections,
+  toggleSection,
+}: {
+  multiEntity: NonNullable<ComparisonData["multiEntity"]>;
+  insurers: InsurerData[];
+  colClass: string;
+  pricingMode: "ht" | "ttc";
+  setPricingMode: (m: "ht" | "ttc") => void;
+  showAnnual: boolean;
+  setShowAnnual: (v: boolean) => void;
+  collapsedSections: Set<string>;
+  toggleSection: (key: string) => void;
+}) {
+  const collapsed = collapsedSections.has("fleet-synthesis");
+  return (
+    <div>
+      <SectionHeader
+        title={`Synthèse parc ${multiEntity.entityLabelPlural}`}
+        variant="product"
+        collapsed={collapsed}
+        onToggle={() => toggleSection("fleet-synthesis")}
+      />
+      {!collapsed && (
+        <div className="flex border-b border-panora-border">
+          <div className="w-[250px] shrink-0 px-4 py-4 border-r border-panora-border flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-[22px] h-[22px] rounded-[4px] bg-[#eae7e0] flex items-center justify-center text-[10px] text-panora-text font-bold">€</span>
+                <span className="text-[13px] font-medium text-panora-text">Prix</span>
+              </div>
+              <div className="flex items-center gap-[2px] bg-[#eae7e0] rounded-[6px] p-[2px]">
+                <button
+                  onClick={() => setPricingMode("ht")}
+                  className={`px-1.5 py-[2px] rounded-[6px] text-[12px] font-medium leading-4 transition-colors ${
+                    pricingMode === "ht"
+                      ? "bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-panora-text"
+                      : "text-panora-text-muted"
+                  }`}
+                >
+                  HT
+                </button>
+                <button
+                  onClick={() => setPricingMode("ttc")}
+                  className={`px-1.5 py-[2px] rounded-[6px] text-[12px] font-medium leading-4 transition-colors ${
+                    pricingMode === "ttc"
+                      ? "bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-panora-text"
+                      : "text-panora-text-muted"
+                  }`}
+                >
+                  TTC
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAnnual(!showAnnual)}
+                className={`relative w-[28px] h-[16px] rounded-full transition-colors ${showAnnual ? "bg-panora-green" : "bg-[#d1d1d1]"}`}
+              >
+                <span className={`absolute top-[2px] w-[12px] h-[12px] rounded-full bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)] transition-transform ${showAnnual ? "left-[14px]" : "left-[2px]"}`} />
+              </button>
+              <span className="text-[13px] text-panora-text-muted">Prix annuel</span>
+            </div>
+          </div>
+
+          {insurers.map((ins) => {
+            const summary = multiEntity.summaryPerInsurer[ins.id];
+            if (!summary) return (
+              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                <span className="text-[13px] text-panora-text-muted">—</span>
+              </div>
+            );
+            const total = showAnnual ? summary.totalAnnual : Math.round(summary.totalAnnual / 12);
+            const avg = showAnnual ? summary.avgPerEntity : Math.round(summary.avgPerEntity / 12);
+            const period = showAnnual ? "/ an" : "/ mois";
+            return (
+              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12px] text-panora-text-muted">Coût total flotte</span>
+                    <span className="text-[13px] font-semibold text-panora-text">{formatEur(total)} <span className="text-panora-text-muted font-normal">{period}</span></span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12px] text-panora-text-muted">Coût moy/{multiEntity.entityLabel.toLowerCase()}</span>
+                    <span className="text-[13px] font-medium text-panora-text">{formatEur(avg)} <span className="text-panora-text-muted font-normal">{period}</span></span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12px] text-panora-text-muted">Nombre de {multiEntity.entityLabelPlural}</span>
+                    <span className="text-[13px] text-panora-text">{summary.entityCount}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12px] text-panora-text-muted">Date du devis</span>
+                    <span className="text-[13px] text-panora-text">{summary.quoteDate}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <SectionDivider />
+    </div>
+  );
+}
+
+function EntitySelector({
+  entities,
+  selectedId,
+  onSelect,
+}: {
+  entities: FleetEntity[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = entities.find((e) => e.id === selectedId) ?? entities[0];
+  const filtered = query
+    ? entities.filter((e) => {
+        const haystack = `${e.name ?? ""} ${e.plate ?? ""} ${e.label}`.toLowerCase();
+        return haystack.includes(query.toLowerCase());
+      })
+    : entities;
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 bg-white border border-[#e2dfd8] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] rounded-[6px] pl-2.5 pr-2 py-[3px] text-[13px] text-panora-text cursor-pointer hover:border-[#d4d2cc] transition-colors"
+      >
+        <span className="font-medium truncate max-w-[140px]">{selected?.name ?? selected?.label}</span>
+        {selected?.plate && <span className="text-panora-text-muted text-[12px]">{selected.plate}</span>}
+        <ChevronDown className={`w-3 h-3 text-panora-text-muted shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-[280px] bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)] z-30 overflow-hidden">
+          {/* Search */}
+          <div className="px-2.5 py-2 border-b border-panora-border">
+            <div className="flex items-center gap-2 bg-[#faf8f5] border border-[#e2dfd8] rounded-[6px] px-2.5 py-[5px]">
+              <Search className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher..."
+                className="flex-1 bg-transparent text-[12px] text-panora-text outline-none placeholder:text-panora-text-muted"
+              />
+            </div>
+          </div>
+          {/* List */}
+          <div className="max-h-[220px] overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-[12px] text-panora-text-muted">Aucun résultat</div>
+            ) : (
+              filtered.map((e) => {
+                const isActive = e.id === selectedId;
+                return (
+                  <button
+                    key={e.id}
+                    onClick={() => { onSelect(e.id); setOpen(false); }}
+                    className={`w-full px-3 py-1.5 flex items-center gap-2 text-left hover:bg-[#faf8f5] transition-colors ${isActive ? "bg-[#ebf3ef]" : ""}`}
+                  >
+                    <span className={`text-[13px] truncate ${isActive ? "font-medium text-panora-text" : "text-panora-text"}`}>{e.name ?? e.label}</span>
+                    {e.plate && <span className="text-[11px] text-panora-text-muted shrink-0">{e.plate}</span>}
+                    {isActive && <Check className="w-3 h-3 text-panora-green ml-auto shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
