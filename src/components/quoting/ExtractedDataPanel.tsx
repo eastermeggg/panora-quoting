@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { ChevronRight, ChevronDown, CheckCircle2 } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { ChevronRight, ChevronDown, CheckCircle2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   ExtractedSection,
@@ -193,28 +193,34 @@ function DataSection({
   );
 }
 
-function FieldRow({
+function InlineInput({
   field,
   onChange,
 }: {
   field: ExtractedField;
   onChange: (value: string) => void;
 }) {
-  const [editing, setEditing] = useState(field.status === "invalid");
+  const [editing, setEditing] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [localValue, setLocalValue] = useState(field.value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editing]);
 
   const handleSave = () => {
     onChange(localValue);
-    if (localValue.trim()) {
-      setEditing(false);
-    }
+    setEditing(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSave();
     if (e.key === "Escape") {
       setLocalValue(field.value);
-      if (field.status === "ok") setEditing(false);
+      setEditing(false);
     }
   };
 
@@ -230,15 +236,100 @@ function FieldRow({
       ? "tel"
       : "text";
 
+  // Editing state: green outer border, inner white field
+  if (editing) {
+    return (
+      <div className="border border-panora-green rounded-lg p-[2px]">
+        <div className="bg-white border border-[#e2dfd8] rounded-[6px] flex items-center gap-1.5 px-2 py-1">
+          <input
+            ref={inputRef}
+            type={inputType}
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyDown}
+            placeholder={field.placeholder || "À compléter.."}
+            className="flex-1 text-[13px] text-panora-text leading-5 outline-none bg-transparent min-w-0"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Missing/warning state: orange border, placeholder text
+  if (isMissing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="border border-[#d4b792] rounded-lg p-[2px] w-full text-left"
+      >
+        <div className="bg-white border border-[#e2dfd8] rounded-[6px] flex items-center gap-1.5 px-2 py-1">
+          <span className="text-[13px] text-panora-text-muted leading-5">
+            À compléter..
+          </span>
+        </div>
+      </button>
+    );
+  }
+
+  // Invalid state: red border, error message
+  if (isInvalid) {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => { setEditing(true); setLocalValue(field.value); }}
+          className="border border-panora-error rounded-lg p-[2px] flex-1 min-w-0 text-left"
+        >
+          <div className="bg-white border border-[#e2dfd8] rounded-[6px] flex items-center gap-1.5 px-2 py-1">
+            <span className="text-[13px] text-panora-text leading-5 truncate">
+              {field.value}
+            </span>
+          </div>
+        </button>
+        {field.error && (
+          <span className="text-[12px] font-medium text-panora-error whitespace-nowrap shrink-0">
+            {field.error}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Filled state: text + pencil icon, hover bg
   return (
-    <div className={cn(
-      "flex items-center px-4 py-2.5 gap-2",
-      isInvalid && "border-l-2 border-l-panora-error"
-    )}>
+    <button
+      onClick={() => { setEditing(true); setLocalValue(field.value); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={cn(
+        "flex items-center gap-1.5 rounded-lg px-2 py-1 transition-colors w-full text-left",
+        hovered && "bg-[rgba(34,32,26,0.05)]"
+      )}
+    >
+      <Pencil className="w-4 h-4 text-panora-text-muted shrink-0" />
+      <span className="text-[13px] text-panora-text leading-5 truncate">
+        {field.value}
+      </span>
+    </button>
+  );
+}
+
+function FieldRow({
+  field,
+  onChange,
+}: {
+  field: ExtractedField;
+  onChange: (value: string) => void;
+}) {
+  const isMissing = field.status === "missing";
+  const isInvalid = field.status === "invalid";
+
+  return (
+    <div className="flex items-center px-4 py-2 gap-3">
       {/* Label */}
       <span
         className={cn(
-          "text-[13px] shrink-0 w-40",
+          "text-[13px] shrink-0 w-40 leading-5",
           isMissing
             ? "text-panora-warning-text"
             : isInvalid
@@ -249,50 +340,9 @@ function FieldRow({
         {field.label}
       </span>
 
-      {/* Value / Input */}
-      <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
-        {isMissing && !editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="border border-panora-border rounded-lg px-2 py-1 text-[13px] text-panora-text-muted hover:bg-panora-drop/50 transition-colors"
-          >
-            À compléter..
-          </button>
-        ) : isInvalid || editing ? (
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <input
-              type={inputType}
-              value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                field.placeholder || (isMissing ? "À compléter..." : undefined)
-              }
-              className={cn(
-                "flex-1 rounded-lg px-2 py-1 text-[13px] outline-none text-right max-w-[180px]",
-                isInvalid
-                  ? "border border-panora-error/50 bg-white focus:ring-2 focus:ring-panora-error/20"
-                  : isMissing
-                  ? "border border-panora-warning/50 bg-white focus:ring-2 focus:ring-panora-warning/20"
-                  : "border border-panora-border bg-white focus:ring-2 focus:ring-panora-green/20"
-              )}
-            />
-            {isInvalid && field.error && (
-              <span className="text-[12px] text-panora-error whitespace-nowrap">
-                {field.error}
-              </span>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-[13px] text-panora-text text-right hover:text-panora-green transition-colors cursor-text"
-            title="Cliquer pour modifier"
-          >
-            {field.value}
-          </button>
-        )}
+      {/* Inline input */}
+      <div className="flex-1 min-w-0">
+        <InlineInput field={field} onChange={onChange} />
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ const mockClients = [
   { id: "techvision", name: "TechVision SAS", siren: "891 234 567", color: "bg-emerald-600" },
   { id: "greenway", name: "Greenway SARL", siren: "345 678 912", color: "bg-amber-600" },
   { id: "blueleaf", name: "BlueLeaf Industries SA", siren: "456 789 123", color: "bg-sky-600" },
+  { id: "marchand", name: "Sophie Marchand", siren: "", color: "bg-rose-600" },
 ];
 
 // Mock products for dropdown
@@ -38,6 +39,7 @@ const mockProducts = [
   { id: "multirisque", name: "Multirisque Bureaux", icon: "shield" },
   { id: "cyber", name: "Cyber Risques", icon: "shield" },
   { id: "dommages", name: "Dommages aux Biens", icon: "shield" },
+  { id: "auto", name: "Auto", icon: "car" },
 ];
 
 /* ── Client Logo (colored square with initial) ── */
@@ -195,7 +197,8 @@ function PreparationContent() {
   };
 
   const handleLaunch = () => {
-    router.push("/quoting/followup?id=cot-1");
+    const followupId = scenarioId === "auto" ? "cot-13" : "cot-1";
+    router.push(`/quoting/followup?id=${followupId}`);
   };
 
   const currentProduct = mockProducts.find((p) => p.id === selectedProduct);

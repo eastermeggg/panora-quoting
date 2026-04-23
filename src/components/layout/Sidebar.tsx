@@ -66,7 +66,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between pr-2 py-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logos/panora-wordmark.svg"
+            src="/logos/panora-wordmark.png"
             alt="Panora"
             className="h-[22px] w-auto"
           />

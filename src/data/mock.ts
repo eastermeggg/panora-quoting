@@ -270,6 +270,25 @@ export type CotationInsurer = {
   bestPrice?: string;
 };
 
+export type FleetMeta = {
+  totalVehicles: number;
+  vp: number;
+  vul: number;
+  pl: number;
+  kmMoyen: string;
+  echeance: string;
+  primeActuelle: string;
+  ratioSP: string;
+};
+
+export type AutoMeta = {
+  marque: string;
+  modele: string;
+  annee: number;
+  usage: string;
+  conducteur: string;
+};
+
 export type Cotation = {
   id: string;
   cotationId: string;
@@ -279,6 +298,8 @@ export type Cotation = {
   createdAt: string;
   createdVia: "email" | "manual";
   insurers: CotationInsurer[];
+  fleetMeta?: FleetMeta;
+  autoMeta?: AutoMeta;
 };
 
 export function getCotationStatus(cotation: Cotation): CotationStatus {
@@ -329,6 +350,50 @@ export const cotationsList: Cotation[] = [
       { id: "axa", name: "Axa", status: "pending" },
       { id: "chubb", name: "Chubb", status: "pending" },
     ],
+  },
+  {
+    id: "cot-12",
+    cotationId: "COT-2026-0175",
+    client: "Transports Leroy SAS",
+    product: "Flotte automobile",
+    productIcon: "car",
+    createdAt: "22/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "pending" },
+      { id: "allianz", name: "Allianz", status: "pending" },
+      { id: "generali", name: "Generali", status: "pending" },
+    ],
+    fleetMeta: {
+      totalVehicles: 37,
+      vp: 18,
+      vul: 14,
+      pl: 5,
+      kmMoyen: "22 000 km/an",
+      echeance: "01/07/2026",
+      primeActuelle: "38 400 €",
+      ratioSP: "58 %",
+    },
+  },
+  {
+    id: "cot-13",
+    cotationId: "COT-2026-0178",
+    client: "Sophie Marchand",
+    product: "Auto",
+    productIcon: "car",
+    createdAt: "23/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "pending" },
+      { id: "maif", name: "MAIF", status: "pending" },
+    ],
+    autoMeta: {
+      marque: "Peugeot",
+      modele: "3008 GT",
+      annee: 2024,
+      usage: "Trajets domicile-travail",
+      conducteur: "Sophie Marchand",
+    },
   },
   {
     id: "cot-4",
@@ -1194,6 +1259,94 @@ const cotationFollowupMap: Record<string, FollowupData> = {
           { label: "Date d'effet", value: "01/06/2026" },
         ],
         allSteps: makeSteps("Chubb", 7),
+      },
+    ],
+  },
+  "cot-13": {
+    cotation: cotationsList[4],
+    projectName: "Auto Marchand — Peugeot 3008 GT",
+    emailSubject: "Demande de devis auto - Peugeot 3008",
+    scenarioId: "auto",
+    attachments: [
+      { name: "Carte_Grise_3008.pdf", size: "320 Ko", fieldsExtracted: 4 },
+      { name: "Releve_Info_Macif.pdf", size: "180 Ko", fieldsExtracted: 5 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "action_required", reference: "AXA-AU-4401",
+        documents: [
+          "Devis_Axa_Auto_Marchand.pdf",
+          "Conditions_Generales_Auto_Axa.pdf",
+          "Tableau_Garanties_Auto_Axa.pdf",
+        ],
+        pricing: [
+          { formula: "Tiers", details: [{ label: "Prime annuelle", value: "420,00 €/an" }, { label: "Prime mensuelle", value: "35,00 €" }] },
+          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "580,00 €/an" }, { label: "Prime mensuelle", value: "48,33 €" }] },
+          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "780,00 €/an" }, { label: "Prime mensuelle", value: "65,00 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-AU-4401" },
+          { label: "Client", value: "Sophie Marchand" },
+          { label: "Produit", value: "Auto individuelle" },
+          { label: "Véhicule", value: "Peugeot 3008 GT (2024)" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Bonus/malus", value: "0.50" },
+        ],
+        alertMessage: "Code de vérification requis",
+        alertDescription: "AXA demande un code à 6 chiffres envoyé par SMS au 06 •• •• 17.",
+        twoFaAction: {
+          type: "2fa_otp",
+          title: "Code de vérification requis",
+          desc: "AXA demande un code à 6 chiffres envoyé par SMS au 06 •• •• 17.",
+          portalName: "AXA",
+          channel: "sms",
+          codeLength: 6,
+          canResend: true,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          interruptId: "int-auto-axa-otp",
+        },
+        allSteps: [
+          { date: "23/04/26 - 09h50", title: "Lancement de la cotation", description: "Cotation auto pour Sophie Marchand — Peugeot 3008 GT", status: "success" },
+          { date: "23/04/26 - 09h51", title: "Connexion à l'extranet Axa", description: "Authentification réussie", status: "success" },
+          { date: "23/04/26 - 09h52", title: "Saisie des informations conducteur", description: "7 champs remplis — nom, date de naissance, permis, CRM…", status: "success" },
+          { date: "23/04/26 - 09h53", title: "Saisie des informations véhicule", description: "Peugeot 3008 GT — FG-456-HJ", status: "success" },
+          { date: "23/04/26 - 09h54", title: "Upload des documents", description: "Carte grise et relevé d'information transmis", status: "success" },
+          { date: "23/04/26 - 09h55", title: "Vérification de sécurité", description: "Code OTP requis — en attente de validation", status: "in_progress" },
+        ],
+        initialVisibleSteps: 4,
+      },
+      {
+        id: "maif", name: "MAIF", logo: "🟢", logoColor: "#00A651", hasCode: true,
+        status: "in_progress", reference: "MAIF-AU-7701",
+        documents: [
+          "Devis_MAIF_Auto_Marchand.pdf",
+          "Conditions_Generales_Auto_MAIF.pdf",
+        ],
+        pricing: [
+          { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "390,00 €/an" }, { label: "Prime mensuelle", value: "32,50 €" }] },
+          { formula: "Confort", details: [{ label: "Prime annuelle", value: "540,00 €/an" }, { label: "Prime mensuelle", value: "45,00 €" }] },
+          { formula: "Sérénité", details: [{ label: "Prime annuelle", value: "710,00 €/an" }, { label: "Prime mensuelle", value: "59,17 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "MAIF-AU-7701" },
+          { label: "Client", value: "Sophie Marchand" },
+          { label: "Produit", value: "Auto individuelle" },
+          { label: "Véhicule", value: "Peugeot 3008 GT (2024)" },
+          { label: "Date d'effet", value: "15/06/2026" },
+          { label: "Bonus/malus", value: "0.50" },
+        ],
+        allSteps: [
+          { date: "23/04/26 - 09h50", title: "Lancement de la cotation", description: "Cotation auto pour Sophie Marchand — Peugeot 3008 GT", status: "success" },
+          { date: "23/04/26 - 09h52", title: "Connexion à l'extranet MAIF", description: "Authentification réussie", status: "success" },
+          { date: "23/04/26 - 09h54", title: "Saisie des informations conducteur", description: "7 champs remplis — nom, permis, CRM…", status: "success" },
+          { date: "23/04/26 - 09h56", title: "Saisie des informations véhicule", description: "Peugeot 3008 GT — FG-456-HJ", status: "success" },
+          { date: "23/04/26 - 09h58", title: "Upload des documents", description: "Carte grise et relevé d'information transmis", status: "success" },
+          { date: "23/04/26 - 10h00", title: "Demande de tarification", description: "Soumission du dossier complet", status: "success" },
+          { date: "23/04/26 - 10h02", title: "Attente retour tarifs", description: "Traitement en cours par l'extranet MAIF…", status: "in_progress" },
+          { date: "23/04/26 - 10h05", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
+        ],
+        initialVisibleSteps: 2,
       },
     ],
   },
