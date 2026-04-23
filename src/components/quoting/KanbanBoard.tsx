@@ -75,6 +75,112 @@ function CardFooter({
   );
 }
 
+/* ── Single-vehicle auto preparation card ── */
+function SingleAutoPreparationCard({ cotation }: { cotation: Cotation }) {
+  const auto = cotation.autoMeta!;
+  const href = `/quoting/preparation?id=${cotation.id}&scenario=auto`;
+
+  return (
+    <Link href={href}>
+      <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+        {/* Title + client */}
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+            {cotation.product} — {auto.conducteur.split(" ")[0]}
+          </h3>
+          <span className="text-[13px] text-panora-text-muted leading-5">
+            {cotation.client}
+          </span>
+        </div>
+
+        {/* Insurers */}
+        <div className="flex items-center gap-2.5">
+          {cotation.insurers.map((insurer) => (
+            <div key={insurer.id} className="flex items-center gap-[7px]">
+              <InsurerLogo insurerId={insurer.id} name={insurer.name} size="sm" />
+              <span className="text-[13px] text-panora-text-muted leading-5">
+                {insurer.name}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px bg-[#d9d9d9]" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#85827b]">
+            {cotation.cotationId} - {cotation.createdAt}
+          </span>
+          <span className="text-[13px] font-medium text-panora-green">
+            Préparer et lancer →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/* ── Fleet preparation card ── */
+function FleetPreparationCard({ cotation }: { cotation: Cotation }) {
+  const fleet = cotation.fleetMeta!;
+  const href = `/quoting/preparation?id=${cotation.id}&scenario=flotte-auto`;
+
+  return (
+    <Link href={href}>
+      <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+        {/* Title + client */}
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+            {cotation.product} {cotation.client.split(" ")[0]} 2026
+          </h3>
+          <div className="flex items-center gap-[9px]">
+            <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
+              <Building2 className="w-2 h-2 text-[#85827b]" />
+            </div>
+            <span className="text-[13px] text-panora-text-muted leading-5 truncate">
+              {cotation.client}
+            </span>
+          </div>
+        </div>
+
+        {/* Product badge */}
+        <div className="flex items-start">
+          <span className="inline-flex items-center h-5 px-2 rounded-[6px] bg-panora-secondary text-[12px] font-medium text-panora-text-muted">
+            {cotation.product}
+          </span>
+        </div>
+
+        {/* Insurers */}
+        <div className="flex items-center gap-2.5">
+          {cotation.insurers.map((insurer) => (
+            <div key={insurer.id} className="flex items-center gap-[7px]">
+              <InsurerLogo insurerId={insurer.id} name={insurer.name} size="sm" />
+              <span className="text-[13px] text-panora-text-muted leading-5">
+                {insurer.name}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px bg-[#d9d9d9]" />
+
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#85827b]">
+            {cotation.cotationId} - {cotation.createdAt}
+          </span>
+          <span className="text-[13px] font-medium text-panora-green">
+            Préparer et lancer →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 /* ── Cotation card ── */
 function CotationCard({
   cotation,
@@ -83,6 +189,16 @@ function CotationCard({
   cotation: Cotation;
   status: CotationStatus;
 }) {
+  // Use specialized cards for automobile products in preparation
+  if (status === "preparation" && cotation.productIcon === "car") {
+    if (cotation.autoMeta) {
+      return <SingleAutoPreparationCard cotation={cotation} />;
+    }
+    if (cotation.fleetMeta) {
+      return <FleetPreparationCard cotation={cotation} />;
+    }
+  }
+
   const href =
     status === "preparation"
       ? `/quoting/preparation?id=${cotation.id}`

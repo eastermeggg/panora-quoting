@@ -326,7 +326,7 @@ function InProgressContent({
         <LiveAgentTimeline
           allSteps={insurer.allSteps}
           initialVisible={insurer.initialVisibleSteps ?? 3}
-          stepInterval={2500}
+          stepInterval={5000}
           onComplete={onComplete}
         />
       </div>

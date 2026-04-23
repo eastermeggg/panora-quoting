@@ -375,6 +375,90 @@ const rcProExtractedSections: ExtractedSection[] = [
   },
 ];
 
+// ─── Auto individuelle ────────────────────────────────────────────────
+
+const autoEmailThread: EmailMessage[] = [
+  {
+    id: "auto-1",
+    from: "Sophie Marchand",
+    fromName: "Sophie Marchand",
+    fromEmail: "s.marchand@gmail.com",
+    to: "cotation+a7f3b2@panora.co",
+    date: "23/04/2026 à 09:40",
+    subject: "Demande de devis auto - Peugeot 3008",
+    body: `Bonjour,
+
+Je souhaite obtenir un devis pour assurer mon véhicule :
+- Peugeot 3008 GT, année 2024
+- Immatriculation : FG-456-HJ
+- Mise en circulation : 15/03/2024
+- Kilométrage actuel : 18 000 km, environ 15 000 km/an
+- Usage : trajets domicile-travail (25 km aller)
+- Stationnement : garage fermé
+
+Me concernant :
+- Née le 12/07/1988
+- Permis obtenu le 20/09/2006
+- Bonus/malus : 0.50 depuis le 01/01/2023
+- Cadre dans le secteur bancaire
+- Aucun sinistre sur les 24 derniers mois
+- Jamais résiliée par un assureur
+
+Mon contrat actuel chez Macif arrive à échéance le 15/06/2026.
+Je souhaite une prise d'effet au 15/06/2026.
+
+Cordialement,
+Sophie Marchand`,
+    attachments: [
+      { name: "Carte_Grise_3008.pdf", size: "320 Ko", fieldsExtracted: 4 },
+      { name: "Releve_Info_Macif.pdf", size: "180 Ko", fieldsExtracted: 5 },
+    ],
+  },
+];
+
+const autoExtractedSections: ExtractedSection[] = [
+  {
+    key: "conducteur",
+    label: "Informations conducteur",
+    status: "incomplete",
+    missingCount: 1,
+    fields: [
+      { key: "nom_prenom", label: "Nom et prénom", value: "Sophie Marchand", type: "text", status: "ok" },
+      { key: "date_naissance", label: "Date de naissance", value: "12/07/1988", type: "date", status: "ok" },
+      { key: "date_permis", label: "Date du permis", value: "20/09/2006", type: "date", status: "ok" },
+      { key: "crm", label: "Bonus/malus (CRM)", value: "0.50", type: "text", status: "ok" },
+      { key: "date_bonus_50", label: "Date bonus 0,50", value: "01/01/2023", type: "date", status: "ok" },
+      { key: "situation_pro", label: "Situation pro.", value: "Cadre — secteur bancaire", type: "text", status: "ok" },
+      { key: "sinistres_24m", label: "Sinistres (24 mois)", value: "Aucun", type: "text", status: "ok" },
+      { key: "resiliation", label: "Résiliation par assureur", value: "", type: "text", status: "missing", placeholder: "Oui / Non" },
+    ],
+  },
+  {
+    key: "vehicule",
+    label: "Informations véhicule",
+    status: "complete",
+    fields: [
+      { key: "immatriculation", label: "Plaque d'immatriculation", value: "FG-456-HJ", type: "text", status: "ok" },
+      { key: "marque_modele", label: "Marque / Modèle", value: "Peugeot 3008 GT", type: "text", status: "ok" },
+      { key: "annee", label: "Année", value: "2024", type: "number", status: "ok" },
+      { key: "date_mec", label: "Date de 1ère mise en circulation", value: "15/03/2024", type: "date", status: "ok" },
+      { key: "usage", label: "Usage du véhicule", value: "Trajets domicile-travail", type: "text", status: "ok" },
+      { key: "km_annuel", label: "Kilométrage annuel estimé", value: "15 000 km/an", type: "text", status: "ok" },
+      { key: "stationnement", label: "Mode de stationnement", value: "Garage fermé", type: "text", status: "ok" },
+    ],
+  },
+  {
+    key: "contrat",
+    label: "Informations contrat",
+    status: "complete",
+    fields: [
+      { key: "date_effet", label: "Date d'effet souhaitée", value: "15/06/2026", type: "date", status: "ok" },
+      { key: "assureur_precedent", label: "Assureur précédent", value: "Macif", type: "text", status: "ok" },
+      { key: "echeance", label: "Date d'échéance", value: "15/06/2026", type: "date", status: "ok" },
+    ],
+  },
+];
+
 // ─── Scenario definitions ──────────────────────────────────────────────
 
 export const scenarios: Record<string, Scenario> = {
@@ -400,6 +484,26 @@ export const scenarios: Record<string, Scenario> = {
     ],
     defaultSelectedInsurers: ["axa", "allianz"],
     defaultProjectName: "Flotte Auto ACME 2026",
+  },
+  "auto": {
+    id: "auto",
+    label: "Auto individuelle",
+    description: "Devis auto pour un véhicule particulier. Email entrant avec carte grise et relevé d'information.",
+    product: "Auto",
+    productIcon: "car",
+    client: "Sophie Marchand",
+    clientSiren: "",
+    cotationId: "COT-2026-0178",
+    emailThread: autoEmailThread,
+    extractedSections: autoExtractedSections,
+    availableInsurers: [
+      { id: "axa", name: "Axa", logo: "🔴", hasCode: true },
+      { id: "maif", name: "MAIF", logo: "🟢", hasCode: true },
+      { id: "groupama", name: "Groupama", logo: "🟢", hasCode: true },
+      { id: "mma", name: "MMA", logo: "🔶", hasCode: true },
+    ],
+    defaultSelectedInsurers: ["axa", "maif"],
+    defaultProjectName: "Auto Marchand 2026",
   },
   "rc-pro": {
     id: "rc-pro",
