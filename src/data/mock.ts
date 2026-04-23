@@ -427,6 +427,20 @@ export const cotationsList: Cotation[] = [
       { id: "generali", name: "Generali", status: "completed", reference: "GEN-FS-2205", bestPrice: "11 800,00 €/an" },
     ],
   },
+  {
+    id: "cot-11",
+    cotationId: "COT-2026-0170",
+    client: "BTP Horizon SAS",
+    product: "Accident du Travail",
+    productIcon: "shield",
+    createdAt: "20/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-AT-7701", bestPrice: "0,95%" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-AT-8802", bestPrice: "1,02%" },
+      { id: "swisslife", name: "Swiss Life", status: "completed", reference: "SWL-AT-3305", bestPrice: "0,88%" },
+    ],
+  },
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -1044,6 +1058,67 @@ const cotationFollowupMap: Record<string, FollowupData> = {
       },
     ],
   },
+  "cot-11": {
+    cotation: cotationsList[10],
+    projectName: "Accident du Travail BTP Horizon 2026",
+    emailSubject: "Cotation Accident du Travail - BTP Horizon SAS",
+    scenarioId: "accident-travail",
+    attachments: [
+      { name: "Kbis_BTP_Horizon.pdf", size: "180 Ko", fieldsExtracted: 3 },
+      { name: "Masse_Salariale_2025_BTP_Horizon.pdf", size: "720 Ko", fieldsExtracted: 5 },
+      { name: "Registre_Personnel_BTP_Horizon.pdf", size: "1.1 Mo", fieldsExtracted: 4 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-AT-7701",
+        documents: ["Devis_Axa_AT_BTP_Horizon.pdf", "Conditions_Generales_AT_Axa.pdf"],
+        pricing: [
+          { formula: "Formule BTP Essentielle", details: [{ label: "Taux global", value: "0,95 % de la MS" }, { label: "Prime minimum", value: "1 200,00 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-AT-7701" },
+          { label: "Client", value: "BTP Horizon SAS" },
+          { label: "Produit", value: "Accident du Travail" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "BTP — IDCC 1597" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-AT-8802",
+        documents: ["Devis_Generali_AT_BTP_Horizon.pdf", "Tableau_Garanties_AT_Generali.pdf"],
+        pricing: [
+          { formula: "Formule AT Confort", details: [{ label: "Taux global", value: "1,02 % de la MS" }, { label: "Prime minimum", value: "1 500,00 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-AT-8802" },
+          { label: "Client", value: "BTP Horizon SAS" },
+          { label: "Produit", value: "Accident du Travail" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "BTP — IDCC 1597" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+      {
+        id: "swisslife", name: "Swiss Life", logo: "🟢", logoColor: "#009A44", hasCode: true,
+        status: "completed", reference: "SWL-AT-3305",
+        documents: ["Devis_SwissLife_AT_BTP_Horizon.pdf"],
+        pricing: [
+          { formula: "Formule AT Pro", details: [{ label: "Taux global", value: "0,88 % de la MS" }, { label: "Prime minimum", value: "950,00 €" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "SWL-AT-3305" },
+          { label: "Client", value: "BTP Horizon SAS" },
+          { label: "Produit", value: "Accident du Travail" },
+          { label: "Date d'effet", value: "01/07/2026" },
+          { label: "Convention", value: "BTP — IDCC 1597" },
+        ],
+        allSteps: makeSteps("Swiss Life", 7),
+      },
+    ],
+  },
 };
 
 export function getFollowupData(cotationId: string): FollowupData | undefined {
@@ -1118,6 +1193,8 @@ export type GuaranteeSubGroup = {
 export type GuaranteeProduct = {
   title: string;
   subGroups: GuaranteeSubGroup[];
+  /** "definitions" renders full-width rows (label + description) instead of per-insurer columns */
+  layout?: "definitions";
 };
 
 /** @deprecated — kept for migration, use GuaranteeProduct */
@@ -2924,6 +3001,292 @@ const comparisonDataMap: Record<string, ComparisonData> = {
       },
     ],
   },
+  "cot-11": {
+    products: [
+      {
+        title: "Remarques",
+        subGroups: [
+          {
+            title: "",
+            rows: [
+              {
+                label: "Inspection exigée",
+                values: { axa: { type: "cross" }, generali: { type: "check" }, swisslife: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Inspection exigée", "axa", "Axa", false, "Pas d'inspection préalable exigée par Axa.", [], defaultSources),
+                  generali: makeDetail("Inspection exigée", "generali", "Generali", true, "Inspection des locaux et conditions de travail requise avant mise en place du contrat.", [{ id: "sl-1", label: "Délai", value: "Sous 30 jours" }], defaultSources),
+                  swisslife: makeDetail("Inspection exigée", "swisslife", "Swiss Life", false, "Pas d'inspection préalable.", [], defaultSources),
+                },
+              },
+              {
+                label: "Abandon de recours contre les filiales",
+                values: { axa: { type: "cross" }, generali: { type: "cross" }, swisslife: { type: "check" } },
+                details: {
+                  axa: makeDetail("Abandon de recours", "axa", "Axa", false, "Recours contre les filiales maintenu.", [], defaultSources),
+                  generali: makeDetail("Abandon de recours", "generali", "Generali", false, "Recours maintenu.", [], defaultSources),
+                  swisslife: makeDetail("Abandon de recours", "swisslife", "Swiss Life", true, "Abandon de recours contre les filiales et sociétés apparentées.", [], defaultSources),
+                },
+              },
+              {
+                label: "Clauses Group Casier",
+                values: { axa: { type: "cross" }, generali: { type: "cross" }, swisslife: { type: "cross" } },
+                details: {
+                  axa: makeDetail("Clauses Group Casier", "axa", "Axa", false, "Pas de clause Group Casier.", [], defaultSources),
+                  generali: makeDetail("Clauses Group Casier", "generali", "Generali", false, "Non applicable.", [], defaultSources),
+                  swisslife: makeDetail("Clauses Group Casier", "swisslife", "Swiss Life", false, "Non applicable.", [], defaultSources),
+                },
+              },
+              {
+                label: "Durée de la police",
+                values: { axa: { type: "text", value: "1 an — tacite reconduction" }, generali: { type: "text", value: "3 ans ferme" }, swisslife: { type: "text", value: "1 an — tacite reconduction" } },
+                details: {
+                  axa: makeDetail("Durée de la police", "axa", "Axa", true, "Contrat annuel renouvelable par tacite reconduction.", [{ id: "sl-1", label: "Préavis", value: "2 mois" }], defaultSources),
+                  generali: makeDetail("Durée de la police", "generali", "Generali", true, "Engagement ferme de 3 ans avec tarif garanti.", [{ id: "sl-1", label: "Durée", value: "3 ans" }, { id: "sl-2", label: "Avantage", value: "Tarif garanti" }], defaultSources),
+                  swisslife: makeDetail("Durée de la police", "swisslife", "Swiss Life", true, "Contrat annuel avec tacite reconduction.", [{ id: "sl-1", label: "Préavis", value: "3 mois" }], defaultSources),
+                },
+              },
+              {
+                label: "Excédent",
+                values: { axa: { type: "text", value: "1x le max. légal" }, generali: { type: "text", value: "1,5x le max. légal" }, swisslife: { type: "text", value: "1x le max. légal" } },
+                details: {
+                  axa: makeDetail("Excédent", "axa", "Axa", true, "Plafond global d'excédent toutes catégories.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                  generali: makeDetail("Excédent", "generali", "Generali", true, "Plafond d'excédent relevé sur l'ensemble des catégories.", [{ id: "sl-1", label: "Plafond", value: "1,5x le maximum légal" }], defaultSources),
+                  swisslife: makeDetail("Excédent", "swisslife", "Swiss Life", true, "Plafond standard toutes catégories.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                },
+              },
+              {
+                label: "Remarques",
+                values: { axa: { type: "text", value: "RAS" }, generali: { type: "text", value: "Tarif garanti 3 ans" }, swisslife: { type: "text", value: "RAS" } },
+                details: {
+                  axa: makeDetail("Remarques", "axa", "Axa", true, "Aucune remarque particulière.", [], defaultSources),
+                  generali: makeDetail("Remarques", "generali", "Generali", true, "Tarif garanti sur la durée du contrat de 3 ans. Révision possible en cas de sinistralité exceptionnelle.", [{ id: "sl-1", label: "Condition", value: "Sinistralité < 80% du ratio S/P" }], defaultSources),
+                  swisslife: makeDetail("Remarques", "swisslife", "Swiss Life", true, "Aucune remarque particulière.", [], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Définitions garanties supplémentaires",
+        layout: "definitions",
+        subGroups: [
+          {
+            title: "",
+            rows: [
+              {
+                label: "Excédent",
+                values: { _definition: { type: "text", value: "L'assurance accidents du travail prévoit une indemnisation basée sur le maximum légal. En cas d'accident du travail, un salarié dont la rémunération est supérieure à ce plafond subira une perte de revenu. L'assurance excédentaire vous permet de souscrire une assurance qui dépasse le plafond légal pour tous vos salariés ou seulement ce qui vous permet de fixer votre propre plafond." } },
+              },
+              {
+                label: "Accidents vie privée",
+                values: { _definition: { type: "text", value: "L'assurance accidents du travail de base couvre les accidents du travail. Avec cette garantie étendue, vos collaborateurs sont également protégés financièrement à la suite d'un accident survenu dans le cadre de leur vie privée." } },
+              },
+              {
+                label: "Salaire garantie",
+                values: { _definition: { type: "text", value: "En cas d'accident du travail, l'assurance accidents du travail intervient, mais pas pour la totalité des 100 %. L'assurance salaire garanti prend en charge la différence complet de l'employé et ce que l'assureur accidents du travail rembourse. De cette manière, vous n'aurez pas de frais supplémentaires après un accident du travail." } },
+              },
+              {
+                label: "Garanties supplémentaires",
+                values: { _definition: { type: "text", value: "Travail à domicile, missions temporaires à l'étranger, partenaires cohabitants, activités sportives, culturelles et de loisirs organisées par l'employeur." } },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-at-d1",
+        label: "Faute inexcusable de l'employeur",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, generali: { type: "exclu" }, swisslife: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute inexcusable de l'employeur", "axa", "Axa", false, "deterministic", "excl-at-d1", "Exclusion des conséquences d'une faute inexcusable reconnue de l'employeur.", [], defaultSources),
+          generali: makeExclusionDetail("Faute inexcusable de l'employeur", "generali", "Generali", false, "deterministic", "excl-at-d1", "Faute inexcusable exclue conformément au Code de la Sécurité sociale.", [], defaultSources),
+          swisslife: makeExclusionDetail("Faute inexcusable de l'employeur", "swisslife", "Swiss Life", false, "deterministic", "excl-at-d1", "Exclusion standard faute inexcusable.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-at-d2",
+        label: "Accident de trajet hors itinéraire habituel",
+        origin: "ai",
+        values: { axa: { type: "inclus" }, generali: { type: "exclu-text", value: "Sous conditions" }, swisslife: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Accident de trajet hors itinéraire", "axa", "Axa", true, "ai", "excl-at-d2", "Couverture étendue aux détours raisonnables.", [], defaultSources),
+          generali: makeExclusionDetail("Accident de trajet hors itinéraire", "generali", "Generali", false, "ai", "excl-at-d2", "Couvert uniquement si le détour est justifié par un motif professionnel ou familial.", [{ id: "sl-1", label: "Condition", value: "Motif légitime requis" }], defaultSources),
+          swisslife: makeExclusionDetail("Accident de trajet hors itinéraire", "swisslife", "Swiss Life", false, "ai", "excl-at-d2", "Seul l'itinéraire habituel domicile-travail est couvert.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-at-a1",
+        label: "Activités sportives pendant le temps de travail",
+        origin: "ai",
+        values: { axa: { type: "inclus" }, generali: { type: "inclus" }, swisslife: { type: "exclu-text", value: "Hors sports à risque" } },
+        details: {
+          axa: makeExclusionDetail("Activités sportives pendant le temps de travail", "axa", "Axa", true, "ai", "excl-at-a1", "Team building et activités sportives organisées par l'employeur couvertes.", [], defaultSources),
+          generali: makeExclusionDetail("Activités sportives pendant le temps de travail", "generali", "Generali", true, "ai", "excl-at-a1", "Activités organisées dans le cadre professionnel incluses.", [], defaultSources),
+          swisslife: makeExclusionDetail("Activités sportives pendant le temps de travail", "swisslife", "Swiss Life", false, "ai", "excl-at-a1", "Sports à risque exclus même dans un cadre professionnel.", [{ id: "sl-1", label: "Exemples", value: "Escalade, parapente, sports mécaniques" }], defaultSources),
+        },
+      },
+    ],
+    rateProducts: [
+      {
+        title: "Risque assuré",
+        subGroups: [
+          {
+            title: "Ouvriers",
+            rows: [
+              {
+                label: "Loi AT (chemin de travail inclus)",
+                dynamicFieldId: "ms-ouvriers-loi",
+                rates: { axa: 0.0095, generali: 0.0102, swisslife: 0.0088 },
+                details: {
+                  axa: makeDetail("Loi AT (chemin de travail inclus)", "axa", "Axa", true, "Couverture légale obligatoire des accidents du travail et de trajet pour les ouvriers.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet domicile-travail" }], defaultSources),
+                  generali: makeDetail("Loi AT (chemin de travail inclus)", "generali", "Generali", true, "Couverture AT légale intégrale, chemin de travail inclus.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  swisslife: makeDetail("Loi AT (chemin de travail inclus)", "swisslife", "Swiss Life", true, "Assurance AT de base conforme aux obligations légales.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet habituel" }], defaultSources),
+                },
+              },
+              {
+                label: "Excédent",
+                dynamicFieldId: "ms-ouvriers-excedent",
+                rates: { axa: 0.0018, generali: 0.0024, swisslife: 0.0015 },
+                details: {
+                  axa: makeDetail("Excédent — Ouvriers", "axa", "Axa", true, "L'assurance AT prévoit une indemnisation basée sur une perte de revenu. L'excédent permet de fixer un plafond supérieur au maximum légal.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                  generali: makeDetail("Excédent — Ouvriers", "generali", "Generali", true, "Plafond d'indemnisation relevé à 1,5 fois le maximum légal pour les ouvriers.", [{ id: "sl-1", label: "Plafond", value: "1,5x le maximum légal" }], defaultSources),
+                  swisslife: makeDetail("Excédent — Ouvriers", "swisslife", "Swiss Life", true, "Indemnisation plafonnée au maximum légal standard.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                },
+              },
+              {
+                label: "Salaire garantie",
+                dynamicFieldId: "ms-ouvriers-loi",
+                rates: { axa: 0.0008, generali: 0.0008, swisslife: 0.0005 },
+                details: {
+                  axa: makeDetail("Salaire garantie — Ouvriers", "axa", "Axa", true, "En cas d'AT, maintien de salaire garanti pour les ouvriers.", [{ id: "sl-1", label: "Durée", value: "30 jours" }, { id: "sl-2", label: "Taux", value: "100% du salaire" }], defaultSources),
+                  generali: makeDetail("Salaire garantie — Ouvriers", "generali", "Generali", true, "Maintien de salaire intégral pendant 30 jours pour les ouvriers.", [{ id: "sl-1", label: "Durée", value: "30 jours" }, { id: "sl-2", label: "Taux", value: "100% du salaire" }], defaultSources),
+                  swisslife: makeDetail("Salaire garantie — Ouvriers", "swisslife", "Swiss Life", true, "Maintien de salaire limité à 14 jours calendaires.", [{ id: "sl-1", label: "Durée", value: "14 jours" }, { id: "sl-2", label: "Taux", value: "100% du salaire" }], defaultSources),
+                },
+              },
+              {
+                label: "Accidents vie privée",
+                dynamicFieldId: "ms-ouvriers-loi",
+                rates: { generali: 0.0012 },
+                details: {
+                  axa: makeDetail("Accidents vie privée — Ouvriers", "axa", "Axa", false, "Non inclus dans cette formule.", [], defaultSources),
+                  generali: makeDetail("Accidents vie privée — Ouvriers", "generali", "Generali", true, "Extension couvrant les accidents survenant dans le cadre de la vie privée des ouvriers.", [{ id: "sl-1", label: "Couverture", value: "24h/24, 7j/7" }], defaultSources),
+                  swisslife: makeDetail("Accidents vie privée — Ouvriers", "swisslife", "Swiss Life", false, "Non inclus. Option disponible en supplément.", [], defaultSources),
+                },
+              },
+              {
+                label: "Frais médicaux excédant le max. légal",
+                dynamicFieldId: "ms-ouvriers-loi",
+                rates: { axa: 0.0004, generali: 0.0005 },
+                details: {
+                  axa: makeDetail("Frais médicaux excédant le max. légal — Ouvriers", "axa", "Axa", true, "Prise en charge des frais médicaux au-delà du plafond légal.", [{ id: "sl-1", label: "Base", value: "Frais réels" }], defaultSources),
+                  generali: makeDetail("Frais médicaux excédant le max. légal — Ouvriers", "generali", "Generali", true, "Couverture intégrale des frais médicaux dépassant le barème légal.", [{ id: "sl-1", label: "Base", value: "Frais réels" }, { id: "sl-2", label: "Plafond", value: "Sans plafond" }], defaultSources),
+                  swisslife: makeDetail("Frais médicaux excédant le max. légal — Ouvriers", "swisslife", "Swiss Life", false, "Frais médicaux couverts uniquement dans la limite du barème légal.", [], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Employés",
+            rows: [
+              {
+                label: "Loi AT (chemin de travail inclus)",
+                dynamicFieldId: "ms-employes-loi",
+                rates: { axa: 0.0052, generali: 0.0058, swisslife: 0.0048 },
+                details: {
+                  axa: makeDetail("Loi AT — Employés", "axa", "Axa", true, "Couverture AT légale pour les employés, chemin de travail inclus.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  generali: makeDetail("Loi AT — Employés", "generali", "Generali", true, "Assurance AT légale intégrale pour les employés.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  swisslife: makeDetail("Loi AT — Employés", "swisslife", "Swiss Life", true, "Couverture AT de base pour employés.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet habituel" }], defaultSources),
+                },
+              },
+              {
+                label: "Excédent",
+                dynamicFieldId: "ms-employes-excedent",
+                rates: { axa: 0.0010, generali: 0.0010, swisslife: 0.0008 },
+                details: {
+                  axa: makeDetail("Excédent — Employés", "axa", "Axa", true, "Plafond d'indemnisation au maximum légal pour les employés.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                  generali: makeDetail("Excédent — Employés", "generali", "Generali", true, "Indemnisation plafonnée au maximum légal standard pour les employés.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                  swisslife: makeDetail("Excédent — Employés", "swisslife", "Swiss Life", true, "Maximum légal standard pour cette catégorie.", [{ id: "sl-1", label: "Plafond", value: "1x le maximum légal" }], defaultSources),
+                },
+              },
+              {
+                label: "Salaire garantie",
+                dynamicFieldId: "ms-employes-loi",
+                rates: { axa: 0.0006, generali: 0.0006, swisslife: 0.0006 },
+                details: {
+                  axa: makeDetail("Salaire garantie — Employés", "axa", "Axa", true, "Maintien de salaire garanti pendant 30 jours pour les employés.", [{ id: "sl-1", label: "Durée", value: "30 jours" }, { id: "sl-2", label: "Taux", value: "100%" }], defaultSources),
+                  generali: makeDetail("Salaire garantie — Employés", "generali", "Generali", true, "Maintien intégral de salaire sur 30 jours.", [{ id: "sl-1", label: "Durée", value: "30 jours" }, { id: "sl-2", label: "Taux", value: "100%" }], defaultSources),
+                  swisslife: makeDetail("Salaire garantie — Employés", "swisslife", "Swiss Life", true, "Salaire garanti pendant 30 jours.", [{ id: "sl-1", label: "Durée", value: "30 jours" }, { id: "sl-2", label: "Taux", value: "100%" }], defaultSources),
+                },
+              },
+              {
+                label: "Accidents vie privée",
+                dynamicFieldId: "ms-employes-loi",
+                rates: { generali: 0.0008 },
+                details: {
+                  axa: makeDetail("Accidents vie privée — Employés", "axa", "Axa", false, "Non inclus dans la formule employés.", [], defaultSources),
+                  generali: makeDetail("Accidents vie privée — Employés", "generali", "Generali", true, "Extension vie privée incluse pour les employés.", [{ id: "sl-1", label: "Couverture", value: "24h/24, 7j/7" }], defaultSources),
+                  swisslife: makeDetail("Accidents vie privée — Employés", "swisslife", "Swiss Life", false, "Non inclus. Option disponible.", [], defaultSources),
+                },
+              },
+              {
+                label: "Frais médicaux excédant le max. légal",
+                dynamicFieldId: "ms-employes-loi",
+                rates: { axa: 0.0003, generali: 0.0004 },
+                details: {
+                  axa: makeDetail("Frais médicaux excédant le max. légal — Employés", "axa", "Axa", true, "Prise en charge des dépassements pour les employés.", [{ id: "sl-1", label: "Base", value: "Frais réels" }], defaultSources),
+                  generali: makeDetail("Frais médicaux excédant le max. légal — Employés", "generali", "Generali", true, "Couverture intégrale des dépassements.", [{ id: "sl-1", label: "Base", value: "Frais réels" }], defaultSources),
+                  swisslife: makeDetail("Frais médicaux excédant le max. légal — Employés", "swisslife", "Swiss Life", false, "Limité au barème légal pour les employés.", [], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Ouvriers (non soumis à l'ONSS)",
+            rows: [
+              {
+                label: "Loi AT (chemin de travail inclus)",
+                dynamicFieldId: "ms-ouvriers-nononss",
+                rates: { axa: 0.0088, generali: 0.0095, swisslife: 0.0082 },
+                details: {
+                  axa: makeDetail("Loi AT — Ouvriers non-ONSS", "axa", "Axa", true, "Couverture AT pour ouvriers non soumis à l'ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  generali: makeDetail("Loi AT — Ouvriers non-ONSS", "generali", "Generali", true, "Assurance AT pour ouvriers hors ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  swisslife: makeDetail("Loi AT — Ouvriers non-ONSS", "swisslife", "Swiss Life", true, "Couverture de base ouvriers non-ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Employés (non soumis à l'ONSS)",
+            rows: [
+              {
+                label: "Loi AT (chemin de travail inclus)",
+                dynamicFieldId: "ms-employes-nononss",
+                rates: { axa: 0.0045, generali: 0.0050, swisslife: 0.0040 },
+                details: {
+                  axa: makeDetail("Loi AT — Employés non-ONSS", "axa", "Axa", true, "Couverture AT pour employés non soumis à l'ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  generali: makeDetail("Loi AT — Employés non-ONSS", "generali", "Generali", true, "Assurance AT pour employés hors ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                  swisslife: makeDetail("Loi AT — Employés non-ONSS", "swisslife", "Swiss Life", true, "Couverture de base employés non-ONSS.", [{ id: "sl-1", label: "Périmètre", value: "AT + trajet" }], defaultSources),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    dynamicFields: [
+      { id: "ms-ouvriers-loi", label: "Ouvriers (loi)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number", required: true },
+      { id: "ms-ouvriers-excedent", label: "Ouvriers (excédent)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number", required: true },
+      { id: "ms-employes-loi", label: "Employés (loi)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number", required: true },
+      { id: "ms-employes-excedent", label: "Employés (excédent)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number", required: true },
+      { id: "ms-ouvriers-nononss", label: "Ouvriers (non-ONSS)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number" },
+      { id: "ms-employes-nononss", label: "Employés (non-ONSS)", sectionKey: "masseSalariale", sectionLabel: "Masse salariale totale (20XX)", type: "number" },
+    ],
+    dynamicFieldValues: {},
+  },
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -3075,37 +3438,42 @@ const analysisDataMap: Record<string, AnalysisData> = {
       {
         insurerId: "axa",
         pointsForts: [
-          "Couverture dommages tous accidents incluse",
-          "Assistance 0 km disponible",
-          "Franchise compétitive à 500 €/sinistre",
+          "Réseau de garages partenaires le plus étendu (1 200 garages)",
+          "Assistance 0 km — essentielle pour une flotte professionnelle",
+          "Véhicule de remplacement sous 48h, limitant l'immobilisation",
+          "Franchise la plus basse du panel (500 €)",
         ],
         pointsFaibles: [
-          "Tarif le plus élevé sur le tous risques",
-          "Pas de garantie valeur à neuf au-delà de 12 mois",
+          "Prime annuelle la plus élevée en Tous risques (4 200 €/an)",
+          "Valeur à neuf limitée à 12 mois — inadaptée pour les VP récents",
+          "Plafond accessoires hors série à 1 500 € seulement",
         ],
       },
       {
         insurerId: "allianz",
         pointsForts: [
-          "Meilleur tarif global sur le tiers étendu",
-          "Bris de glace sans franchise",
-          "Garantie conducteur étendue à 2 000 000 €",
+          "Tarif le plus compétitif toutes formules confondues",
+          "Bris de glace sans franchise — économie notable sur 44 véhicules",
+          "Protection conducteur la plus élevée (2 000 000 €)",
+          "Gestion sinistres dématérialisée 24/7",
         ],
         pointsFaibles: [
-          "Franchise plus élevée à 750 €/sinistre",
+          "Franchise la plus élevée (750 €) — impact cumulé sur la sinistralité à 12%",
+          "Véhicule de remplacement sous 72h — délai plus long",
           "Pas de couverture des accessoires hors série",
         ],
       },
       {
         insurerId: "generali",
         pointsForts: [
-          "Prise en charge partielle de l'usure véhicule",
-          "Garantie perte financière incluse en Premium",
+          "Prise en charge de l'usure véhicule (unique sur le panel)",
+          "Garantie perte financière en Premium — pertinente pour les véhicules récents",
         ],
         pointsFaibles: [
-          "Dommages tous accidents non inclus en Standard",
-          "Tarif le plus élevé sur la formule Premium",
-          "Assistance uniquement à partir de 50 km",
+          "Dommages tous accidents non inclus en Standard — risque majeur pour une flotte",
+          "Prime la plus élevée en Premium (4 450 €/an)",
+          "Assistance à partir de 50 km seulement",
+          "Réseau garages le plus limité (400 garages)",
         ],
       },
     ],
@@ -3114,112 +3482,70 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-2", label: "Usage professionnel", source: "extracted" },
       { id: "cp-3", label: "Sinistralité 3 ans : 12%", source: "extracted" },
       { id: "cp-4", label: "Bonus-malus moyen : 0.76", source: "manual" },
-      { id: "cp-5", label: "Zone de circulation", source: "missing", hint: "Affine le calcul du risque routier" },
-      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et les options d'assurance" },
+      { id: "cp-5", label: "Zone de circulation", source: "missing", hint: "Affine le calcul du risque routier et le tarif" },
+      { id: "cp-6", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et la catégorie de risque" },
     ],
     hasFullContext: false,
-    resumeExecutif: `L'analyse comparative des trois offres pour la flotte de 44 véhicules d'ACME Corp révèle des différences significatives en termes de couverture et de tarification. Allianz propose le meilleur rapport qualité-prix sur la formule Tiers étendu (3 300 €/an), tandis qu'Axa offre la couverture la plus complète en Tous risques malgré un tarif plus élevé.\n\nGenerali se positionne en milieu de gamme avec un avantage notable sur la prise en charge de l'usure véhicule dans sa formule Premium. Cependant, l'absence de couverture dommages tous accidents en formule Standard constitue une limitation importante pour une flotte professionnelle.\n\nRecommandation : pour une flotte de cette taille avec un taux de sinistralité de 12%, la formule Tous risques Axa ou Allianz est préconisée. Le choix final dépendra de l'arbitrage entre la franchise (500 € Axa vs 750 € Allianz) et le tarif annuel.`,
+    resumeExecutif: `L'analyse comparative des trois offres pour la flotte de 44 véhicules d'ACME Corp (sinistralité 12%, bonus-malus 0.76) met en évidence un arbitrage entre tarif, franchise et services.\n\nAllianz propose le meilleur tarif (3 300 €/an en Tiers étendu, 3 960 €/an en Tous risques) mais avec une franchise de 750 € — un paramètre à pondérer par le taux de sinistralité de 12% qui génère environ 5 sinistres/an sur le parc.\n\nAxa offre la meilleure combinaison services/garanties : franchise basse (500 €), assistance 0 km, véhicule de remplacement sous 48h, et le réseau de garages le plus étendu. Le surcoût par rapport à Allianz est de 240 €/an en Tous risques.\n\nGenerali est pénalisé par l'absence de DTA en Standard et l'assistance à 50 km, rédhibitoire pour une flotte professionnelle à usage quotidien.\n\nRecommandation : Axa en Tous risques pour maximiser la continuité d'exploitation, ou Allianz en Tous risques si le budget prime sur les services.`,
     conditionsFinancieres: {
-      analysisBefore: "Les trois assureurs proposent chacun deux niveaux de formule. Les écarts de prime annuelle varient de 660 € entre la formule la moins chère (Allianz Tiers étendu à 3 300 €) et la plus chère (Generali Premium à 4 450 €). À noter que les franchises diffèrent sensiblement d'un assureur à l'autre.",
-      analysisAfter: "En rapportant le coût au nombre de véhicules, Allianz offre le coût par véhicule le plus bas à 75 €/véhicule/an en Tiers étendu. Axa reste compétitif à 80,45 €/véhicule/an en Tiers étendu. Le surcoût du Tous risques se situe entre 15 et 18 €/véhicule/an selon l'assureur.",
+      analysisBefore: "Les primes annuelles varient de 3 300 € (Allianz Tiers étendu) à 4 450 € (Generali Premium), soit un écart de 1 150 €. Par véhicule, cela représente de 75 € à 101 €/an. Les franchises oscillent entre 500 € (Axa) et 750 € (Allianz), un différentiel qui pèse avec une sinistralité à 12%.",
+      analysisAfter: "Avec un bonus-malus moyen de 0.76, le tarif réel est favorable. En intégrant la sinistralité (environ 5 sinistres/an), le coût total annuel (prime + franchises) avantage Axa malgré une prime plus élevée : 4 200 + 2 500 (5 × 500) = 6 700 € vs Allianz : 3 960 + 3 750 (5 × 750) = 7 710 €.",
     },
     analyseParOffre: [
       {
         insurerId: "axa",
         insurerName: "Axa",
         pointsForts: [
-          "Couverture dommages tous accidents incluse dès la première formule",
-          "Assistance 0 km disponible",
-          "Franchise compétitive à 500 €/sinistre",
+          "Franchise la plus basse (500 €) — avantage net avec une sinistralité de 12%",
+          "Assistance 0 km, essentielle pour les déplacements professionnels",
           "Réseau de garages partenaires le plus étendu (1 200 garages)",
           "Véhicule de remplacement sous 48h",
         ],
         pointsFaibles: [
-          "Tarif le plus élevé sur la formule Tous risques (4 200 €/an)",
-          "Pas de garantie valeur à neuf au-delà de 12 mois",
-          "Plafond accessoires limité à 1 500 €",
+          "Prime la plus élevée en Tous risques (4 200 €/an)",
+          "Valeur à neuf limitée à 12 mois",
+          "Plafond accessoires hors série à 1 500 €",
         ],
       },
       {
         insurerId: "allianz",
         insurerName: "Allianz",
         pointsForts: [
-          "Meilleur tarif global toutes formules confondues",
-          "Bris de glace sans franchise",
-          "Garantie conducteur étendue à 2 000 000 €",
+          "Prime la plus basse toutes formules confondues",
+          "Bris de glace sans franchise — économie significative sur 44 véhicules",
+          "Protection conducteur à 2 000 000 €",
           "Gestion sinistres en ligne 24/7",
         ],
         pointsFaibles: [
-          "Franchise plus élevée à 750 €/sinistre",
-          "Pas de couverture des accessoires hors série",
-          "Délai véhicule de remplacement : 72h",
+          "Franchise la plus élevée (750 €) — coût cumulé important avec 5 sinistres/an",
+          "Véhicule de remplacement sous 72h seulement",
+          "Accessoires hors série non couverts",
         ],
       },
       {
         insurerId: "generali",
         insurerName: "Generali",
         pointsForts: [
-          "Prise en charge partielle de l'usure véhicule (unique sur le marché)",
-          "Garantie perte financière incluse en formule Premium",
-          "Franchise identique à Axa (500 €/sinistre)",
+          "Prise en charge de l'usure véhicule (unique sur le panel)",
+          "Garantie perte financière en Premium",
+          "Franchise identique à Axa (500 €)",
         ],
         pointsFaibles: [
-          "Dommages tous accidents non inclus en formule Standard",
-          "Tarif le plus élevé sur la formule Premium (4 450 €/an)",
-          "Assistance uniquement à partir de 50 km du domicile",
-          "Réseau de garages partenaires limité (400 garages)",
+          "DTA non inclus en Standard — risque majeur pour une flotte professionnelle",
+          "Prime la plus élevée en Premium (4 450 €/an)",
+          "Assistance à partir de 50 km seulement",
+          "Réseau garages limité (400 garages)",
         ],
       },
     ],
     garantiesCles: [
-      {
-        label: "Responsabilité civile",
-        values: {
-          axa: { status: "covered" },
-          allianz: { status: "covered" },
-          generali: { status: "covered" },
-        },
-      },
-      {
-        label: "Dommages tous accidents",
-        values: {
-          axa: { status: "covered" },
-          allianz: { status: "covered" },
-          generali: { status: "not_covered", keyInfo: "Option en Standard" },
-        },
-      },
-      {
-        label: "Vol et tentative de vol",
-        values: {
-          axa: { status: "covered" },
-          allianz: { status: "covered" },
-          generali: { status: "covered" },
-        },
-      },
-      {
-        label: "Bris de glace",
-        values: {
-          axa: { status: "covered", keyInfo: "Franchise 150 €" },
-          allianz: { status: "covered", keyInfo: "Sans franchise" },
-          generali: { status: "covered", keyInfo: "Franchise 100 €" },
-        },
-      },
-      {
-        label: "Assistance 0 km",
-        values: {
-          axa: { status: "covered" },
-          allianz: { status: "covered" },
-          generali: { status: "not_covered", keyInfo: "À partir de 50 km" },
-        },
-      },
-      {
-        label: "Véhicule de remplacement",
-        values: {
-          axa: { status: "covered", keyInfo: "Sous 48h" },
-          allianz: { status: "covered", keyInfo: "Sous 72h" },
-          generali: { status: "covered", keyInfo: "Sous 48h" },
-        },
-      },
+      { label: "Responsabilité civile", values: { axa: { status: "covered" }, allianz: { status: "covered" }, generali: { status: "covered" } } },
+      { label: "Dommages tous accidents", values: { axa: { status: "covered" }, allianz: { status: "covered" }, generali: { status: "not_covered", keyInfo: "Option en Standard" } } },
+      { label: "Bris de glace", values: { axa: { status: "covered", keyInfo: "Franchise 150 €" }, allianz: { status: "covered", keyInfo: "Sans franchise" }, generali: { status: "covered", keyInfo: "Franchise 100 €" } } },
+      { label: "Assistance 0 km", values: { axa: { status: "covered" }, allianz: { status: "covered" }, generali: { status: "not_covered", keyInfo: "Dès 50 km" } } },
+      { label: "Véhicule de remplacement", values: { axa: { status: "covered", keyInfo: "48h" }, allianz: { status: "covered", keyInfo: "72h" }, generali: { status: "covered", keyInfo: "48h" } } },
+      { label: "Protection conducteur", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, allianz: { status: "covered", keyInfo: "2 000 000 €" }, generali: { status: "covered", keyInfo: "1 000 000 €" } } },
+      { label: "Franchise", values: { axa: { status: "covered", keyInfo: "500 €" }, allianz: { status: "covered", keyInfo: "750 €" }, generali: { status: "covered", keyInfo: "500 €" } } },
     ],
   },
   "cot-7": {
@@ -3427,39 +3753,41 @@ const analysisDataMap: Record<string, AnalysisData> = {
       {
         insurerId: "axa",
         pointsForts: [
-          "Assistance 0 km incluse pour l'ensemble de la flotte",
-          "Plateforme de gestion de flotte en ligne performante",
-          "Reporting sinistralité trimestriel détaillé",
+          "Plateforme de gestion de flotte en ligne — indispensable pour 87 véhicules",
+          "Assistance 0 km sur toute la flotte",
+          "Reporting sinistralité trimestriel détaillé par véhicule",
+          "21 jours de véhicule de remplacement",
         ],
         pointsFaibles: [
-          "Tarif le plus élevé sur la formule Tous risques",
-          "Franchise supérieure à la MAIF (600 € vs 500 €)",
+          "Prime la plus élevée (18 200 €/an en Tous risques)",
+          "Franchise intermédiaire (600 €) — coût cumulé important avec 18% de sinistralité",
+          "Protection conducteur limitée à 1 500 000 € — insuffisante pour des conducteurs PL",
         ],
       },
       {
         insurerId: "allianz",
         pointsForts: [
-          "Meilleur tarif global toutes formules confondues",
-          "Bris de glace sans franchise",
-          "Reporting mensuel de la sinistralité",
+          "Prime la plus basse (16 800 €/an en Tous risques)",
+          "Bris de glace sans franchise — économie notable sur un parc de PL",
+          "Reporting mensuel et gestion en ligne",
         ],
         pointsFaibles: [
-          "Franchise la plus élevée du panel à 800 €/sinistre",
-          "Véhicule de remplacement limité à 14 jours",
+          "Franchise la plus élevée (800 €) — coût annuel franchises estimé à 12 500 €",
+          "Véhicule de remplacement limité à 14 jours — critique pour un transporteur",
           "Protection conducteur la plus faible (1 000 000 €)",
         ],
       },
       {
         insurerId: "maif",
         pointsForts: [
-          "Meilleure protection corporelle du conducteur (2 000 000 €)",
-          "Franchise la plus basse du panel à 500 €",
-          "Véhicule de remplacement 30 jours",
-          "Valeur à neuf 24 mois incluse",
+          "Protection conducteur la plus élevée (2 000 000 €) — priorité pour les conducteurs PL",
+          "Franchise la plus basse (500 €) — avantage décisif avec 18% de sinistralité",
+          "Véhicule de remplacement 30 jours — continuité d'exploitation assurée",
+          "Valeur à neuf 24 mois — pertinent pour les PL récents",
         ],
         pointsFaibles: [
-          "Pas de bris de glace en formule Confort",
-          "Pas de plateforme de gestion de flotte en ligne",
+          "Bris de glace non inclus en Confort",
+          "Pas de plateforme de gestion de flotte — frein opérationnel pour 87 véhicules",
           "Reporting semestriel uniquement",
         ],
       },
@@ -3470,38 +3798,39 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { id: "cp-3", label: "Sinistralité 3 ans : 18%", source: "extracted" },
       { id: "cp-4", label: "Zone IDF + Province", source: "extracted" },
       { id: "cp-5", label: "Kilométrage annuel moyen", source: "missing", hint: "Influence le tarif et la catégorie de risque" },
-      { id: "cp-6", label: "Type de marchandises transportées", source: "missing", hint: "Peut impacter les garanties marchandises transportées" },
+      { id: "cp-6", label: "Type de marchandises transportées", source: "missing", hint: "Peut impacter les garanties marchandises transportées et la RC" },
     ],
     hasFullContext: false,
-    resumeExecutif: "L'analyse comparative des trois offres pour la flotte de 87 véhicules de Transports Moreau révèle des différences significatives. Allianz propose le meilleur tarif global (16 800 €/an en Tous risques) mais avec la franchise la plus élevée et une durée de véhicule de remplacement limitée.\n\nLa MAIF se distingue par la meilleure protection conducteur (2 000 000 €) et la franchise la plus basse (500 €), avec un véhicule de remplacement de 30 jours — un avantage décisif pour une flotte de transport. En revanche, l'absence de plateforme de gestion en ligne est un frein pour une flotte de cette taille.\n\nRecommandation : la MAIF offre le meilleur alignement avec les contraintes opérationnelles d'un transporteur (franchise basse, remplacement long), tandis qu'Allianz est le choix budgétaire optimal si la gestion de flotte dématérialisée est prioritaire.",
+    resumeExecutif: "L'analyse des trois offres pour la flotte de transport de Transports Moreau (87 véhicules, sinistralité 18%) fait ressortir un arbitrage marqué entre coût de prime, coût de franchise et continuité d'exploitation.\n\nAvec 18% de sinistralité, soit environ 16 sinistres/an, le niveau de franchise est un paramètre critique. La MAIF (franchise 500 €) génère un coût annuel de franchises de ~8 000 €, contre ~12 800 € pour Allianz (800 €). Malgré une prime supérieure, le coût total (prime + franchises) de la MAIF est compétitif.\n\nLa MAIF se distingue aussi par le véhicule de remplacement 30 jours et la protection conducteur à 2 000 000 € — deux critères essentiels pour un transporteur dont les conducteurs sont exposés quotidiennement. Allianz, avec un remplacement limité à 14 jours, expose Transports Moreau à des arrêts d'exploitation.\n\nAxa offre le meilleur outillage de gestion (plateforme en ligne, reporting trimestriel) mais au tarif le plus élevé.\n\nRecommandation : MAIF en Tous risques pour la combinaison franchise basse / remplacement long / protection conducteur, malgré l'absence de plateforme de gestion.",
     conditionsFinancieres: {
-      analysisBefore: "Les trois assureurs proposent chacun deux formules. L'écart entre la formule la moins chère (Allianz Tiers étendu à 14 400 €/an) et la plus chère (Axa Tous risques à 18 200 €/an) est de 3 800 €/an, soit environ 44 €/véhicule/an de différence.",
-      analysisAfter: "En rapportant le coût au nombre de véhicules, Allianz offre le coût par véhicule le plus bas à 193 €/véhicule/an en Tous risques. La MAIF se positionne en milieu de gamme à 200 €/véhicule/an avec une couverture plus protectrice (franchise basse, remplacement long).",
+      analysisBefore: "Les primes annuelles s'échelonnent de 16 800 € (Allianz) à 18 200 € (Axa) en Tous risques, soit un écart de 1 400 €. Les franchises varient de 500 € (MAIF) à 800 € (Allianz). Avec 16 sinistres/an estimés, le différentiel de franchise pèse plus que le différentiel de prime.",
+      analysisAfter: "Coût total estimé (prime + franchises) : MAIF = 17 400 + 8 000 = 25 400 €/an. Allianz = 16 800 + 12 800 = 29 600 €/an. Axa = 18 200 + 9 600 = 27 800 €/an. La MAIF est la plus avantageuse en coût total malgré une prime intermédiaire.",
     },
     analyseParOffre: [
       {
         insurerId: "axa", insurerName: "Axa",
-        pointsForts: ["Assistance 0 km incluse", "Plateforme de gestion de flotte performante", "Reporting trimestriel détaillé", "21 jours de véhicule de remplacement"],
-        pointsFaibles: ["Tarif le plus élevé (18 200 €/an en Tous risques)", "Franchise intermédiaire (600 €)", "Protection conducteur limitée à 1 500 000 €"],
+        pointsForts: ["Plateforme de gestion de flotte performante", "Assistance 0 km incluse", "Reporting trimestriel détaillé par véhicule", "21 jours de véhicule de remplacement"],
+        pointsFaibles: ["Prime la plus élevée (18 200 €/an)", "Franchise intermédiaire (600 €)", "Protection conducteur la plus limitée pour un transporteur (1 500 000 €)"],
       },
       {
         insurerId: "allianz", insurerName: "Allianz",
-        pointsForts: ["Meilleur tarif global (16 800 €/an)", "Bris de glace sans franchise", "Reporting mensuel", "Gestion de flotte en ligne"],
-        pointsFaibles: ["Franchise la plus élevée (800 €)", "Véhicule de remplacement limité à 14 jours", "Protection conducteur la plus basse (1 000 000 €)"],
+        pointsForts: ["Prime la plus basse (16 800 €/an)", "Bris de glace sans franchise", "Reporting mensuel", "Gestion de flotte en ligne"],
+        pointsFaibles: ["Franchise la plus élevée (800 €) — coût cumulé estimé à 12 800 €/an", "Véhicule de remplacement limité à 14 jours — risque d'arrêt d'exploitation", "Protection conducteur insuffisante pour des conducteurs PL (1 000 000 €)"],
       },
       {
         insurerId: "maif", insurerName: "MAIF",
-        pointsForts: ["Meilleure protection conducteur (2 000 000 €)", "Franchise la plus basse (500 €)", "30 jours de véhicule de remplacement", "Valeur à neuf 24 mois incluse"],
-        pointsFaibles: ["Bris de glace non inclus en Confort", "Pas de plateforme de gestion en ligne", "Reporting semestriel uniquement"],
+        pointsForts: ["Protection conducteur la meilleure du panel (2 000 000 €)", "Franchise la plus basse (500 €) — coût cumulé le plus bas", "30 jours de véhicule de remplacement — continuité assurée", "Valeur à neuf 24 mois incluse"],
+        pointsFaibles: ["Bris de glace non inclus en Confort", "Pas de plateforme de gestion de flotte en ligne", "Reporting semestriel uniquement — insuffisant pour une flotte de 87 véhicules"],
       },
     ],
     garantiesCles: [
       { label: "Responsabilité civile", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
       { label: "Dommages tous accidents", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
       { label: "Bris de glace", values: { axa: { status: "covered" }, allianz: { status: "covered", keyInfo: "Sans franchise" }, maif: { status: "not_covered", keyInfo: "Option" } } },
-      { label: "Assistance 0 km", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "covered" } } },
       { label: "Véhicule de remplacement", values: { axa: { status: "covered", keyInfo: "21 jours" }, allianz: { status: "covered", keyInfo: "14 jours" }, maif: { status: "covered", keyInfo: "30 jours" } } },
       { label: "Protection conducteur", values: { axa: { status: "covered", keyInfo: "1 500 000 €" }, allianz: { status: "covered", keyInfo: "1 000 000 €" }, maif: { status: "covered", keyInfo: "2 000 000 €" } } },
+      { label: "Franchise", values: { axa: { status: "covered", keyInfo: "600 €" }, allianz: { status: "covered", keyInfo: "800 €" }, maif: { status: "covered", keyInfo: "500 €" } } },
+      { label: "Gestion de flotte en ligne", values: { axa: { status: "covered" }, allianz: { status: "covered" }, maif: { status: "not_covered" } } },
     ],
   },
   "cot-9": {
@@ -3586,17 +3915,202 @@ const analysisDataMap: Record<string, AnalysisData> = {
     ],
   },
   "cot-10": {
-    hasFullContext: false,
     synthese: [
-      { insurerId: "axa", pointsForts: ["Bonne couverture des véhicules confiés", "Franchise compétitive sur les VL"], pointsFaibles: ["Pas de garantie vol sur les VL lourds en stock vente", "Capacité simultanée limitée à 60"] },
-      { insurerId: "allianz", pointsForts: ["Capacité simultanée de 80 véhicules", "Vol inclus sur toutes les catégories"], pointsFaibles: ["Franchise la plus élevée (1 200 €)", "Prime annuelle supérieure"] },
-      { insurerId: "generali", pointsForts: ["Meilleure capacité (100 véhicules)", "Franchise la plus basse (800 €)", "Prime la plus compétitive"], pointsFaibles: ["Conditions spécifiques sur le vol (parking clos)", "Pro rata en cas de dépassement capacitaire"] },
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Bonne couverture des véhicules confiés (réparation et essais)",
+          "Franchise compétitive sur les VL (900 €)",
+          "Couverture des déplacements essais sans surcoût",
+        ],
+        pointsFaibles: [
+          "Capacité simultanée limitée à 60 véhicules",
+          "Vol non garanti sur les VL lourds en stock vente",
+          "Pas de couverture incendie parking extérieur",
+        ],
+      },
+      {
+        insurerId: "allianz",
+        pointsForts: [
+          "Vol inclus sur toutes les catégories (VL, VUL, VL lourds)",
+          "Capacité simultanée de 80 véhicules",
+          "Couverture incendie parking extérieur incluse",
+        ],
+        pointsFaibles: [
+          "Franchise la plus élevée du panel (1 200 €)",
+          "Prime annuelle supérieure (13 200 €/an)",
+          "Pas de couverture grêle en standard",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Capacité la plus élevée (100 véhicules) — marge de manœuvre pour croissance",
+          "Franchise la plus basse (800 €)",
+          "Prime la plus compétitive (11 800 €/an)",
+          "Couverture grêle incluse",
+        ],
+        pointsFaibles: [
+          "Vol conditionné à un parking clos et sécurisé",
+          "Prorata de prime en cas de dépassement capacitaire",
+          "Délai d'indemnisation plus long (45 jours vs 30 jours)",
+        ],
+      },
     ],
-    contextPills: [],
-    resumeExecutif: "Comparaison de 3 offres pour l'assurance du stock automobile du Garage Dupont & Fils, couvrant les véhicules confiés (réparation) et les véhicules destinés à la vente.",
-    conditionsFinancieres: { analysisBefore: "Les primes varient de 11 800 € (Generali) à 13 200 € (Allianz).", analysisAfter: "Generali propose le meilleur rapport couverture/prix avec la capacité la plus élevée." },
-    analyseParOffre: [],
-    garantiesCles: [],
+    contextPills: [
+      { id: "cp-1", label: "Stock moyen : 45 véhicules", source: "extracted" },
+      { id: "cp-2", label: "Mix VL / VUL / VL lourds", source: "extracted" },
+      { id: "cp-3", label: "Parking : clos + extérieur", source: "extracted" },
+      { id: "cp-4", label: "Valeur moyenne du stock", source: "missing", hint: "Permet de vérifier l'adéquation des plafonds de garantie" },
+      { id: "cp-5", label: "Sinistralité stock 3 ans", source: "missing", hint: "Permet de négocier les franchises et les conditions de vol" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: "L'analyse des trois offres de couverture du stock automobile du Garage Dupont & Fils fait ressortir un arbitrage entre capacité, conditions de vol et tarif.\n\nGenerali propose la combinaison la plus attractive : capacité maximale (100 véhicules), franchise la plus basse (800 €) et prime la plus compétitive (11 800 €/an). La condition de parking clos pour le vol est à évaluer selon la configuration du site.\n\nAllianz est le seul à couvrir le vol sur toutes les catégories sans condition de parking, avec une capacité de 80 véhicules — suffisante pour le stock actuel de 45 véhicules. Le surcoût de 1 400 €/an et la franchise à 1 200 € limitent son attractivité.\n\nAxa est pénalisé par la capacité la plus basse (60 véhicules) et l'absence de vol sur les VL lourds.\n\nRecommandation : Generali si le parking est clos et sécurisé (meilleur rapport capacité/prix), Allianz si le garage a un parking extérieur non sécurisé.",
+    conditionsFinancieres: {
+      analysisBefore: "Les primes annuelles s'échelonnent de 11 800 € (Generali) à 13 200 € (Allianz), soit un écart de 1 400 €. Les franchises varient de 800 € (Generali) à 1 200 € (Allianz). La capacité simultanée est un différentiateur clé : de 60 (Axa) à 100 (Generali) véhicules.",
+      analysisAfter: "Rapportée à la capacité, la prime par véhicule garanti est la plus avantageuse chez Generali : 118 €/véhicule/an (100 véhicules) vs 165 € chez Allianz (80) et 200 € chez Axa (60). La marge de capacité de Generali (+55 véhicules vs le stock actuel) offre une flexibilité appréciable pour la croissance.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "axa", insurerName: "Axa",
+        pointsForts: ["Couverture véhicules confiés solide", "Franchise compétitive (900 €)", "Couverture essais routiers incluse"],
+        pointsFaibles: ["Capacité la plus basse (60 véhicules)", "Vol non garanti sur VL lourds", "Pas de couverture incendie parking extérieur"],
+      },
+      {
+        insurerId: "allianz", insurerName: "Allianz",
+        pointsForts: ["Vol inclus toutes catégories sans condition de parking", "Capacité 80 véhicules", "Incendie parking extérieur incluse"],
+        pointsFaibles: ["Franchise la plus élevée (1 200 €)", "Prime la plus chère (13 200 €/an)", "Grêle non couverte en standard"],
+      },
+      {
+        insurerId: "generali", insurerName: "Generali",
+        pointsForts: ["Capacité la plus élevée (100 véhicules)", "Franchise la plus basse (800 €)", "Prime la plus compétitive (11 800 €/an)", "Grêle incluse"],
+        pointsFaibles: ["Vol conditionné à parking clos sécurisé", "Prorata en cas de dépassement capacitaire", "Délai d'indemnisation 45 jours"],
+      },
+    ],
+    garantiesCles: [
+      { label: "Capacité simultanée", values: { axa: { status: "covered", keyInfo: "60 véhicules" }, allianz: { status: "covered", keyInfo: "80 véhicules" }, generali: { status: "covered", keyInfo: "100 véhicules" } } },
+      { label: "Vol toutes catégories", values: { axa: { status: "not_covered", keyInfo: "Hors VL lourds" }, allianz: { status: "covered" }, generali: { status: "covered", keyInfo: "Parking clos requis" } } },
+      { label: "Franchise", values: { axa: { status: "covered", keyInfo: "900 €" }, allianz: { status: "covered", keyInfo: "1 200 €" }, generali: { status: "covered", keyInfo: "800 €" } } },
+      { label: "Grêle", values: { axa: { status: "covered" }, allianz: { status: "not_covered", keyInfo: "Option" }, generali: { status: "covered" } } },
+      { label: "Incendie parking extérieur", values: { axa: { status: "not_covered" }, allianz: { status: "covered" }, generali: { status: "covered" } } },
+    ],
+  },
+  "cot-11": {
+    synthese: [
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Taux ouvriers Loi AT compétitif (0,95%)",
+          "Frais médicaux excédant le max. légal couverts pour ouvriers et employés",
+          "Chemin de travail inclus sur toutes les catégories",
+        ],
+        pointsFaibles: [
+          "Pas de couverture accidents vie privée",
+          "Excédent ouvriers limité (0,18% vs 0,24% Generali)",
+          "Prime minimum la plus élevée (1 200 €)",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Seul assureur à proposer les accidents vie privée (ouvriers et employés)",
+          "Excédent ouvriers le plus élevé (0,24%), plafond à 1,5x le max. légal",
+          "Frais médicaux excédant le max. légal sans plafond",
+          "Inspection préalable incluse (contrôle qualité)",
+        ],
+        pointsFaibles: [
+          "Taux Loi AT les plus élevés (1,02% ouvriers, 0,58% employés)",
+          "Engagement ferme 3 ans",
+          "Prime minimum élevée (1 500 €)",
+        ],
+      },
+      {
+        insurerId: "swisslife",
+        pointsForts: [
+          "Taux Loi AT les plus bas sur toutes les catégories (0,88% ouvriers, 0,48% employés)",
+          "Excédent ouvriers le plus compétitif (0,15%)",
+          "Prime minimum la plus basse (950 €)",
+        ],
+        pointsFaibles: [
+          "Pas de couverture accidents vie privée",
+          "Frais médicaux excédant le max. légal non couverts",
+          "Salaire garanti ouvriers limité à 14 jours (vs 30 jours chez Axa et Generali)",
+          "Accident de trajet hors itinéraire exclu",
+        ],
+      },
+    ],
+    contextPills: [
+      { id: "cp-at-1", label: "Convention BTP — IDCC 1597", source: "extracted" },
+      { id: "cp-at-2", label: "78 salariés (42 ouvriers, 24 ETAM, 12 cadres)", source: "extracted" },
+      { id: "cp-at-3", label: "Activité : construction et rénovation", source: "extracted" },
+      { id: "cp-at-4", label: "Masse salariale ouvriers", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros par catégorie" },
+      { id: "cp-at-5", label: "Masse salariale employés", source: "missing", hint: "Nécessaire pour calculer les cotisations en euros par catégorie" },
+      { id: "cp-at-6", label: "Sinistralité AT 3 ans", source: "missing", hint: "Permet de négocier les taux et d'évaluer le risque" },
+    ],
+    hasFullContext: false,
+    resumeExecutif: `L'analyse comparative des trois offres AT pour BTP Horizon SAS (78 salariés, Convention BTP) fait ressortir un arbitrage clair entre tarif et étendue de couverture.\n\nSwiss Life propose les taux les plus bas sur l'ensemble des catégories (0,88% ouvriers, 0,48% employés) avec la prime minimum la plus faible (950 €), mais au prix de garanties réduites : pas d'accidents vie privée, frais médicaux limités au barème légal, et salaire garanti ouvriers de 14 jours seulement.\n\nGenerali est le seul à couvrir les accidents vie privée (ouvriers et employés) et offre l'excédent le plus généreux (1,5x le max. légal). Les taux sont les plus élevés du panel et l'engagement ferme de 3 ans limite la flexibilité.\n\nAxa se positionne en milieu de gamme avec un bon équilibre : taux intermédiaires, frais médicaux excédant le légal couverts, et salaire garanti 30 jours. L'absence d'accidents vie privée est la principale lacune.\n\nRecommandation : pour une entreprise BTP avec 42 ouvriers exposés à un risque élevé, la couverture accidents vie privée et l'excédent majoré de Generali apportent une protection significative. Si le budget est la priorité, Swiss Life reste compétitif sous réserve d'accepter les limitations sur le salaire garanti et les frais médicaux.`,
+    conditionsFinancieres: {
+      analysisBefore: "Les taux Loi AT ouvriers varient de 0,88% (Swiss Life) à 1,02% (Generali), soit un écart de 0,14 point. Sur les employés, l'écart se réduit : de 0,48% (Swiss Life) à 0,58% (Generali). Les primes minimum s'échelonnent de 950 € (Swiss Life) à 1 500 € (Generali). La comparaison en euros nécessite la masse salariale ventilée par catégorie.",
+      analysisAfter: "Les taux diffèrent selon les catégories de personnel. Pour les ouvriers (risque élevé), l'écart tarifaire entre Swiss Life et Generali est de 0,14 point — soit environ 1 400 € par million d'euros de masse salariale. L'ajout des garanties supplémentaires (accidents vie privée, frais médicaux excédent) chez Generali justifie en partie cet écart.",
+    },
+    analyseParOffre: [
+      {
+        insurerId: "axa",
+        insurerName: "Axa",
+        pointsForts: [
+          "Frais médicaux excédant le max. légal couverts (ouvriers et employés)",
+          "Salaire garanti 30 jours à 100% du salaire",
+          "Chemin de travail inclus avec détours raisonnables couverts",
+          "Pas d'inspection exigée — mise en place rapide",
+        ],
+        pointsFaibles: [
+          "Pas de couverture accidents vie privée",
+          "Excédent plafonné à 1x le max. légal (vs 1,5x Generali)",
+          "Prime minimum la plus élevée (1 200 €)",
+        ],
+      },
+      {
+        insurerId: "generali",
+        insurerName: "Generali",
+        pointsForts: [
+          "Seul assureur avec accidents vie privée (24h/24, 7j/7)",
+          "Excédent le plus élevé : 1,5x le max. légal pour les ouvriers",
+          "Frais médicaux excédant le max. légal sans plafond",
+          "Salaire garanti 30 jours intégral",
+          "Tarif garanti sur 3 ans",
+        ],
+        pointsFaibles: [
+          "Taux Loi AT les plus élevés du panel",
+          "Engagement ferme 3 ans — pas de sortie anticipée",
+          "Inspection des locaux requise sous 30 jours",
+          "Accident de trajet sous conditions strictes",
+        ],
+      },
+      {
+        insurerId: "swisslife",
+        insurerName: "Swiss Life",
+        pointsForts: [
+          "Taux les plus bas sur toutes les catégories",
+          "Prime minimum la plus basse (950 €)",
+          "Excédent ouvriers compétitif (0,15%)",
+          "Contrat annuel avec tacite reconduction — flexibilité maximale",
+        ],
+        pointsFaibles: [
+          "Pas de couverture accidents vie privée",
+          "Frais médicaux excédant le max. légal non couverts (ouvriers et employés)",
+          "Salaire garanti ouvriers limité à 14 jours (vs 30 jours chez les concurrents)",
+          "Accident de trajet hors itinéraire strictement exclu",
+        ],
+      },
+    ],
+    garantiesCles: [
+      { label: "Loi AT — Ouvriers", values: { axa: { status: "covered", keyInfo: "0,95%" }, generali: { status: "covered", keyInfo: "1,02%" }, swisslife: { status: "covered", keyInfo: "0,88%" } } },
+      { label: "Excédent — Ouvriers", values: { axa: { status: "covered", keyInfo: "1x max. légal" }, generali: { status: "covered", keyInfo: "1,5x max. légal" }, swisslife: { status: "covered", keyInfo: "1x max. légal" } } },
+      { label: "Accidents vie privée", values: { axa: { status: "not_covered" }, generali: { status: "covered", keyInfo: "24h/24" }, swisslife: { status: "not_covered" } } },
+      { label: "Frais médicaux excédent", values: { axa: { status: "covered" }, generali: { status: "covered", keyInfo: "Sans plafond" }, swisslife: { status: "not_covered" } } },
+      { label: "Salaire garanti — Ouvriers", values: { axa: { status: "covered", keyInfo: "30 jours" }, generali: { status: "covered", keyInfo: "30 jours" }, swisslife: { status: "covered", keyInfo: "14 jours" } } },
+      { label: "Prime minimum", values: { axa: { status: "covered", keyInfo: "1 200 €" }, generali: { status: "covered", keyInfo: "1 500 €" }, swisslife: { status: "covered", keyInfo: "950 €" } } },
+    ],
   },
 };
 
@@ -3800,6 +4314,16 @@ const clientProfileMap: Record<string, ClientProfileData> = {
       { id: "b-32", value: "Garantie vol obligatoire sur les véhicules en stock vente", source: "manual" as const },
     ],
   },
+  "cot-11": {
+    clientLabel: "BTP Horizon SAS",
+    clientSiren: "91876543200015",
+    besoinsClient: [
+      { id: "b-40", value: "Couverture AT conforme à la convention collective BTP", source: "ai" },
+      { id: "b-41", value: "IJ dès le 1er jour d'arrêt sans franchise", source: "ai" },
+      { id: "b-42", value: "Capital décès AT minimum 24 mois de salaire", source: "ai" },
+      { id: "b-43", value: "Prise en charge de la rééducation professionnelle (métiers physiques)", source: "manual" },
+    ],
+  },
 };
 
 export function getClientProfile(cotationId: string): ClientProfileData | undefined {
@@ -3982,6 +4506,17 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "allianz", "generali"],
     createdBy: "Delphine",
     date: "18/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-11",
+    cotationId: "cot-11",
+    client: "BTP Horizon SAS",
+    products: ["Accident du Travail"],
+    principalProduct: "Accident du Travail",
+    insurerIds: ["axa", "generali", "swisslife"],
+    createdBy: "Delphine",
+    date: "20/04/2026",
     status: "done",
   },
 ];
