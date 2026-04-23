@@ -417,7 +417,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
 
       {/* Section: Synthèse parc — single Prix row (non-fleet only, fleet uses FleetSynthesisSection) */}
       {!isMultiEntity && <SectionHeader
-        title={comparisonData?.synthesisLabel ?? "Synthèse parc"}
+        title={comparisonData?.synthesisLabel ?? "Conditions financières"}
         collapsed={collapsedSections.has("conditions")}
         onToggle={() => toggleSection("conditions")}
       />}
@@ -683,82 +683,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         })
       )}
 
-      {/* Guarantee products → sub-groups → rows (non-fleet standard view) */}
-      {!isMultiEntity && (() => {
-        let flatSectionIdx = 0;
-        return comparisonData?.products?.map((product, pIdx) => {
-          const productKey = `product-${pIdx}`;
-          const productCollapsed = collapsedSections.has(productKey);
-          return (
-            <div key={pIdx}>
-              <SectionHeader
-                title={product.title}
-                variant="product"
-                collapsed={productCollapsed}
-                onToggle={() => toggleSection(productKey)}
-              />
-              {!productCollapsed && product.subGroups.map((subGroup, sgIdx) => {
-                const sIdx = flatSectionIdx++;
-                const subKey = `sub-${pIdx}-${sgIdx}`;
-                const subCollapsed = collapsedSections.has(subKey);
-                return (
-                  <div key={sgIdx}>
-                    {sgIdx > 0 && <SectionDivider />}
-                    <SectionHeader
-                      title={subGroup.title}
-                      variant="sub"
-                      collapsed={subCollapsed}
-                      onToggle={() => toggleSection(subKey)}
-                    />
-                    {!subCollapsed && subGroup.rows.map((row, rIdx) => {
-                      const rowKey = `gua-${sIdx}-${rIdx}`;
-                      const rowActive = isGuaranteeRowActive(sIdx, rIdx);
-                      const rowShown = shownRows.has(rowKey);
-                      return (
-                        <div key={rIdx} className="flex border-b border-panora-border group/row">
-                          <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
-                            <span className="text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text">{row.label}</span>
-                            <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
-                            {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
-                          </div>
-                          {insurers.map((ins) => {
-                            const cell = row.values[ins.id] ?? { type: "empty" as const };
-                            const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
-                            const isSelected = cellIdEquals(selectedCell, cellId);
-                            const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
-                            const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
-
-                            return (
-                              <ComparisonCell
-                                key={ins.id}
-                                isSelected={isSelected}
-                                onClick={() => onCellSelect?.(cellId)}
-                                className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
-                              >
-                                {keyDetail ? (
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <CellBadge cell={cell} />
-                                    <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
-                                  </span>
-                                ) : (
-                                  <CellBadge cell={cell} />
-                                )}
-                              </ComparisonCell>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              <SectionDivider />
-            </div>
-          );
-        });
-      })()}
-
-      {/* Rate-based products (Cotisations par catégorie) */}
+      {/* Rate-based products */}
       {comparisonData?.rateProducts?.map((rateProduct, rpIdx) => {
         const rpKey = `rate-product-${rpIdx}`;
         const rpCollapsed = collapsedSections.has(rpKey);
@@ -801,28 +726,12 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
               const sgKey = `rate-sub-${rpIdx}-${sgIdx}`;
               const sgCollapsed = collapsedSections.has(sgKey);
 
-              // Compute totals per insurer for this sub-group
-              const totals: Record<string, number | null> = {};
-              if (!isPerPerson) {
-                for (const ins of insurers) {
-                  let sum: number | null = null;
-                  for (const row of sg.rows) {
-                    const rate = row.rates[ins.id];
-                    const base = dynamicFieldValues?.[row.dynamicFieldId];
-                    if (rate !== undefined && base !== undefined) {
-                      sum = (sum ?? 0) + rate * base;
-                    }
-                  }
-                  totals[ins.id] = sum;
-                }
-              }
-
               return (
                 <div key={sgIdx}>
                   {sgIdx > 0 && <SectionDivider />}
                   <SectionHeader
                     title={sg.title}
-                    variant="sub"
+                    variant="category"
                     collapsed={sgCollapsed}
                     onToggle={() => toggleSection(sgKey)}
                   />
@@ -861,25 +770,31 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                                 );
                               }
 
-                              // Percent-based: show computed € as primary, rate as secondary
+                              // Percent-based: split cell — € left | % right when base filled, full-width % otherwise
                               const amount = rate !== undefined && base !== undefined ? rate * base : null;
                               return (
                                 <div
                                   key={ins.id}
-                                  className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+                                  className={`${colClass} shrink-0 border-r border-panora-border`}
                                 >
-                                  <div className="flex flex-col gap-0.5">
-                                    {amount !== null ? (
-                                      <span className="text-[13px] font-medium text-panora-text">
-                                        {formatEur(amount)}
-                                      </span>
-                                    ) : (
+                                  {amount !== null ? (
+                                    <div className="flex h-full">
+                                      <div className="flex-1 px-3 py-3 flex items-center border-r border-panora-border/50">
+                                        <span className="text-[13px] text-panora-text-muted">{formatRate(rate!)}</span>
+                                      </div>
+                                      <div className="flex-1 px-3 py-3 flex items-center">
+                                        <span className="text-[13px] font-medium text-panora-text">{formatEur(amount)}</span>
+                                      </div>
+                                    </div>
+                                  ) : rate !== undefined ? (
+                                    <div className="px-3 py-3">
+                                      <span className="text-[13px] text-panora-text">{formatRate(rate)}</span>
+                                    </div>
+                                  ) : (
+                                    <div className="px-3 py-3">
                                       <span className="text-[13px] italic text-panora-text-muted">—</span>
-                                    )}
-                                    {rate !== undefined && (
-                                      <span className="text-[11px] text-panora-text-muted">{formatRate(rate)}</span>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -887,28 +802,6 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                         );
                       })}
 
-                      {/* Sub-group total row — only for percent-based products */}
-                      {!isPerPerson && (
-                        <div className="flex border-b border-panora-border bg-[#faf9f7]">
-                          <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center">
-                            <span className="text-[13px] font-semibold text-panora-text">Total / an</span>
-                          </div>
-                          {insurers.map((ins) => {
-                            const total = totals[ins.id];
-                            return (
-                              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
-                                {total !== null ? (
-                                  <span className="text-[13px] font-semibold text-panora-text">
-                                    {formatEur(total)}
-                                  </span>
-                                ) : (
-                                  <span className="text-[13px] italic text-panora-text-muted">—</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -971,6 +864,98 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           </div>
         );
       })}
+
+      {/* Guarantee products → sub-groups → rows (non-fleet standard view) */}
+      {!isMultiEntity && (() => {
+        let flatSectionIdx = 0;
+        return comparisonData?.products?.map((product, pIdx) => {
+          const productKey = `product-${pIdx}`;
+          const productCollapsed = collapsedSections.has(productKey);
+          const isDefinitions = product.layout === "definitions";
+
+          return (
+            <div key={pIdx}>
+              <SectionHeader
+                title={product.title}
+                variant="product"
+                collapsed={productCollapsed}
+                onToggle={() => toggleSection(productKey)}
+              />
+              {!productCollapsed && isDefinitions && product.subGroups.flatMap((sg) => sg.rows).map((row, rIdx) => {
+                const defText = (row.values._definition as { type: "text"; value: string } | undefined)?.value ?? "";
+                return (
+                  <div key={rIdx} className="flex border-b border-panora-border">
+                    <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-start">
+                      <span className="text-[13px] font-medium text-panora-text">{row.label}</span>
+                    </div>
+                    <div className="flex-1 px-4 py-3.5">
+                      <p className="text-[13px] leading-[20px] text-panora-text-muted">{defText}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              {!productCollapsed && !isDefinitions && product.subGroups.map((subGroup, sgIdx) => {
+                const sIdx = flatSectionIdx++;
+                const subKey = `sub-${pIdx}-${sgIdx}`;
+                const subCollapsed = collapsedSections.has(subKey);
+                return (
+                  <div key={sgIdx}>
+                    {sgIdx > 0 && <SectionDivider />}
+                    {subGroup.title && (
+                      <SectionHeader
+                        title={subGroup.title}
+                        variant="sub"
+                        collapsed={subCollapsed}
+                        onToggle={() => toggleSection(subKey)}
+                      />
+                    )}
+                    {!subCollapsed && subGroup.rows.map((row, rIdx) => {
+                      const rowKey = `gua-${sIdx}-${rIdx}`;
+                      const rowActive = isGuaranteeRowActive(sIdx, rIdx);
+                      const rowShown = shownRows.has(rowKey);
+                      return (
+                        <div key={rIdx} className="flex border-b border-panora-border group/row">
+                          <div className={`w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-center gap-2.5 relative ${rowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
+                            <span className="text-[13px] leading-[20px] flex-1 min-w-0 truncate text-panora-text">{row.label}</span>
+                            <ShowHideToggle shown={rowShown} onToggle={() => toggleRowVisibility(rowKey)} />
+                            {rowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
+                          </div>
+                          {insurers.map((ins) => {
+                            const cell = row.values[ins.id] ?? { type: "empty" as const };
+                            const cellId: CellIdentifier = { type: "guarantee", sectionIndex: sIdx, rowIndex: rIdx, insurerId: ins.id };
+                            const isSelected = cellIdEquals(selectedCell, cellId);
+                            const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
+                            const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
+
+                            return (
+                              <ComparisonCell
+                                key={ins.id}
+                                isSelected={isSelected}
+                                onClick={() => onCellSelect?.(cellId)}
+                                className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                              >
+                                {keyDetail ? (
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <CellBadge cell={cell} />
+                                    <span className={`text-[13px] text-panora-text truncate max-w-[180px] ${keyDetail.isPrice || hasNumericContent(keyDetail.text) ? "font-medium" : ""}`}>{keyDetail.text}</span>
+                                  </span>
+                                ) : (
+                                  <CellBadge cell={cell} />
+                                )}
+                              </ComparisonCell>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              <SectionDivider />
+            </div>
+          );
+        });
+      })()}
 
       {/* Exclusions section — hidden in tarifs mode */}
       {fleetViewMode !== "tarifs" && comparisonData?.exclusions && comparisonData.exclusions.length > 0 && (() => {
@@ -1547,7 +1532,7 @@ function SyntheseCell({
 
 function SectionHeader({ title, variant = "product", collapsed, onToggle }: {
   title: string;
-  variant?: "product" | "sub" | "destructive" | "synthese";
+  variant?: "product" | "category" | "sub" | "destructive" | "synthese";
   collapsed?: boolean;
   onToggle?: () => void;
 }) {
@@ -1586,6 +1571,15 @@ function SectionHeader({ title, variant = "product", collapsed, onToggle }: {
       <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[40px] bg-[#faf8f5]">
         {chevron}
         <span className="text-[14px] font-semibold font-display text-panora-text tracking-[-0.2px]">{title}</span>
+      </div>
+    );
+  }
+
+  if (variant === "category") {
+    return (
+      <div className="flex items-center gap-2 px-4 border-b border-panora-border h-[36px] bg-[#f5f3ef]">
+        {chevron}
+        <span className="text-[12px] font-semibold text-panora-text tracking-[0.2px]">{title}</span>
       </div>
     );
   }
