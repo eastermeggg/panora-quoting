@@ -205,6 +205,86 @@ function ShowHideToggle({ shown, onToggle }: { shown: boolean; onToggle: () => v
   );
 }
 
+function OfferFilterDropdown({
+  insurerId,
+  formulas,
+  hiddenOffers,
+  onToggle,
+  shown,
+  total,
+}: {
+  insurerId: string;
+  formulas: string[];
+  hiddenOffers: Set<number>;
+  onToggle: (fIdx: number) => void;
+  shown: number;
+  total: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger — styled as a visible button with border + shadow */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-2 px-2.5 py-[5px] rounded-[8px] border text-left cursor-pointer transition-all ${
+          open
+            ? "border-panora-green/40 bg-[#f0f9f5] shadow-[0px_0px_0px_2px_rgba(0,162,114,0.1)]"
+            : "border-[#e2dfd8] bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] hover:border-[#d4d2cc] hover:shadow-[0px_1px_3px_rgba(0,0,0,0.08)]"
+        }`}
+      >
+        <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-[5px] rounded-[5px] bg-panora-green text-white text-[11px] font-bold leading-none">
+          {shown}/{total}
+        </span>
+        <span className="text-[12px] font-medium text-panora-text">
+          offres affichées
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 text-panora-text-muted shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 w-[280px] bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_4px_12px_rgba(0,0,0,0.08)] z-30 overflow-hidden">
+          <div className="px-3 py-2 border-b border-panora-border">
+            <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-[0.5px]">Offres à afficher</span>
+          </div>
+          <div className="py-1 max-h-[260px] overflow-y-auto">
+            {formulas.map((formula, fIdx) => {
+              const isVisible = !hiddenOffers.has(fIdx);
+              return (
+                <button
+                  key={fIdx}
+                  onClick={(e) => { e.stopPropagation(); onToggle(fIdx); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#faf8f5] transition-colors"
+                >
+                  <span className={`w-[16px] h-[16px] rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                    isVisible ? "bg-panora-green border-panora-green" : "bg-white border-[#d4d2cc]"
+                  }`}>
+                    {isVisible && <Check className="w-[10px] h-[10px] text-white" strokeWidth={3} />}
+                  </span>
+                  <span className={`text-[13px] leading-[18px] min-w-0 ${isVisible ? "text-panora-text" : "text-panora-text-muted"}`}>{formula}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
@@ -212,6 +292,25 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
   const [pricingMode, setPricingMode] = useState<"ht" | "ttc">("ttc");
   const [showAnnual, setShowAnnual] = useState(true);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  // Per-insurer hidden offers state — keyed by insurerId, value is Set of hidden formula indices
+  const [hiddenOffers, setHiddenOffers] = useState<Record<string, Set<number>>>({});
+  const toggleOffer = (insurerId: string, formulaIdx: number) => {
+    setHiddenOffers((prev) => {
+      const current = prev[insurerId] ?? new Set<number>();
+      const next = new Set(current);
+      if (next.has(formulaIdx)) next.delete(formulaIdx);
+      else next.add(formulaIdx);
+      return { ...prev, [insurerId]: next };
+    });
+  };
+  const isOfferVisible = (insurerId: string, formulaIdx: number) =>
+    !hiddenOffers[insurerId]?.has(formulaIdx);
+  const visibleOfferCount = (ins: InsurerData) => {
+    const total = ins.pricing?.length ?? 0;
+    const hidden = hiddenOffers[ins.id]?.size ?? 0;
+    return total - hidden;
+  };
 
   // Multi-entity state
   const multiEntity = comparisonData?.multiEntity;
@@ -294,6 +393,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         </div>
         {insurers.map((ins) => {
           const offerCount = ins.pricing?.length ?? 0;
+          const shown = visibleOfferCount(ins);
           return (
             <div
               key={ins.id}
@@ -304,12 +404,9 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                   <InsurerLogo insurerId={ins.id} name={ins.name} size="sm" className="w-5 h-5 rounded-[3px]" />
                   <span className="text-[13px] font-semibold text-panora-text">{ins.name}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-panora-text-muted">
-                    {offerCount}/{offerCount} offres affichées
-                  </span>
-                  <button className="text-[11px] font-medium text-panora-green">Gérer</button>
-                </div>
+                {offerCount > 1 && (
+                  <span className="text-[11px] text-panora-text-muted">{shown}/{offerCount} offres</span>
+                )}
               </div>
             </div>
           );
@@ -415,12 +512,43 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         />
       )}
 
-      {/* Section: Synthèse parc — single Prix row (non-fleet only, fleet uses FleetSynthesisSection) */}
+      {/* Section: Conditions financières — per-insurer cell pricing with offer filtering */}
       {!isMultiEntity && <SectionHeader
         title={comparisonData?.synthesisLabel ?? "Conditions financières"}
         collapsed={collapsedSections.has("conditions")}
         onToggle={() => toggleSection("conditions")}
       />}
+
+      {/* Offer filter row — one dropdown per insurer, shown when any insurer has >1 offer */}
+      {!isMultiEntity && !collapsedSections.has("conditions") && insurers.some((ins) => (ins.pricing?.length ?? 0) > 1) && (
+        <div className="flex border-b border-panora-border bg-[#faf8f5]">
+          <div className="w-[250px] shrink-0 px-4 py-2.5 border-r border-panora-border flex items-center">
+            <span className="text-[12px] text-panora-text-muted">Offres affichées</span>
+          </div>
+          {insurers.map((ins) => {
+            const pricing = ins.pricing ?? [];
+            const total = pricing.length;
+            const shown = visibleOfferCount(ins);
+            return (
+              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-2 border-r border-panora-border`}>
+                {total > 1 ? (
+                  <OfferFilterDropdown
+                    insurerId={ins.id}
+                    formulas={pricing.map((p) => p.formula)}
+                    hiddenOffers={hiddenOffers[ins.id] ?? new Set()}
+                    onToggle={(fIdx) => toggleOffer(ins.id, fIdx)}
+                    shown={shown}
+                    total={total}
+                  />
+                ) : (
+                  <span className="text-[12px] text-panora-text-muted">—</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {!isMultiEntity && !collapsedSections.has("conditions") && <div className="flex border-b border-panora-border">
         {/* Left label */}
         <div className={`w-[250px] shrink-0 px-4 py-4 border-r border-panora-border flex flex-col gap-2.5 relative ${isPriceRowActive ? "bg-[linear-gradient(to_right,#ebf3ef_0%,white_20%)]" : ""}`}>
@@ -467,44 +595,50 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           {isPriceRowActive && <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-panora-green rounded-r-sm" />}
         </div>
 
-        {/* One cell per insurer — all sub-offers inside */}
+        {/* One cell per insurer — show only visible offers */}
         {insurers.map((ins) => {
           const pricing = ins.pricing ?? [];
           const cellId: CellIdentifier = { type: "price", insurerId: ins.id };
           const isSelected = cellIdEquals(selectedCell, cellId);
+          const visibleFormulas = pricing.filter((_, fIdx) => isOfferVisible(ins.id, fIdx));
 
           return (
             <ComparisonCell
               key={ins.id}
               isSelected={isSelected}
               onClick={() => onCellSelect?.(cellId)}
-              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+              className={`${colClass} shrink-0 pl-4 pr-4 py-3 border-r border-panora-border`}
             >
-              {pricing.length === 0 ? (
-                <span className="text-[13px] text-panora-text-muted">—</span>
+              {visibleFormulas.length === 0 ? (
+                <span className="text-[13px] text-panora-text-muted italic">Aucune offre sélectionnée</span>
+              ) : visibleFormulas.length === 1 ? (
+                /* Single visible offer — flat price lines */
+                <div className="flex flex-col gap-1">
+                  {visibleFormulas[0].details.map((d, di) => (
+                    <PriceLine key={di} label={d.label} value={d.value} />
+                  ))}
+                </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  {pricing.map((formula, fIdx) => {
-                    const key = `${ins.id}-${fIdx}`;
-                    const isOpen = expanded[key] ?? (fIdx === 0);
+                /* Multiple visible offers — collapsible accordions */
+                <div className="flex flex-col gap-3">
+                  {visibleFormulas.map((formula, vIdx) => {
+                    const key = `${ins.id}-${formula.formula}`;
+                    const isOpen = expanded[key] ?? (vIdx === 0);
                     return (
-                      <div key={fIdx} className="flex flex-col gap-1">
+                      <div key={vIdx} className="flex flex-col gap-1">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggle(key);
-                          }}
-                          className="flex items-center gap-[5px] text-[12px] font-medium text-panora-text-muted tracking-[0.12px] leading-6"
+                          onClick={(e) => { e.stopPropagation(); toggle(key); }}
+                          className="flex items-center gap-1 min-w-0 cursor-pointer"
                         >
                           {isOpen ? (
-                            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+                            <ChevronDown className="w-3.5 h-3.5 shrink-0 text-[#5c5953]" />
                           ) : (
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[#5c5953]" />
                           )}
-                          <span className="truncate">{formula.formula}</span>
+                          <span className="text-[12px] font-medium text-[#5c5953] tracking-[0.12px] leading-5 truncate min-w-0">{formula.formula}</span>
                         </button>
                         {isOpen && (
-                          <div className="space-y-0.5">
+                          <div className="flex flex-col gap-1 pl-[20px]">
                             {formula.details.map((d, di) => (
                               <PriceLine key={di} label={d.label} value={d.value} />
                             ))}
