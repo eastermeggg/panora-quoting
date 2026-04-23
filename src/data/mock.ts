@@ -441,6 +441,20 @@ export const cotationsList: Cotation[] = [
       { id: "swisslife", name: "Swiss Life", status: "completed", reference: "SWL-AT-3305", bestPrice: "0,88%" },
     ],
   },
+  {
+    id: "cot-12",
+    cotationId: "COT-2026-0175",
+    client: "Valeas Groupe SAS",
+    product: "D&O",
+    productIcon: "shield",
+    createdAt: "22/04/2026",
+    createdVia: "email",
+    insurers: [
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-DO-9901", bestPrice: "799 €/an" },
+      { id: "generali", name: "Generali", status: "completed", reference: "GEN-DO-6603", bestPrice: "870 €/an" },
+      { id: "chubb", name: "Chubb", status: "completed", reference: "CHB-DO-2204", bestPrice: "720 €/an" },
+    ],
+  },
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -1119,6 +1133,70 @@ const cotationFollowupMap: Record<string, FollowupData> = {
       },
     ],
   },
+  "cot-12": {
+    cotation: cotationsList[11],
+    projectName: "D&O Valeas Groupe 2026",
+    emailSubject: "Cotation D&O - Valeas Groupe SAS",
+    scenarioId: "rcpro",
+    attachments: [
+      { name: "Kbis_Valeas_Groupe.pdf", size: "210 Ko", fieldsExtracted: 3 },
+      { name: "Statuts_Valeas_Groupe.pdf", size: "890 Ko", fieldsExtracted: 4 },
+      { name: "PV_AG_Valeas_2025.pdf", size: "340 Ko", fieldsExtracted: 2 },
+    ],
+    insurers: [
+      {
+        id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
+        status: "completed", reference: "AXA-DO-9901",
+        documents: ["Devis_Axa_DO_Valeas.pdf", "CG_DO_Axa.pdf"],
+        pricing: [
+          { formula: "Variante 1 — Jusqu'à 50 000 € couverture", details: [{ label: "D&O net", value: "599 €/an" }, { label: "D&O + CLL net", value: "799 €/an" }, { label: "Total D&O (T&L + MLA)", value: "799 €/an" }, { label: "Total D&O + CLL (T&L + MLA)", value: "1 020 €/an" }] },
+          { formula: "Variante 2 — Jusqu'à 100 000 € couverture", details: [{ label: "D&O net", value: "1 150 €/an" }, { label: "D&O + CLL net", value: "1 520 €/an" }, { label: "Total D&O (T&L + MLA)", value: "1 530 €/an" }, { label: "Total D&O + CLL (T&L + MLA)", value: "1 950 €/an" }] },
+          { formula: "Variante 3 — Jusqu'à 500 000 € couverture", details: [{ label: "D&O net", value: "3 200 €/an" }, { label: "D&O + CLL net", value: "4 100 €/an" }, { label: "Total D&O (T&L + MLA)", value: "4 250 €/an" }, { label: "Total D&O + CLL (T&L + MLA)", value: "5 400 €/an" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "AXA-DO-9901" },
+          { label: "Client", value: "Valeas Groupe SAS" },
+          { label: "Produit", value: "D&O — Responsabilité des dirigeants" },
+          { label: "Date d'effet", value: "01/06/2026" },
+        ],
+        allSteps: makeSteps("Axa", 7),
+      },
+      {
+        id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
+        status: "completed", reference: "GEN-DO-6603",
+        documents: ["Devis_Generali_DO_Valeas.pdf", "CG_DO_Generali.pdf"],
+        pricing: [
+          { formula: "Variante 1 — Jusqu'à 50 000 € couverture", details: [{ label: "D&O net", value: "650 €/an" }, { label: "D&O + CLL", value: "870 €/an" }] },
+          { formula: "Variante 2 — Jusqu'à 100 000 € couverture", details: [{ label: "D&O net", value: "1 280 €/an" }, { label: "D&O + CLL", value: "1 650 €/an" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "GEN-DO-6603" },
+          { label: "Client", value: "Valeas Groupe SAS" },
+          { label: "Produit", value: "D&O — Responsabilité des dirigeants" },
+          { label: "Date d'effet", value: "01/06/2026" },
+        ],
+        allSteps: makeSteps("Generali", 7),
+      },
+      {
+        id: "chubb", name: "Chubb", logo: "🟡", logoColor: "#E8A317", hasCode: true,
+        status: "completed", reference: "CHB-DO-2204",
+        documents: ["Devis_Chubb_DO_Valeas.pdf", "CG_DO_Chubb.pdf"],
+        pricing: [
+          { formula: "Variante 1 — Jusqu'à 50 000 € couverture", details: [{ label: "D&O net", value: "720 €/an" }, { label: "D&O + CLL net", value: "940 €/an" }] },
+          { formula: "Variante 2 — Jusqu'à 100 000 € couverture", details: [{ label: "D&O net", value: "1 380 €/an" }, { label: "D&O + CLL net", value: "1 780 €/an" }] },
+          { formula: "Variante 3 — Jusqu'à 500 000 € couverture", details: [{ label: "D&O net", value: "3 100 €/an" }, { label: "D&O + CLL net", value: "3 980 €/an" }] },
+          { formula: "Variante 4 — Jusqu'à 1 000 000 € couverture", details: [{ label: "D&O net", value: "5 800 €/an" }, { label: "D&O + CLL net", value: "7 200 €/an" }] },
+        ],
+        quoteInfo: [
+          { label: "Référence devis", value: "CHB-DO-2204" },
+          { label: "Client", value: "Valeas Groupe SAS" },
+          { label: "Produit", value: "D&O — Responsabilité des dirigeants" },
+          { label: "Date d'effet", value: "01/06/2026" },
+        ],
+        allSteps: makeSteps("Chubb", 7),
+      },
+    ],
+  },
 };
 
 export function getFollowupData(cotationId: string): FollowupData | undefined {
@@ -1292,6 +1370,25 @@ export type MultiEntityData = {
   guaranteeOverrides?: Record<string, Record<string, Record<string, CellValue>>>;
 };
 
+/** A pricing row within a coverage-tier variant, keyed by insurer id */
+export type PricingVariantRow = {
+  label: string;
+  /** keyed by insurer id → formatted price string, e.g. "799 €/an" */
+  values: Record<string, string>;
+  /** Mark as a total/summary row for visual emphasis */
+  isTotal?: boolean;
+};
+
+/** A coverage-tier variant (e.g. "Jusqu'à 50k couverture") with per-insurer pricing */
+export type PricingVariant = {
+  id: string;
+  /** Full display label, e.g. "Variante 1 — Jusqu'à 50 000 € couverture" */
+  label: string;
+  /** Compact pill label, e.g. "50k" */
+  shortLabel: string;
+  rows: PricingVariantRow[];
+};
+
 export type ComparisonData = {
   products: GuaranteeProduct[];
   /** @deprecated — use products */
@@ -1307,6 +1404,8 @@ export type ComparisonData = {
   multiEntity?: MultiEntityData;
   /** Custom label for the synthesis/conditions section (default: "Synthèse parc") */
   synthesisLabel?: string;
+  /** Coverage-tier variants for D&O-style products with tiered pricing */
+  pricingVariants?: PricingVariant[];
 };
 
 function makeDetail(
@@ -3287,6 +3386,120 @@ const comparisonDataMap: Record<string, ComparisonData> = {
     ],
     dynamicFieldValues: {},
   },
+  "cot-12": {
+    products: [
+      {
+        title: "D&O",
+        subGroups: [
+          {
+            title: "Responsabilité des dirigeants",
+            rows: [
+              {
+                label: "Responsabilité civile des mandataires sociaux",
+                values: { axa: { type: "check" }, generali: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("RC des mandataires sociaux", "axa", "Axa", true, "Couverture des dirigeants pour les fautes de gestion, erreurs ou omissions dans l'exercice de leurs fonctions.", [{ id: "sl-1", label: "Dirigeants couverts", value: "Tous mandataires sociaux" }, { id: "sl-2", label: "Rétroactivité", value: "Illimitée" }], defaultSources, "Variable selon variante", "5 000 €"),
+                  generali: makeDetail("RC des mandataires sociaux", "generali", "Generali", true, "Protection des dirigeants contre les réclamations liées à leur gestion.", [{ id: "sl-1", label: "Dirigeants couverts", value: "Mandataires de droit et de fait" }, { id: "sl-2", label: "Rétroactivité", value: "5 ans" }], defaultSources, "Variable selon variante", "7 500 €"),
+                  chubb: makeDetail("RC des mandataires sociaux", "chubb", "Chubb", true, "Couverture étendue des mandataires sociaux incluant les dirigeants de fait.", [{ id: "sl-1", label: "Dirigeants couverts", value: "De droit, de fait et assimilés" }, { id: "sl-2", label: "Rétroactivité", value: "Illimitée" }], defaultSources, "Variable selon variante", "3 000 €"),
+                },
+              },
+              {
+                label: "Faute de gestion",
+                values: { axa: { type: "check" }, generali: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Faute de gestion", "axa", "Axa", true, "Couverture des conséquences financières d'une faute de gestion reprochée au dirigeant.", [{ id: "sl-1", label: "Périmètre", value: "Erreurs, omissions, négligences" }], defaultSources),
+                  generali: makeDetail("Faute de gestion", "generali", "Generali", true, "Prise en charge des fautes de gestion caractérisées.", [{ id: "sl-1", label: "Périmètre", value: "Fautes civiles uniquement" }], defaultSources),
+                  chubb: makeDetail("Faute de gestion", "chubb", "Chubb", true, "Couverture étendue incluant les fautes de gestion involontaires.", [{ id: "sl-1", label: "Périmètre", value: "Toutes fautes non intentionnelles" }], defaultSources),
+                },
+              },
+              {
+                label: "Mise en cause personnelle du patrimoine",
+                values: { axa: { type: "check" }, generali: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Mise en cause patrimoine", "axa", "Axa", true, "Protection du patrimoine personnel du dirigeant en cas de mise en cause.", [], defaultSources),
+                  generali: makeDetail("Mise en cause patrimoine", "generali", "Generali", true, "Garantie du patrimoine personnel.", [], defaultSources),
+                  chubb: makeDetail("Mise en cause patrimoine", "chubb", "Chubb", true, "Protection étendue du patrimoine personnel et familial.", [], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Défense pénale",
+            rows: [
+              {
+                label: "Frais de défense pénale",
+                values: { axa: { type: "check" }, generali: { type: "check" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Frais de défense pénale", "axa", "Axa", true, "Prise en charge des frais d'avocat et de procédure en cas de poursuites pénales.", [{ id: "sl-1", label: "Plafond", value: "150 000 €" }], defaultSources),
+                  generali: makeDetail("Frais de défense pénale", "generali", "Generali", true, "Couverture des frais de défense devant les juridictions pénales.", [{ id: "sl-1", label: "Plafond", value: "100 000 €" }], defaultSources),
+                  chubb: makeDetail("Frais de défense pénale", "chubb", "Chubb", true, "Frais de défense pénale sans sous-limite dédiée.", [{ id: "sl-1", label: "Plafond", value: "Inclus dans le plafond global" }], defaultSources),
+                },
+              },
+              {
+                label: "Enquête administrative / AMF",
+                values: { axa: { type: "check" }, generali: { type: "cross" }, chubb: { type: "check" } },
+                details: {
+                  axa: makeDetail("Enquête AMF", "axa", "Axa", true, "Couverture des frais liés aux enquêtes de l'AMF ou autorités administratives.", [{ id: "sl-1", label: "Sous-limite", value: "75 000 €" }], defaultSources),
+                  generali: makeDetail("Enquête AMF", "generali", "Generali", false, "Non couvert dans cette formule.", [], defaultSources),
+                  chubb: makeDetail("Enquête AMF", "chubb", "Chubb", true, "Enquêtes AMF, ACPR et autorités administratives couvertes.", [{ id: "sl-1", label: "Sous-limite", value: "100 000 €" }], defaultSources),
+                },
+              },
+              {
+                label: "Caution pénale",
+                values: { axa: { type: "text", value: "50 000 €" }, generali: { type: "cross" }, chubb: { type: "text", value: "100 000 €" } },
+                details: {
+                  axa: makeDetail("Caution pénale", "axa", "Axa", true, "Avance de la caution pénale pour éviter la détention provisoire.", [{ id: "sl-1", label: "Plafond", value: "50 000 €" }], defaultSources),
+                  generali: makeDetail("Caution pénale", "generali", "Generali", false, "Non proposé.", [], defaultSources),
+                  chubb: makeDetail("Caution pénale", "chubb", "Chubb", true, "Avance de caution pénale étendue.", [{ id: "sl-1", label: "Plafond", value: "100 000 €" }], defaultSources),
+                },
+              },
+            ],
+          },
+          {
+            title: "Extensions",
+            rows: [
+              {
+                label: "Couverture des filiales",
+                values: { axa: { type: "check" }, generali: { type: "text", value: "Filiales > 50%" }, chubb: { type: "check" } },
+              },
+              {
+                label: "Pollution / atteinte à l'environnement",
+                values: { axa: { type: "cross" }, generali: { type: "cross" }, chubb: { type: "text", value: "Soudaine uniquement" } },
+              },
+              {
+                label: "Responsabilité solidaire entre dirigeants",
+                values: { axa: { type: "check" }, generali: { type: "check" }, chubb: { type: "check" } },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    exclusions: [
+      {
+        id: "excl-do-1",
+        label: "Faute intentionnelle ou dolosive",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, generali: { type: "exclu" }, chubb: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Faute intentionnelle", "axa", "Axa", false, "deterministic", "excl-do-1", "Actes intentionnels ou frauduleux du dirigeant.", [], defaultSources),
+          generali: makeExclusionDetail("Faute intentionnelle", "generali", "Generali", false, "deterministic", "excl-do-1", "Fautes intentionnelles ou dolosives exclues.", [], defaultSources),
+          chubb: makeExclusionDetail("Faute intentionnelle", "chubb", "Chubb", false, "deterministic", "excl-do-1", "Tout acte intentionnel ou frauduleux.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-do-2",
+        label: "Rémunération indue",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, generali: { type: "exclu" }, chubb: { type: "exclu-text", value: "Sauf bonne foi" } },
+        details: {
+          axa: makeExclusionDetail("Rémunération indue", "axa", "Axa", false, "ai", "excl-do-2", "Avantages ou rémunérations obtenues en violation des statuts.", [], defaultSources),
+          generali: makeExclusionDetail("Rémunération indue", "generali", "Generali", false, "ai", "excl-do-2", "Rémunérations indues exclues.", [], defaultSources),
+          chubb: makeExclusionDetail("Rémunération indue", "chubb", "Chubb", false, "ai", "excl-do-2", "Exclusion sauf si le dirigeant établit sa bonne foi.", [{ id: "sl-1", label: "Exception", value: "Présomption de bonne foi" }], defaultSources),
+        },
+      },
+    ],
+  },
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -4112,6 +4325,70 @@ const analysisDataMap: Record<string, AnalysisData> = {
       { label: "Prime minimum", values: { axa: { status: "covered", keyInfo: "1 200 €" }, generali: { status: "covered", keyInfo: "1 500 €" }, swisslife: { status: "covered", keyInfo: "950 €" } } },
     ],
   },
+  "cot-12": {
+    synthese: [
+      {
+        insurerId: "axa",
+        pointsForts: [
+          "Rétroactivité illimitée sur la RC des mandataires",
+          "Enquête AMF couverte avec sous-limite dédiée (75 000 €)",
+          "Couverture des filiales sans restriction de seuil",
+        ],
+        pointsFaibles: [
+          "Pas de couverture pollution / atteinte à l'environnement",
+          "Caution pénale limitée à 50 000 €",
+          "Franchise de 5 000 € — la plus élevée du panel",
+        ],
+      },
+      {
+        insurerId: "generali",
+        pointsForts: [
+          "Dirigeants de droit et de fait couverts",
+          "Primes les plus compétitives sur la variante 50k",
+        ],
+        pointsFaibles: [
+          "Rétroactivité limitée à 5 ans",
+          "Pas de couverture enquête AMF",
+          "Pas de caution pénale",
+          "Filiales couvertes uniquement si participation > 50%",
+        ],
+      },
+      {
+        insurerId: "chubb",
+        pointsForts: [
+          "Couverture la plus étendue : dirigeants de fait et assimilés",
+          "Caution pénale la plus élevée (100 000 €)",
+          "Franchise la plus basse (3 000 €)",
+          "Meilleur tarif sur la variante 500k",
+          "Pollution soudaine incluse",
+        ],
+        pointsFaibles: [
+          "Primes légèrement plus élevées sur les variantes basses",
+          "Frais de défense pénale inclus dans le plafond global (pas de sous-limite)",
+        ],
+      },
+    ],
+    contextPills: [],
+    hasFullContext: true,
+    resumeExecutif: "Comparaison D&O pour Valeas Groupe SAS — 3 assureurs, 3 variantes de couverture. Chubb se distingue par la couverture la plus étendue (dirigeants de fait, pollution soudaine, caution pénale à 100k€) et les meilleurs tarifs sur la variante haute (500k). Axa offre une rétroactivité illimitée mais exclut la pollution. Generali est le plus compétitif en entrée de gamme mais avec des garanties plus restrictives.",
+    conditionsFinancieres: {
+      analysisBefore: "Les tarifs varient significativement selon le niveau de couverture choisi.",
+      analysisAfter: "Chubb propose le meilleur rapport qualité-prix sur la variante 500k, tandis qu'Axa reste compétitif sur les variantes basses.",
+    },
+    analyseParOffre: [
+      { insurerId: "axa", insurerName: "Axa", pointsForts: ["Rétroactivité illimitée", "Enquête AMF couverte", "Filiales sans restriction"], pointsFaibles: ["Pas de pollution", "Caution pénale 50k€ max", "Franchise 5 000 €"] },
+      { insurerId: "generali", insurerName: "Generali", pointsForts: ["Dirigeants de droit et de fait", "Compétitif en 50k"], pointsFaibles: ["Rétroactivité 5 ans", "Pas d'enquête AMF", "Pas de caution pénale"] },
+      { insurerId: "chubb", insurerName: "Chubb", pointsForts: ["Couverture la plus étendue", "Caution 100k€", "Franchise 3 000 €", "Pollution soudaine"], pointsFaibles: ["Primes plus élevées en entrée de gamme", "Défense pénale dans le plafond global"] },
+    ],
+    garantiesCles: [
+      { label: "RC mandataires sociaux", values: { axa: { status: "covered" }, generali: { status: "covered" }, chubb: { status: "covered" } } },
+      { label: "Rétroactivité", values: { axa: { status: "covered", keyInfo: "Illimitée" }, generali: { status: "covered", keyInfo: "5 ans" }, chubb: { status: "covered", keyInfo: "Illimitée" } } },
+      { label: "Enquête AMF", values: { axa: { status: "covered", keyInfo: "75 000 €" }, generali: { status: "not_covered" }, chubb: { status: "covered", keyInfo: "100 000 €" } } },
+      { label: "Caution pénale", values: { axa: { status: "covered", keyInfo: "50 000 €" }, generali: { status: "not_covered" }, chubb: { status: "covered", keyInfo: "100 000 €" } } },
+      { label: "Pollution", values: { axa: { status: "not_covered" }, generali: { status: "not_covered" }, chubb: { status: "covered", keyInfo: "Soudaine" } } },
+      { label: "Franchise", values: { axa: { status: "covered", keyInfo: "5 000 €" }, generali: { status: "covered", keyInfo: "7 500 €" }, chubb: { status: "covered", keyInfo: "3 000 €" } } },
+    ],
+  },
 };
 
 export function getAnalysisData(cotationId: string): AnalysisData | undefined {
@@ -4324,6 +4601,16 @@ const clientProfileMap: Record<string, ClientProfileData> = {
       { id: "b-43", value: "Prise en charge de la rééducation professionnelle (métiers physiques)", source: "manual" },
     ],
   },
+  "cot-12": {
+    clientLabel: "Valeas Groupe SAS",
+    clientSiren: "85234567800019",
+    besoinsClient: [
+      { id: "b-50", value: "Couverture D&O pour 3 mandataires sociaux (président, DG, DGA)", source: "ai" },
+      { id: "b-51", value: "Rétroactivité illimitée souhaitée", source: "ai" },
+      { id: "b-52", value: "Couverture des filiales à plus de 50%", source: "ai" },
+      { id: "b-53", value: "Frais de défense pénale minimum 100 000 €", source: "manual" },
+    ],
+  },
 };
 
 export function getClientProfile(cotationId: string): ClientProfileData | undefined {
@@ -4517,6 +4804,17 @@ export const comparisonTasks: ComparisonTask[] = [
     insurerIds: ["axa", "generali", "swisslife"],
     createdBy: "Delphine",
     date: "20/04/2026",
+    status: "done",
+  },
+  {
+    id: "cmp-12",
+    cotationId: "cot-12",
+    client: "Valeas Groupe SAS",
+    products: ["D&O"],
+    principalProduct: "D&O",
+    insurerIds: ["axa", "generali", "chubb"],
+    createdBy: "Delphine",
+    date: "22/04/2026",
     status: "done",
   },
 ];
