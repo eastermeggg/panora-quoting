@@ -614,17 +614,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             >
               Tableau comparatif
             </button>
-            <button
-              onClick={() => setActiveTab("analysis")}
-              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
-                activeTab === "analysis"
-                  ? "border-panora-green text-panora-green font-medium"
-                  : "border-transparent text-panora-text-muted hover:text-panora-text"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Synthese
-            </button>
+            {/* Synthese tab — hidden for demo */}
           </div>
 
           {/* Tab content */}
