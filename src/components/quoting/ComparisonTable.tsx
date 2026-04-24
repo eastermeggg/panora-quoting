@@ -441,61 +441,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         );
       })()}
 
-      {/* Section: Synthese IA */}
-      {(syntheseData && syntheseData.length > 0) || !hasClientProfile ? (
-        <div>
-          <SectionHeader
-            title="Synthese IA"
-            variant="synthese"
-            collapsed={collapsedSections.has("synthese")}
-            onToggle={() => toggleSection("synthese")}
-          />
-          {!collapsedSections.has("synthese") && (
-            !hasClientProfile ? (
-              /* Empty state: no client profile */
-              <div className="border-b border-panora-border px-5 py-4">
-                <p className="text-[13px] font-medium text-panora-text">
-                  <button onClick={onOpenProfile} className="text-panora-green underline hover:no-underline">Completez le profil client</button>
-                  {" "}pour generer une analyse personnalisee.
-                </p>
-              </div>
-            ) : (
-              <div className="flex border-b border-panora-border">
-                <div className="w-[250px] shrink-0 px-4 py-4 border-r border-panora-border">
-                  <p className="text-[12px] text-panora-text-muted leading-[18px]">
-                    La synthese est generee a partir des devis et du{" "}
-                    <button onClick={onOpenProfile} className="text-panora-green font-medium hover:underline">profil client</button>{" "}
-                    que vous pouvez modifier.
-                  </p>
-                </div>
-                {insurers.map((ins, insIdx) => {
-                  const item = syntheseData?.find((s) => s.insurerId === ins.id);
-                  return (
-                    <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
-                      {item ? (
-                        <SyntheseCell
-                          item={item}
-                          onUpdate={(updated) => {
-                            const next = (syntheseData ?? []).map((s) => s.insurerId === ins.id ? updated : s);
-                            onUpdateSynthese?.(next);
-                          }}
-                          onViewAnalysis={onViewAnalysis}
-                          isStreaming={isStreaming}
-                          streamDelay={insIdx * 400}
-                          onStreamingDone={insIdx === insurers.length - 1 ? onStreamingDone : undefined}
-                        />
-                      ) : (
-                        <span className="text-[13px] text-panora-text-muted">—</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          )}
-          <SectionDivider />
-        </div>
-      ) : null}
+      {/* Section: Synthese IA — hidden for demo */}
 
       {/* Section: Synthèse parc auto — both views for multi-entity */}
       {isMultiEntity && multiEntity && (
