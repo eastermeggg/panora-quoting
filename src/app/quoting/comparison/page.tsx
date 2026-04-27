@@ -644,6 +644,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                   onStreamingDone={() => setIsStreaming(false)}
                   hasClientProfile={hasClientProfile}
                   dynamicFieldValues={dynamicFieldValues}
+                  principalProduct={task?.principalProduct ?? null}
                 />
               </div>
               {isProfileOpen ? (

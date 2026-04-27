@@ -30,6 +30,8 @@ interface ComparisonTableProps {
   /** Fleet view mode — controlled by parent for multi-entity products */
   fleetViewMode?: "garanties" | "tarifs";
   onFleetViewChange?: (mode: "garanties" | "tarifs") => void;
+  /** Principal product name — drives layout variants (e.g. columnar pricing for Santé) */
+  principalProduct?: string | null;
 }
 
 function cellIdKey(c: CellIdentifier): string {
@@ -94,10 +96,53 @@ function PriceLine({ label, value }: { label: string; value: string }) {
   const { amount, period } = splitPrice(value);
   return (
     <div className="flex items-baseline justify-between">
-      <span className="text-[13px] leading-5 text-panora-text-muted">{label}</span>
-      <span className="whitespace-nowrap">
+      <span className="text-[13px] leading-5 text-panora-text-muted truncate min-w-0">{label}</span>
+      <span className="whitespace-nowrap ml-2 shrink-0">
         <span className="text-[13px] font-medium leading-5 text-panora-text">{amount}</span>
         {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
+      </span>
+    </div>
+  );
+}
+
+function PriceLineStacked({ label, value }: { label: string; value: string }) {
+  const { amount, period } = splitPrice(value);
+  return (
+    <div className="flex flex-col">
+      <span className="text-[13px] leading-5 text-panora-text-muted">{label}</span>
+      <span>
+        <span className="text-[13px] font-medium leading-5 text-panora-text">{amount}</span>
+        {period && <span className="text-[13px] leading-5 text-panora-text-muted"> {period}</span>}
+      </span>
+    </div>
+  );
+}
+
+function SubOfferDropdown({ label, isOpen, onToggle, showCaret = true, onHide }: { label: string; isOpen: boolean; onToggle: (e: React.MouseEvent) => void; showCaret?: boolean; onHide?: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      onClick={onToggle}
+      className={`flex items-center h-6 w-full border border-panora-border rounded-[5px] overflow-hidden group/dropdown ${showCaret ? "cursor-pointer" : "cursor-default"}`}
+    >
+      {showCaret && (
+        <span className="flex items-center justify-center w-6 h-6 bg-[#faf8f5] border-r border-panora-border shrink-0">
+          {isOpen ? (
+            <ChevronDown className="w-3.5 h-3.5 text-panora-text" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-panora-text" />
+          )}
+        </span>
+      )}
+      <span className="flex-1 min-w-0 h-6 flex items-center gap-2.5 px-1.5 bg-[#faf8f5]">
+        <span className="text-[12px] font-medium leading-4 text-panora-text truncate flex-1 min-w-0">{label}</span>
+        {onHide && (
+          <button
+            onClick={onHide}
+            className="shrink-0 opacity-0 group-hover/dropdown:opacity-100 transition-opacity cursor-pointer"
+          >
+            <EyeOff className="w-3.5 h-3.5 text-panora-text-muted" />
+          </button>
+        )}
       </span>
     </div>
   );
@@ -285,13 +330,24 @@ function OfferFilterDropdown({
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange, principalProduct }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
   const [pricingMode, setPricingMode] = useState<"ht" | "ttc">("ttc");
   const [showAnnual, setShowAnnual] = useState(true);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  // Columnar pricing layout for Santé products — sub-offers as columns instead of stacked
+  const isColumnarPricing = principalProduct === "Santé collective";
+  const subOfferColClass = "w-[191px]";
+  // Helper: returns column class and optional style for an insurer cell in columnar mode
+  const insurerColProps = (ins: InsurerData) => {
+    if (!isColumnarPricing) return { className: colClass, style: undefined };
+    const visibleFormulas = (ins.pricing ?? []).filter((_, fIdx) => isOfferVisible(ins.id, fIdx));
+    const spanCount = Math.max(visibleFormulas.length, 1);
+    return { className: "", style: { width: `${spanCount * 191}px` } as React.CSSProperties };
+  };
 
   // Per-insurer hidden offers state — keyed by insurerId, value is Set of hidden formula indices
   const [hiddenOffers, setHiddenOffers] = useState<Record<string, Set<number>>>({});
@@ -394,10 +450,12 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         {insurers.map((ins) => {
           const offerCount = ins.pricing?.length ?? 0;
           const shown = visibleOfferCount(ins);
+          const icp = insurerColProps(ins);
           return (
             <div
               key={ins.id}
-              className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+              className={`${icp.className} shrink-0 px-3 py-3 border-r border-panora-border`}
+              style={icp.style}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -475,8 +533,13 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             const pricing = ins.pricing ?? [];
             const total = pricing.length;
             const shown = visibleOfferCount(ins);
+            const icp = insurerColProps(ins);
             return (
-              <div key={ins.id} className={`${colClass} shrink-0 px-3 py-2 border-r border-panora-border`}>
+              <div
+                key={ins.id}
+                className={`${icp.className} shrink-0 px-4 py-2.5 border-r border-panora-border`}
+                style={icp.style}
+              >
                 {total > 1 ? (
                   <OfferFilterDropdown
                     insurerId={ins.id}
@@ -548,43 +611,67 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
           const isSelected = cellIdEquals(selectedCell, cellId);
           const visibleFormulas = pricing.filter((_, fIdx) => isOfferVisible(ins.id, fIdx));
 
+          if (isColumnarPricing) {
+            // Columnar layout: each sub-offer is its own column
+            // Track original indices for toggling visibility
+            const visibleWithIdx = pricing
+              .map((f, idx) => ({ formula: f, originalIdx: idx }))
+              .filter(({ originalIdx }) => isOfferVisible(ins.id, originalIdx));
+
+            return visibleWithIdx.length === 0 ? (
+              <div key={ins.id} className={`${subOfferColClass} shrink-0 px-4 py-3 border-r border-panora-border`}>
+                <span className="text-[13px] text-panora-text-muted italic">Aucune offre</span>
+              </div>
+            ) : (
+              visibleWithIdx.map(({ formula, originalIdx }) => (
+                <ComparisonCell
+                  key={`${ins.id}-${originalIdx}`}
+                  isSelected={isSelected}
+                  onClick={() => onCellSelect?.(cellId)}
+                  className={`${subOfferColClass} shrink-0 border-r border-panora-border group/suboffer`}
+                >
+                  <div className="flex flex-col gap-2 p-4">
+                    <SubOfferDropdown
+                      label={formula.formula}
+                      isOpen={true}
+                      onToggle={(e) => e.stopPropagation()}
+                      showCaret={false}
+                      onHide={(e) => { e.stopPropagation(); toggleOffer(ins.id, originalIdx); }}
+                    />
+                    <div className="flex flex-col gap-1 px-px">
+                      {formula.details.map((d, di) => (
+                        <PriceLineStacked key={di} label={d.label} value={d.value} />
+                      ))}
+                    </div>
+                  </div>
+                </ComparisonCell>
+              ))
+            );
+          }
+
           return (
             <ComparisonCell
               key={ins.id}
               isSelected={isSelected}
               onClick={() => onCellSelect?.(cellId)}
-              className={`${colClass} shrink-0 pl-4 pr-4 py-3 border-r border-panora-border`}
+              className={`${colClass} shrink-0 border-r border-panora-border`}
             >
               {visibleFormulas.length === 0 ? (
-                <span className="text-[13px] text-panora-text-muted italic">Aucune offre sélectionnée</span>
-              ) : visibleFormulas.length === 1 ? (
-                /* Single visible offer — flat price lines */
-                <div className="flex flex-col gap-1">
-                  {visibleFormulas[0].details.map((d, di) => (
-                    <PriceLine key={di} label={d.label} value={d.value} />
-                  ))}
-                </div>
+                <span className="text-[13px] text-panora-text-muted italic px-4 py-3">Aucune offre sélectionnée</span>
               ) : (
-                /* Multiple visible offers — collapsible accordions */
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
                   {visibleFormulas.map((formula, vIdx) => {
                     const key = `${ins.id}-${formula.formula}`;
                     const isOpen = expanded[key] ?? (vIdx === 0);
                     return (
-                      <div key={vIdx} className="flex flex-col gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggle(key); }}
-                          className="flex items-center gap-1 min-w-0 cursor-pointer"
-                        >
-                          {isOpen ? (
-                            <ChevronDown className="w-3.5 h-3.5 shrink-0 text-[#5c5953]" />
-                          ) : (
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[#5c5953]" />
-                          )}
-                          <span className="text-[12px] font-medium text-[#5c5953] tracking-[0.12px] leading-5 truncate min-w-0">{formula.formula}</span>
-                        </button>
+                      <div key={vIdx} className={`flex flex-col gap-2 p-4 ${vIdx > 0 ? "border-t border-panora-border" : ""}`}>
+                        <SubOfferDropdown
+                          label={formula.formula}
+                          isOpen={isOpen}
+                          onToggle={(e) => { e.stopPropagation(); toggle(key); }}
+                        />
                         {isOpen && (
-                          <div className="flex flex-col gap-1 pl-[20px]">
+                          <div className="flex flex-col gap-1 px-px">
                             {formula.details.map((d, di) => (
                               <PriceLine key={di} label={d.label} value={d.value} />
                             ))}
@@ -826,13 +913,15 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                             </div>
                             {insurers.map((ins) => {
                               const rate = row.rates[ins.id];
+                              const icp = insurerColProps(ins);
 
                               if (isPerPerson) {
                                 // €/pers/mois: show rate as primary, unit label as secondary
                                 return (
                                   <div
                                     key={ins.id}
-                                    className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}
+                                    className={`${icp.className} shrink-0 px-3 py-3 border-r border-panora-border`}
+                                    style={icp.style}
                                   >
                                     <div className="flex flex-col gap-0.5">
                                       {rate !== undefined ? (
@@ -855,7 +944,8 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                               return (
                                 <div
                                   key={ins.id}
-                                  className={`${colClass} shrink-0 border-r border-panora-border`}
+                                  className={`${icp.className} shrink-0 border-r border-panora-border`}
+                                  style={icp.style}
                                 >
                                   {amount !== null ? (
                                     <div className="flex h-full">
@@ -897,8 +987,9 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                   </div>
                   {insurers.map((ins) => {
                     const gt = grandTotals[ins.id];
+                    const icp = insurerColProps(ins);
                     return (
-                      <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                      <div key={ins.id} className={`${icp.className} shrink-0 px-3 py-3 border-r border-panora-border`} style={icp.style}>
                         {gt !== null ? (
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[13px] font-semibold text-panora-text">
@@ -923,8 +1014,9 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                     </div>
                     {insurers.map((ins) => {
                       const gt = grandTotals[ins.id];
+                      const icp = insurerColProps(ins);
                       return (
-                        <div key={ins.id} className={`${colClass} shrink-0 px-3 py-3 border-r border-panora-border`}>
+                        <div key={ins.id} className={`${icp.className} shrink-0 px-3 py-3 border-r border-panora-border`} style={icp.style}>
                           {gt !== null ? (
                             <span className="text-[13px] text-panora-text-muted">
                               {formatEur(Math.round(gt.total * employerPct / 100))}
@@ -1006,13 +1098,15 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                             const isSelected = cellIdEquals(selectedCell, cellId);
                             const showDetail = cellDisplayModes?.[cellIdKey(cellId)];
                             const keyDetail = showDetail ? deriveKeyDetail(cell, row.details?.[ins.id] ?? null) : null;
+                            const icp = insurerColProps(ins);
 
                             return (
                               <ComparisonCell
                                 key={ins.id}
                                 isSelected={isSelected}
                                 onClick={() => onCellSelect?.(cellId)}
-                                className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                                className={`${icp.className} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                                style={icp.style}
                               >
                                 {keyDetail ? (
                                   <span className="inline-flex items-center gap-1.5">
@@ -1042,8 +1136,6 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         const deterministicRows = exclusionsByOrigin("deterministic");
         const aiRows = exclusionsByOrigin("ai");
         const manualRows = exclusionsByOrigin("manual");
-        const aiGroupKey = "excl-group-ai";
-        const isAiExpanded = expanded[aiGroupKey] ?? (aiRows.length <= 5);
 
         const renderExclusionRow = (row: ExclusionRow) => {
           const exclRowActive = isExclusionRowActive(row.id);
@@ -1091,13 +1183,15 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
                 const cell = row.values[ins.id] ?? { type: "empty" as const };
                 const cellId: CellIdentifier = { type: "exclusion", exclusionId: row.id, insurerId: ins.id };
                 const isSelected = cellIdEquals(selectedCell, cellId);
+                const icp = insurerColProps(ins);
 
                 return (
                   <ComparisonCell
                     key={ins.id}
                     isSelected={isSelected}
                     onClick={() => onCellSelect?.(cellId)}
-                    className={`${colClass} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                    className={`${icp.className} shrink-0 px-3 py-3.5 border-r border-panora-border flex items-center`}
+                    style={icp.style}
                   >
                     <ExclusionCellBadge cell={cell} />
                   </ComparisonCell>
@@ -1121,18 +1215,34 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
             {/* Deterministic rows — flat, no sub-group */}
             {deterministicRows.map(renderExclusionRow)}
 
-            {/* AI sub-group — collapsible */}
+            {/* AI exclusions — single row with bullet lists per insurer */}
             {aiRows.length > 0 && (
-              <div>
+              <>
                 <SectionDivider />
-                <SectionHeader
-                  title={`${aiRows.length} autre${aiRows.length > 1 ? "s" : ""} exclusion${aiRows.length > 1 ? "s" : ""} détectée${aiRows.length > 1 ? "s" : ""} par l'IA`}
-                  variant="sub"
-                  collapsed={!isAiExpanded}
-                  onToggle={() => toggle(aiGroupKey)}
-                />
-                {isAiExpanded && aiRows.map(renderExclusionRow)}
-              </div>
+                <div className="flex border-b border-panora-border">
+                  <div className="w-[250px] shrink-0 px-4 py-3.5 border-r border-panora-border flex items-start gap-2">
+                    <Sparkles className="w-3.5 h-3.5 mt-[3px] text-panora-green shrink-0" />
+                    <span className="text-[13px] leading-[20px] text-panora-text font-medium">Exclusions détectées par l&apos;IA</span>
+                  </div>
+                  {insurers.map((ins) => {
+                    const icp = insurerColProps(ins);
+                    return (
+                      <div key={ins.id} className={`${icp.className} shrink-0 px-3 py-3 border-r border-panora-border`} style={icp.style}>
+                        <ul className="flex flex-col gap-1.5">
+                          {aiRows.map((row) => (
+                            <li key={row.id} className="flex items-start gap-2">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-[#fde8e8]">
+                                <span className="text-[13px] font-bold text-[#952617] leading-none">!</span>
+                              </span>
+                              <span className="text-[13px] leading-6 text-panora-text">{row.label}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
             {/* "Ajouter une exclusion manuelle" — inline action row */}

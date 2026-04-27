@@ -7,6 +7,7 @@ interface ComparisonCellProps {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function ComparisonCell({
@@ -14,6 +15,7 @@ export function ComparisonCell({
   onClick,
   children,
   className,
+  style,
 }: ComparisonCellProps) {
   return (
     <div
@@ -28,6 +30,7 @@ export function ComparisonCell({
           : "hover:bg-panora-bg/50",
         className
       )}
+      style={style}
     >
       {children}
     </div>
