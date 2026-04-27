@@ -643,7 +643,9 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "ALN-SC-2201",
         documents: ["Devis_Alan_Sante_Dupont.pdf", "Tableau_Garanties_Alan.pdf"],
         pricing: [
-          { formula: "Formule Confort", details: [{ label: "Tarif cadre isolé", value: "82,50 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "62,00 €/pers/mois" }] },
+          { formula: "Base", details: [{ label: "Cotisation adulte", value: "1% PMSS" }, { label: "Cotisation enfant", value: "0,7% PMSS" }] },
+          { formula: "Formule 1", details: [{ label: "Adulte", value: "+16,35 €" }, { label: "Enfant", value: "+7,19 €" }] },
+          { formula: "Formule 2", details: [{ label: "Adulte", value: "+32,69 €" }, { label: "Enfant", value: "+13,08 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "ALN-SC-2201" },
@@ -659,7 +661,9 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "MH-SC-4410",
         documents: ["Devis_Malakoff_Sante_Dupont.pdf", "CG_Malakoff_Sante.pdf"],
         pricing: [
-          { formula: "Formule Équilibre", details: [{ label: "Tarif cadre isolé", value: "78,30 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "59,80 €/pers/mois" }] },
+          { formula: "Base", details: [{ label: "Cotisation adulte", value: "0,95% PMSS" }, { label: "Cotisation enfant", value: "0,65% PMSS" }] },
+          { formula: "Formule 1", details: [{ label: "Adulte", value: "+14,80 €" }, { label: "Enfant", value: "+6,50 €" }] },
+          { formula: "Formule 2", details: [{ label: "Adulte", value: "+29,40 €" }, { label: "Enfant", value: "+11,80 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "MH-SC-4410" },
@@ -675,7 +679,9 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         status: "completed", reference: "GEN-SC-7703",
         documents: ["Devis_Generali_Sante_Dupont.pdf"],
         pricing: [
-          { formula: "Formule Vitalité", details: [{ label: "Tarif cadre isolé", value: "85,00 €/pers/mois" }, { label: "Tarif non-cadre isolé", value: "64,50 €/pers/mois" }] },
+          { formula: "Base", details: [{ label: "Cotisation adulte", value: "1,1% PMSS" }, { label: "Cotisation enfant", value: "0,75% PMSS" }] },
+          { formula: "Formule 1", details: [{ label: "Adulte", value: "+18,50 €" }, { label: "Enfant", value: "+8,10 €" }] },
+          { formula: "Formule 2", details: [{ label: "Adulte", value: "+35,20 €" }, { label: "Enfant", value: "+14,90 €" }] },
         ],
         quoteInfo: [
           { label: "Référence devis", value: "GEN-SC-7703" },
@@ -1653,6 +1659,28 @@ const comparisonDataMap: Record<string, ComparisonData> = {
         },
       },
       {
+        id: "excl-d4",
+        label: "Conduite sous alcool ou stupéfiants",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Conduite sous alcool ou stupéfiants", "axa", "Axa", false, "deterministic", "excl-d4", "Aucune prise en charge des sinistres survenus lorsque le conducteur est sous l'emprise d'alcool ou de stupéfiants.", [], defaultSources),
+          allianz: makeExclusionDetail("Conduite sous alcool ou stupéfiants", "allianz", "Allianz", false, "deterministic", "excl-d4", "Exclusion des dommages causés en état d'ivresse manifeste ou sous l'emprise de stupéfiants.", [], defaultSources),
+          generali: makeExclusionDetail("Conduite sous alcool ou stupéfiants", "generali", "Generali", false, "deterministic", "excl-d4", "Sinistres liés à la conduite en état d'ébriété ou sous l'influence de drogues.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-d5",
+        label: "Catastrophes naturelles hors arrêté",
+        origin: "deterministic",
+        values: { axa: { type: "exclu" }, allianz: { type: "inclus" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Catastrophes naturelles hors arrêté", "axa", "Axa", false, "deterministic", "excl-d5", "Dommages causés par des événements naturels non reconnus par arrêté interministériel.", [], defaultSources),
+          allianz: makeExclusionDetail("Catastrophes naturelles hors arrêté", "allianz", "Allianz", true, "deterministic", "excl-d5", "Extension de garantie couvrant les événements naturels même hors arrêté Cat Nat.", [{ id: "sl-1", label: "Plafond", value: "200 000 €" }], defaultSources),
+          generali: makeExclusionDetail("Catastrophes naturelles hors arrêté", "generali", "Generali", false, "deterministic", "excl-d5", "Exclusion des sinistres naturels en l'absence d'arrêté de catastrophe naturelle.", [], defaultSources),
+        },
+      },
+      {
         id: "excl-a1",
         label: "Activités non déclarées",
         origin: "ai",
@@ -1672,6 +1700,50 @@ const comparisonDataMap: Record<string, ComparisonData> = {
           axa: makeExclusionDetail("Dommages aux biens confiés", "axa", "Axa", true, "ai", "excl-a2", "Les dommages aux biens confiés sont couverts dans le cadre de la RC exploitation.", [{ id: "sl-1", label: "Sous-limite", value: "50 000 €" }], defaultSources),
           allianz: makeExclusionDetail("Dommages aux biens confiés", "allianz", "Allianz", false, "ai", "excl-a2", "Les biens confiés par les clients sont exclus de la couverture de base.", [], defaultSources),
           generali: makeExclusionDetail("Dommages aux biens confiés", "generali", "Generali", false, "ai", "excl-a2", "Exclusion des dommages aux biens dont l'assuré a la garde.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a3",
+        label: "Perte d'exploitation sans dommage",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "inclus" } },
+        details: {
+          axa: makeExclusionDetail("Perte d'exploitation sans dommage", "axa", "Axa", false, "ai", "excl-a3", "Les pertes d'exploitation non consécutives à un dommage matériel garanti sont exclues.", [], defaultSources),
+          allianz: makeExclusionDetail("Perte d'exploitation sans dommage", "allianz", "Allianz", false, "ai", "excl-a3", "Exclusion des pertes financières sans sinistre matériel préalable.", [], defaultSources),
+          generali: makeExclusionDetail("Perte d'exploitation sans dommage", "generali", "Generali", true, "ai", "excl-a3", "Extension couvrant les pertes d'exploitation même sans dommage matériel direct.", [{ id: "sl-1", label: "Plafond", value: "100 000 €" }], defaultSources),
+        },
+      },
+      {
+        id: "excl-a4",
+        label: "Sous-traitance non agréée",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Sous-traitance non agréée", "axa", "Axa", false, "ai", "excl-a4", "Dommages causés par des sous-traitants non déclarés ou non agréés par l'assureur.", [], defaultSources),
+          allianz: makeExclusionDetail("Sous-traitance non agréée", "allianz", "Allianz", false, "ai", "excl-a4", "Exclusion des sinistres liés à l'intervention de sous-traitants non référencés.", [], defaultSources),
+          generali: makeExclusionDetail("Sous-traitance non agréée", "generali", "Generali", false, "ai", "excl-a4", "Travaux confiés à des sous-traitants sans agrément préalable exclus.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a5",
+        label: "Pollution graduelle",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "inclus" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Pollution graduelle", "axa", "Axa", false, "ai", "excl-a5", "Dommages résultant d'une pollution lente ou progressive non couverts.", [], defaultSources),
+          allianz: makeExclusionDetail("Pollution graduelle", "allianz", "Allianz", true, "ai", "excl-a5", "Extension couvrant la pollution graduelle avec sous-limite dédiée.", [{ id: "sl-1", label: "Sous-limite", value: "75 000 €" }], defaultSources),
+          generali: makeExclusionDetail("Pollution graduelle", "generali", "Generali", false, "ai", "excl-a5", "Exclusion des dommages liés à une contamination progressive des sols ou des eaux.", [], defaultSources),
+        },
+      },
+      {
+        id: "excl-a6",
+        label: "Cyber-risques et atteintes aux données",
+        origin: "ai",
+        values: { axa: { type: "exclu" }, allianz: { type: "exclu" }, generali: { type: "exclu" } },
+        details: {
+          axa: makeExclusionDetail("Cyber-risques et atteintes aux données", "axa", "Axa", false, "ai", "excl-a6", "Dommages immatériels liés aux cyberattaques et violations de données exclus de la RC.", [], defaultSources),
+          allianz: makeExclusionDetail("Cyber-risques et atteintes aux données", "allianz", "Allianz", false, "ai", "excl-a6", "Exclusion des préjudices résultant d'incidents informatiques et de fuites de données.", [], defaultSources),
+          generali: makeExclusionDetail("Cyber-risques et atteintes aux données", "generali", "Generali", false, "ai", "excl-a6", "Les risques cyber sont exclus — garantie dédiée recommandée.", [], defaultSources),
         },
       },
     ],
