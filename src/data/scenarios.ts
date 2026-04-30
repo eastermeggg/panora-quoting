@@ -1,6 +1,6 @@
 // Scenario data: insurer × product × required fields mapping
 
-export type FieldType = "text" | "date" | "number" | "email" | "phone" | "currency" | "percentage" | "boolean";
+export type FieldType = "text" | "date" | "number" | "email" | "phone" | "currency" | "percentage" | "boolean" | "document";
 
 export type FieldStatus = "ok" | "missing" | "invalid";
 
@@ -12,6 +12,8 @@ export type ExtractedField = {
   status?: FieldStatus;
   error?: string;
   placeholder?: string;
+  multiple?: boolean; // for type="document"
+  accept?: string;    // for type="document" — e.g. ".pdf,.jpg,.png"
 };
 
 export type ExtractedSection = {

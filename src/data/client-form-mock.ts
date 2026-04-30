@@ -11,6 +11,7 @@ export type ClientFormRequest = {
   brokerName: string;
   cabinetName: string;
   cabinetLogo?: string;
+  password: string; // shared by broker via SMS / phone
   expiresAt: string; // ISO date
   sections: ExtractedSection[];
 };
@@ -65,6 +66,31 @@ const rcProSections: ExtractedSection[] = [
       { key: "montant_garanti", label: "Montant garanti souhaité", value: "1 000 000 €", type: "currency", status: "ok" },
     ],
   },
+  {
+    key: "documents",
+    label: "Pièces justificatives",
+    status: "incomplete",
+    missingCount: 2,
+    fields: [
+      {
+        key: "kbis",
+        label: "Kbis (moins de 3 mois)",
+        value: "",
+        type: "document",
+        status: "missing",
+        accept: ".pdf,.jpg,.jpeg,.png",
+      },
+      {
+        key: "bilans",
+        label: "Bilans des 3 derniers exercices",
+        value: "",
+        type: "document",
+        status: "missing",
+        multiple: true,
+        accept: ".pdf",
+      },
+    ],
+  },
 ];
 
 // Flotte Auto scenario — different set of missing fields
@@ -117,6 +143,7 @@ export const clientFormRequests: Record<string, ClientFormRequest> = {
     product: "RC Professionnelle",
     brokerName: "Alexandre Durand",
     cabinetName: "Cabinet Durand & Associés",
+    password: "MARBLE2026",
     expiresAt: "2026-05-15T23:59:59Z",
     sections: rcProSections,
   },
@@ -127,6 +154,7 @@ export const clientFormRequests: Record<string, ClientFormRequest> = {
     product: "Flotte Automobile",
     brokerName: "Alexandre Durand",
     cabinetName: "Cabinet Durand & Associés",
+    password: "ACME2026",
     expiresAt: "2026-05-15T23:59:59Z",
     sections: flotteAutoSections,
   },
