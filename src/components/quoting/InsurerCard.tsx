@@ -5,13 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  AlertTriangle,
-  CheckCircle2,
   RefreshCw,
-  Play,
-  Pause,
-  X,
-  Clock,
   Paperclip,
   Eye,
 } from "lucide-react";
@@ -19,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { LiveAgentTimeline } from "@/components/ui/LiveAgentTimeline";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { VideoPlaceholder } from "@/components/ui/VideoPlaceholder";
+import { AgentLivePanel } from "@/components/ui/AgentLivePanel";
 import { TwoFaActionBox } from "@/components/quoting/TwoFaActionBox";
 import type { InsurerData } from "@/data/mock";
 
@@ -300,12 +296,12 @@ function CompletedContent({ insurer }: { insurer: InsurerData }) {
       )}
 
       {/* Timeline drawer */}
-      {drawerOpen && (
-        <TimelineDrawer
-          insurer={insurer}
-          onClose={() => setDrawerOpen(false)}
-        />
-      )}
+      <AgentLivePanel
+        open={drawerOpen}
+        title={`Historique de l’agent — ${insurer.name}`}
+        steps={insurer.allSteps}
+        onClose={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }
@@ -463,73 +459,3 @@ function ActionRequiredContent({
   );
 }
 
-/* ── Timeline drawer ── */
-function TimelineDrawer({
-  insurer,
-  onClose,
-}: {
-  insurer: InsurerData;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-        onClick={onClose}
-      />
-      <div className="fixed right-0 top-0 bottom-0 w-[480px] bg-white shadow-2xl z-50 flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-panora-border">
-          <h2 className="text-[15px] font-semibold text-panora-text">
-            Historique de l&apos;agent — {insurer.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-panora-bg rounded transition-colors"
-          >
-            <X className="w-5 h-5 text-panora-text-muted" />
-          </button>
-        </div>
-        <div className="px-5 pt-5">
-          <VideoPlaceholder />
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          <LiveAgentTimeline allSteps={insurer.allSteps} isCompleted />
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ── Video placeholder ── */
-function VideoPlaceholder({ isLive = false }: { isLive?: boolean }) {
-  const [playing, setPlaying] = useState(false);
-
-  return (
-    <div
-      onClick={() => setPlaying(!playing)}
-      className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center relative overflow-hidden cursor-pointer group"
-    >
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-      <div className="relative w-12 h-12 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors backdrop-blur-sm">
-        {playing ? (
-          <Pause className="w-5 h-5 text-white fill-white" />
-        ) : (
-          <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-        )}
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-center gap-2">
-        {isLive && (
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[11px] text-white/80 font-medium">LIVE</span>
-          </div>
-        )}
-        {!isLive && (
-          <span className="text-[11px] text-white/60">Replay session agent</span>
-        )}
-        <div className="flex-1" />
-        <span className="text-[11px] text-white/40">0:00 / 2:34</span>
-      </div>
-    </div>
-  );
-}
