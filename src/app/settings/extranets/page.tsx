@@ -53,6 +53,25 @@ export default function ExtranetsPage() {
                 {configuredExtranets.length}
               </span>
             </div>
+
+            {/* Session activation explainer */}
+            <div className="flex items-start gap-3 bg-panora-secondary/40 border border-panora-border rounded-lg px-4 py-3 max-w-[720px]">
+              <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-white border border-panora-border flex items-center justify-center">
+                <KeyRound className="w-3.5 h-3.5 text-panora-text-secondary" />
+              </div>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <p className="text-[13px] font-medium text-panora-text leading-5">
+                  Activez vos sessions chaque matin
+                </p>
+                <p className="text-[12px] text-panora-text-secondary leading-[18px]">
+                  Les extranets exigent une 2FA quotidienne. Une session
+                  activée permet à l&apos;agent Panora de coter automatiquement
+                  jusqu&apos;à expiration, sans nouvelle authentification de
+                  votre part.
+                </p>
+              </div>
+            </div>
+
             <CardGrid minCardWidth={320}>
               {configuredExtranets.map((config) => (
                 <ExtranetCard

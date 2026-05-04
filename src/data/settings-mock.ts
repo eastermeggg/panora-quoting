@@ -1,5 +1,7 @@
 // ── Types ──
 
+import type { InsurerAction } from "./mock";
+
 export type InsuranceProduct =
   | "Auto"
   | "MRI"
@@ -30,6 +32,19 @@ export type InsurerProduct = {
 
 export type ConnectionStatus = "connected" | "needs_reauth" | "unchecked";
 
+export type OtpFormat = "digits-4" | "digits-6" | "alphanumeric-8";
+
+/**
+ * Daily 2FA session lifecycle, per extranet card.
+ * Orthogonal to `connectionStatus` (which is the long-term credentials trust signal).
+ */
+export type SessionState =
+  | { status: "inactive" }
+  | { status: "connecting" }
+  | { status: "otp_required"; otpFormat: OtpFormat }
+  | { status: "active"; expiresAtLabel: string }
+  | { status: "error"; message: string };
+
 export type ExtranetConfig = {
   id: string;
   insurerId: string;
@@ -43,7 +58,9 @@ export type ExtranetConfig = {
   configuredAt: string;
   connectionStatus: ConnectionStatus;
   lastVerified: string;
+  sessionState: SessionState;
 };
+
 
 export type AvailableExtranet = {
   id: string;
@@ -120,6 +137,7 @@ export const configuredExtranets: ExtranetConfig[] = [
     configuredAt: "2026-03-15",
     connectionStatus: "connected",
     lastVerified: "2026-04-15",
+    sessionState: { status: "active", expiresAtLabel: "18h" },
   },
   {
     id: "cfg-generali-sante",
@@ -137,6 +155,7 @@ export const configuredExtranets: ExtranetConfig[] = [
     configuredAt: "2026-03-15",
     connectionStatus: "connected",
     lastVerified: "2026-04-15",
+    sessionState: { status: "inactive" },
   },
   {
     id: "cfg-axa",
@@ -157,6 +176,7 @@ export const configuredExtranets: ExtranetConfig[] = [
     configuredAt: "2026-03-10",
     connectionStatus: "connected",
     lastVerified: "2026-04-14",
+    sessionState: { status: "otp_required", otpFormat: "digits-6" },
   },
   {
     id: "cfg-allianz",
@@ -174,6 +194,52 @@ export const configuredExtranets: ExtranetConfig[] = [
     configuredAt: "2026-03-12",
     connectionStatus: "needs_reauth",
     lastVerified: "2026-04-02",
+    sessionState: { status: "inactive" },
+  },
+  {
+    id: "cfg-groupama",
+    insurerId: "groupama",
+    insurerName: "Groupama",
+    portalUrl: "portail.groupama.fr",
+    username: "dhowden_courtier",
+    modelizedProducts: [
+      { product: "Auto", isNew: false },
+      { product: "MRI", isNew: false },
+    ],
+    selectedProducts: ["Auto", "MRI"],
+    catalogEntryId: "avail-groupama",
+    configuredAt: "2026-03-20",
+    connectionStatus: "connected",
+    lastVerified: "2026-04-12",
+    sessionState: { status: "inactive" },
+  },
+];
+
+/** Steps the agent walks through when activating a session — used by the live side panel. */
+export const mockConnectionSteps: InsurerAction[] = [
+  {
+    date: "À l'instant",
+    title: "Ouverture du portail assureur",
+    description: "Connexion à l'extranet en cours.",
+    status: "success",
+  },
+  {
+    date: "À l'instant",
+    title: "Saisie des identifiants",
+    description: "Les identifiants sont déchiffrés localement puis transmis au portail.",
+    status: "success",
+  },
+  {
+    date: "À l'instant",
+    title: "Demande du code 2FA",
+    description: "L'extranet exige une vérification supplémentaire.",
+    status: "in_progress",
+  },
+  {
+    date: "En attente",
+    title: "Validation du code",
+    description: "Saisissez le code reçu pour finaliser la connexion.",
+    status: "pending",
   },
 ];
 

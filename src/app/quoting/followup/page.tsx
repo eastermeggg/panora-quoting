@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { InsurerCard } from "@/components/quoting/InsurerCard";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
+import { SessionExpiredModal } from "@/components/quoting/SessionExpiredModal";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { scenarios } from "@/data/scenarios";
 import {
@@ -26,6 +27,7 @@ import {
   X,
   ArrowRight,
   Sparkles,
+  Clock,
 } from "lucide-react";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress";
@@ -73,6 +75,11 @@ function FollowupContent() {
     },
     []
   );
+
+  // Demo affordance: simulate the agent hitting an expired session mid-quote.
+  // In production this would be triggered by the agent runtime, not a button.
+  const [expiredModalOpen, setExpiredModalOpen] = useState(false);
+  const expiredCarrier = insurersList[0] ?? { id: "generali", name: "Generali" };
 
   const completed = useMemo(
     () => Object.values(statuses).filter((s) => s === "completed").length,
@@ -128,6 +135,15 @@ function FollowupContent() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setExpiredModalOpen(true)}
+            title="Démo : déclenche le modal de session expirée"
+            className="flex items-center gap-1.5 px-2 h-[22px] rounded-md border border-dashed border-panora-border text-[11px] font-medium text-panora-text-muted hover:text-panora-text hover:border-panora-text-muted/40 transition-colors"
+          >
+            <Clock className="w-3 h-3" />
+            Simuler session expirée
+          </button>
+          <div className="w-px h-4 bg-panora-border" />
           <div className="flex items-center gap-[5px]">
             <button className="bg-panora-secondary rounded-[6px] p-[5px] hover:bg-panora-border transition-colors">
               <ChevronUp className="w-[13px] h-[13px] text-panora-text-muted" />
@@ -268,6 +284,14 @@ function FollowupContent() {
           </div>
         </div>
       </div>
+
+      <SessionExpiredModal
+        open={expiredModalOpen}
+        insurerId={expiredCarrier.id}
+        insurerName={expiredCarrier.name}
+        onResolved={() => setExpiredModalOpen(false)}
+        onDismiss={() => setExpiredModalOpen(false)}
+      />
     </div>
   );
 }

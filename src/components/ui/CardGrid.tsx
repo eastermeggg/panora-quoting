@@ -42,10 +42,11 @@ export function Card({ children, className }: CardProps) {
   return (
     <div
       className={cn(
-        "grid grid-rows-subgrid row-span-3",
+        "grid grid-rows-subgrid row-span-3 group",
         "bg-white border border-panora-border rounded-xl",
-        "shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
-        "transition-shadow duration-200 hover:shadow-[0px_2px_8px_0px_rgba(0,0,0,0.06)]",
+        "shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05)]",
+        "transition-all duration-200",
+        "hover:bg-panora-bg hover:shadow-[0px_5px_9px_0px_rgba(0,0,0,0.06)]",
         className
       )}
     >
@@ -61,7 +62,7 @@ interface CardSectionProps {
 
 export function CardHeader({ children, className }: CardSectionProps) {
   return (
-    <div className={cn("px-4 pt-3.5 pb-1.5 self-start", className)}>
+    <div className={cn("px-5 pt-5 self-start", className)}>
       {children}
     </div>
   );
@@ -69,7 +70,7 @@ export function CardHeader({ children, className }: CardSectionProps) {
 
 export function CardBody({ children, className }: CardSectionProps) {
   return (
-    <div className={cn("px-4 pb-2.5 self-start", className)}>
+    <div className={cn("px-5 pt-3 pb-5 self-start", className)}>
       {children}
     </div>
   );
@@ -79,7 +80,7 @@ export function CardFooter({ children, className }: CardSectionProps) {
   return (
     <div
       className={cn(
-        "border-t border-panora-border/50 px-4 py-2.5 self-end",
+        "border-t border-panora-border px-5 py-4 self-end",
         className
       )}
     >
