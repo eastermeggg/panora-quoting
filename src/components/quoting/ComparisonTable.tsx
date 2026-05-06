@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { Check, X as XIcon, ChevronDown, ChevronUp, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles, Search } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem, DynamicFieldValues, FleetEntity } from "@/data/mock";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, DynamicFieldValues, FleetEntity } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -17,14 +17,7 @@ interface ComparisonTableProps {
   onUpdateExclusionLabel?: (exclusionId: string, label: string) => void;
   onDiscardExclusion?: (exclusionId: string) => void;
   cellDisplayModes?: Record<string, boolean>;
-  syntheseData?: AnalysisSyntheseItem[];
-  onUpdateSynthese?: (updated: AnalysisSyntheseItem[]) => void;
-  onViewAnalysis?: () => void;
   onOpenProfile?: () => void;
-  isStreaming?: boolean;
-  onStreamingDone?: () => void;
-  /** When false, shows empty state in synthese row prompting user to complete the profile */
-  hasClientProfile?: boolean;
   /** Current dynamic field values for rate computation */
   dynamicFieldValues?: DynamicFieldValues;
   /** Fleet view mode — controlled by parent for multi-entity products */
@@ -330,7 +323,7 @@ function OfferFilterDropdown({
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange, principalProduct }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, onOpenProfile, dynamicFieldValues, fleetViewMode, onFleetViewChange, principalProduct }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
@@ -499,7 +492,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         );
       })()}
 
-      {/* Section: Synthese IA — hidden for demo */}
+      {/* Synthese IA section moved to dedicated tab — see ComparisonSynthesis */}
 
       {/* Section: Synthèse parc auto — both views for multi-entity */}
       {isMultiEntity && multiEntity && (
@@ -1537,188 +1530,6 @@ function parseContentEditable(el: HTMLElement): string[] {
   return (el.innerText ?? "").split("\n").map((l) => l.replace(/^[\s•\-–+]\s*/, "").trim()).filter(Boolean);
 }
 
-function StreamingText({
-  text,
-  active,
-  delay = 0,
-  speed = 18,
-  onDone,
-  className,
-}: {
-  text: string;
-  active: boolean;
-  delay?: number;
-  speed?: number;
-  onDone?: () => void;
-  className?: string;
-}) {
-  const [charCount, setCharCount] = useState(text.length);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    if (!active) {
-      setCharCount(text.length);
-      setStarted(false);
-      return;
-    }
-    setCharCount(0);
-    setStarted(false);
-    const delayTimer = setTimeout(() => {
-      setStarted(true);
-      let i = 0;
-      const interval = setInterval(() => {
-        i++;
-        setCharCount(i);
-        if (i >= text.length) {
-          clearInterval(interval);
-          onDone?.();
-        }
-      }, speed);
-      return () => clearInterval(interval);
-    }, delay);
-    return () => clearTimeout(delayTimer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
-
-  if (active && !started) {
-    return <span className={className} />;
-  }
-
-  const displayed = active ? text.slice(0, charCount) : text;
-  const showCursor = active && charCount < text.length;
-
-  return (
-    <span className={className}>
-      {displayed}
-      {showCursor && <span className="inline-block w-[5px] h-[12px] bg-[#8b5cf6]/60 ml-[1px] animate-pulse rounded-sm align-middle" />}
-    </span>
-  );
-}
-
-function SyntheseCell({
-  item,
-  onUpdate,
-  onViewAnalysis,
-  isStreaming,
-  streamDelay = 0,
-  onStreamingDone,
-}: {
-  item: AnalysisSyntheseItem;
-  onUpdate: (updated: AnalysisSyntheseItem) => void;
-  onViewAnalysis?: () => void;
-  isStreaming?: boolean;
-  streamDelay?: number;
-  onStreamingDone?: () => void;
-}) {
-  const fortsRef = useRef<HTMLDivElement>(null);
-  const faiblesRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const fortsText = item.pointsForts.map((s) => `• ${s}`).join("\n");
-  const faiblesText = item.pointsFaibles.map((s) => `• ${s}`).join("\n");
-
-  // Track which sections have finished streaming
-  const [fortsDone, setFortsDone] = useState(false);
-  const [faiblesDone, setFaiblesDone] = useState(false);
-
-  useEffect(() => {
-    if (isStreaming) {
-      setFortsDone(false);
-      setFaiblesDone(false);
-    }
-  }, [isStreaming]);
-
-  useEffect(() => {
-    if (isStreaming && fortsDone && faiblesDone) {
-      onStreamingDone?.();
-    }
-  }, [isStreaming, fortsDone, faiblesDone, onStreamingDone]);
-
-  const commitForts = () => {
-    if (!fortsRef.current) return;
-    const lines = parseContentEditable(fortsRef.current);
-    if (lines.join("|") !== item.pointsForts.join("|")) {
-      onUpdate({ ...item, pointsForts: lines });
-    }
-  };
-
-  const commitFaibles = () => {
-    if (!faiblesRef.current) return;
-    const lines = parseContentEditable(faiblesRef.current);
-    if (lines.join("|") !== item.pointsFaibles.join("|")) {
-      onUpdate({ ...item, pointsFaibles: lines });
-    }
-  };
-
-  if (isStreaming) {
-    return (
-      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-        <div>
-          <p className="text-[12px] font-medium text-panora-green mb-1">Points forts :</p>
-          <div className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap">
-            <StreamingText
-              text={fortsText}
-              active
-              delay={streamDelay}
-              speed={15}
-              onDone={() => setFortsDone(true)}
-            />
-          </div>
-        </div>
-        <div>
-          <p className="text-[12px] font-medium text-[#952617] mb-1">Points faibles :</p>
-          <div className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap">
-            <StreamingText
-              text={faiblesText}
-              active
-              delay={streamDelay + fortsText.length * 15 + 200}
-              speed={15}
-              onDone={() => setFaiblesDone(true)}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} className="space-y-3" onClick={(e) => e.stopPropagation()}>
-      <div>
-        <p className="text-[12px] font-medium text-panora-green mb-1">Points forts :</p>
-        <div
-          ref={fortsRef}
-          contentEditable
-          suppressContentEditableWarning
-          className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap outline-none"
-          onBlur={commitForts}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {item.pointsForts.map((s) => `• ${s}`).join("\n")}
-        </div>
-      </div>
-      <div>
-        <p className="text-[12px] font-medium text-[#952617] mb-1">Points faibles :</p>
-        <div
-          ref={faiblesRef}
-          contentEditable
-          suppressContentEditableWarning
-          className="text-[12px] leading-[18px] text-panora-text whitespace-pre-wrap outline-none"
-          onBlur={commitFaibles}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {item.pointsFaibles.map((s) => `• ${s}`).join("\n")}
-        </div>
-      </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); onViewAnalysis?.(); }}
-        className="flex items-center gap-1 text-[12px] font-medium text-panora-green hover:underline"
-      >
-        Voir la synthese complete
-        <ArrowRight className="w-3 h-3" />
-      </button>
-    </div>
-  );
-}
 
 function SectionHeader({ title, variant = "product", collapsed, onToggle }: {
   title: string;

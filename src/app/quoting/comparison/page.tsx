@@ -18,11 +18,15 @@ import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
-import { AnalysisTab } from "@/components/quoting/AnalysisTab";
+import { ComparisonSynthesis, buildDefaultSynthese } from "@/components/quoting/ComparisonSynthesis";
+import { ComparisonChat } from "@/components/quoting/ComparisonChat";
 import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
-import { DevoirConseilWizard } from "@/components/quoting/DevoirConseilWizard";
+import { TemplateExportDialog } from "@/components/quoting/TemplateExportDialog";
+import { getSynthesisOverride, setSynthesisOverride } from "@/data/chatMock";
+import { getTemplatesForProduct } from "@/data/templates-mock";
 import Link from "next/link";
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
   Loader2,
@@ -33,6 +37,18 @@ import {
   Search,
   MoreVertical,
 } from "lucide-react";
+
+function downloadMockFile(fileName: string, content: string) {
+  const blob = new Blob([content], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 // ─── List View ───────────────────────────────────────────────────────
 
@@ -351,7 +367,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
   const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
-  const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("comparison");
+  const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("analysis");
+  const [chatOpen, setChatOpen] = useState(true);
   const [fleetViewMode, setFleetViewMode] = useState<"garanties" | "tarifs">("garanties");
   const isMultiEntity = !!comparisonResult?.multiEntity;
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -359,7 +376,9 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     () => getClientProfile(cotParamId) ?? { clientLabel: followupData?.cotation.client ?? "", clientSiren: "", besoinsClient: [] as import("@/data/mock").BesoinItem[] }
   );
   const [isStreaming, setIsStreaming] = useState(false);
-  const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
+  const [templateExport, setTemplateExport] = useState<
+    { mode: "library" } | { mode: "direct"; templateId: string } | null
+  >(null);
   const [dynamicFieldValues, setDynamicFieldValues] = useState<import("@/data/mock").DynamicFieldValues>(
     () => getComparisonData(cotParamId)?.dynamicFieldValues ?? {}
   );
@@ -560,6 +579,30 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     setMutableAnalysis(updated);
   }, []);
 
+  const recommendedInsurerId = mutableInsurers.find((ins) => ins.status === "completed")?.id ?? null;
+  const productLabel = task?.principalProduct ?? cotation.product ?? "votre couverture";
+
+  const [syntheseContent, setSyntheseContentState] = useState<string>(() => {
+    const override = getSynthesisOverride(cotParamId);
+    if (override.content) return override.content;
+    return buildDefaultSynthese({
+      clientName: cotation.client,
+      productLabel,
+      insurers: mutableInsurers,
+      recommendedInsurerId,
+      besoinsClient: mutableProfile.besoinsClient,
+      comparisonData: comparisonResult,
+      analysisData: mutableAnalysis,
+    });
+  });
+  const updateSyntheseContent = useCallback(
+    (next: string) => {
+      setSyntheseContentState(next);
+      setSynthesisOverride(cotParamId, { content: next });
+    },
+    [cotParamId]
+  );
+
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
       {/* Header */}
@@ -592,9 +635,11 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
         <FinaliserDropdown
           clientName={mutableProfile.clientLabel || followupData?.cotation.client}
           presentationUrl={`/presentation/${cotParamId}`}
-          onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
+          availableTemplates={getTemplatesForProduct(productLabel)}
+          productLabel={productLabel}
+          onUseTemplate={(templateId) => setTemplateExport({ mode: "direct", templateId })}
+          onOpenTemplateLibrary={() => setTemplateExport({ mode: "library" })}
           onDownloadEtudePDF={() => console.log("TODO: Telecharger etude PDF")}
-          onDownloadSynthesePDF={() => console.log("TODO: Telecharger synthese PDF")}
         />
       </div>
 
@@ -603,117 +648,156 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
       ) : (
         <>
           {/* Tab bar */}
-          <div className="h-[44px] shrink-0 border-b border-panora-border bg-white px-4 flex items-end">
-            <button
-              onClick={() => setActiveTab("comparison")}
-              className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 ${
-                activeTab === "comparison"
-                  ? "border-panora-green text-panora-green font-medium"
-                  : "border-transparent text-panora-text-muted hover:text-panora-text"
-              }`}
-            >
-              Tableau comparatif
-            </button>
-            {/* Synthese tab — hidden for demo */}
-          </div>
-
-          {/* Tab content */}
-          {activeTab === "comparison" ? (
-            <div className="flex-1 flex min-h-0">
-              <div
-                className="flex-1 overflow-auto min-w-0"
-                onClick={() => setSelectedCell(null)}
+          <div className="h-[44px] shrink-0 border-b border-panora-border bg-white px-4 flex items-end justify-between">
+            <div className="flex items-end">
+              <button
+                onClick={() => setActiveTab("analysis")}
+                className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
+                  activeTab === "analysis"
+                    ? "border-panora-green text-panora-green font-medium"
+                    : "border-transparent text-panora-text-muted hover:text-panora-text"
+                }`}
               >
-                <ComparisonTable
-                  insurers={mutableInsurers}
-                  comparisonData={comparisonResult}
-                  cotParamId={cotParamId}
-                  fleetViewMode={isMultiEntity ? fleetViewMode : undefined}
-                  onFleetViewChange={isMultiEntity ? setFleetViewMode : undefined}
-                  selectedCell={selectedCell}
-                  onCellSelect={(cell) => { setIsProfileOpen(false); setSelectedCell(cell); }}
-                  onAddExclusion={handleAddManualExclusion}
-                  onUpdateExclusionLabel={handleUpdateExclusionLabel}
-                  onDiscardExclusion={handleDiscardExclusion}
-                  cellDisplayModes={cellDisplayModes}
-                  syntheseData={mutableSynthese}
-                  onUpdateSynthese={handleUpdateSynthese}
-                  onViewAnalysis={() => setActiveTab("analysis")}
-                  onOpenProfile={openProfile}
-                  isStreaming={isStreaming}
-                  onStreamingDone={() => setIsStreaming(false)}
-                  hasClientProfile={hasClientProfile}
-                  dynamicFieldValues={dynamicFieldValues}
-                  principalProduct={task?.principalProduct ?? null}
-                />
-              </div>
-              {isProfileOpen ? (
-                <ClientProfilePanel
-                  profile={mutableProfile}
-                  dynamicFields={comparisonResult?.dynamicFields}
-                  dynamicFieldValues={dynamicFieldValues}
-                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
-                  contextPills={mutableAnalysis?.contextPills}
-                  onSave={handleProfileSave}
-                  onClose={() => setIsProfileOpen(false)}
-                />
-              ) : selectedCell && currentDetail ? (
-                <DetailPanel
-                  cellDetail={currentDetail}
-                  onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
-                  onClose={handlePanelClose}
-                  onDelete={
-                    selectedCell.type === "exclusion" && currentDetail.origin === "manual"
-                      ? () => handleDeleteExclusion(selectedCell.exclusionId)
-                      : undefined
-                  }
-                  showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
-                  onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
-                />
-              ) : null}
+                <Sparkles className="w-3.5 h-3.5" />
+                Synthèse
+              </button>
+              <button
+                onClick={() => setActiveTab("comparison")}
+                className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 ${
+                  activeTab === "comparison"
+                    ? "border-panora-green text-panora-green font-medium"
+                    : "border-transparent text-panora-text-muted hover:text-panora-text"
+                }`}
+              >
+                Tableau comparatif
+              </button>
             </div>
-          ) : (
-            <div className="flex-1 flex min-h-0">
-              <AnalysisTab
-                analysisData={mutableAnalysis}
-                insurers={mutableInsurers}
-                offerCount={mutableInsurers.length}
-                comparisonData={comparisonResult}
-                onSwitchToComparison={() => setActiveTab("comparison")}
-                onOpenProfile={openProfile}
-                onUpdateAnalysis={handleUpdateAnalysis}
-                isStreaming={isStreaming}
-                onStreamingDone={() => setIsStreaming(false)}
-                hasClientProfile={hasClientProfile}
-                isPanelOpen={isProfileOpen}
-              />
-              {isProfileOpen && (
-                <ClientProfilePanel
-                  profile={mutableProfile}
-                  contextPills={mutableAnalysis?.contextPills}
-                  onSave={handleProfileSave}
-                  onClose={() => setIsProfileOpen(false)}
-                  dynamicFields={comparisonResult?.dynamicFields}
-                  dynamicFieldValues={dynamicFieldValues}
-                  onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
-                />
+            <div className="flex items-center gap-1.5 mb-2">
+              {activeTab === "analysis" ? (
+                <button
+                  onClick={() => downloadMockFile(`${cotation.client} - Synthèse.pdf`, syntheseContent)}
+                  className="inline-flex items-center gap-1.5 px-2.5 h-[26px] rounded-md text-[12px] font-medium text-panora-text-muted hover:text-panora-text hover:bg-panora-bg transition-colors"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                  Télécharger PDF
+                </button>
+              ) : (
+                <button
+                  onClick={() => downloadMockFile(`${cotation.client} - Tableau comparatif.xlsx`, "Tableau comparatif — export XLS (démo)")}
+                  className="inline-flex items-center gap-1.5 px-2.5 h-[26px] rounded-md text-[12px] font-medium text-panora-text-muted hover:text-panora-text hover:bg-panora-bg transition-colors"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                  Télécharger XLS
+                </button>
+              )}
+              {!chatOpen && (
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 h-[26px] rounded-md text-[12px] font-medium text-panora-text-muted hover:text-panora-text hover:bg-panora-bg transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Copilote
+                </button>
               )}
             </div>
-          )}
+          </div>
+
+          {/* Tab content + persistent chat */}
+          <div className="flex-1 flex min-h-0">
+            {activeTab === "comparison" ? (
+              <div className="flex-1 flex min-h-0 min-w-0">
+                <div
+                  className="flex-1 overflow-auto min-w-0"
+                  onClick={() => setSelectedCell(null)}
+                >
+                  <ComparisonTable
+                    insurers={mutableInsurers}
+                    comparisonData={comparisonResult}
+                    cotParamId={cotParamId}
+                    fleetViewMode={isMultiEntity ? fleetViewMode : undefined}
+                    onFleetViewChange={isMultiEntity ? setFleetViewMode : undefined}
+                    selectedCell={selectedCell}
+                    onCellSelect={(cell) => { setIsProfileOpen(false); setSelectedCell(cell); }}
+                    onAddExclusion={handleAddManualExclusion}
+                    onUpdateExclusionLabel={handleUpdateExclusionLabel}
+                    onDiscardExclusion={handleDiscardExclusion}
+                    cellDisplayModes={cellDisplayModes}
+                    onOpenProfile={openProfile}
+                    dynamicFieldValues={dynamicFieldValues}
+                    principalProduct={task?.principalProduct ?? null}
+                  />
+                </div>
+                {isProfileOpen ? (
+                  <ClientProfilePanel
+                    profile={mutableProfile}
+                    dynamicFields={comparisonResult?.dynamicFields}
+                    dynamicFieldValues={dynamicFieldValues}
+                    onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
+                    contextPills={mutableAnalysis?.contextPills}
+                    onSave={handleProfileSave}
+                    onClose={() => setIsProfileOpen(false)}
+                  />
+                ) : selectedCell && currentDetail ? (
+                  <DetailPanel
+                    cellDetail={currentDetail}
+                    onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+                    onClose={handlePanelClose}
+                    onDelete={
+                      selectedCell.type === "exclusion" && currentDetail.origin === "manual"
+                        ? () => handleDeleteExclusion(selectedCell.exclusionId)
+                        : undefined
+                    }
+                    showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
+                    onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex-1 flex min-h-0 min-w-0">
+                <ComparisonSynthesis
+                  insurers={mutableInsurers}
+                  recommendedInsurerId={recommendedInsurerId}
+                  productLabel={productLabel}
+                  clientName={cotation.client}
+                  content={syntheseContent}
+                  onContentChange={updateSyntheseContent}
+                />
+                {isProfileOpen && (
+                  <ClientProfilePanel
+                    profile={mutableProfile}
+                    contextPills={mutableAnalysis?.contextPills}
+                    onSave={handleProfileSave}
+                    onClose={() => setIsProfileOpen(false)}
+                    dynamicFields={comparisonResult?.dynamicFields}
+                    dynamicFieldValues={dynamicFieldValues}
+                    onDynamicFieldChange={(id, value) => setDynamicFieldValues((prev) => ({ ...prev, [id]: value }))}
+                  />
+                )}
+              </div>
+            )}
+            {chatOpen && (
+              <ComparisonChat
+                cotParamId={cotParamId}
+                insurers={mutableInsurers}
+                productLabel={productLabel}
+                recommendedInsurerId={recommendedInsurerId}
+                syntheseContent={syntheseContent}
+                onAcceptContentEdit={updateSyntheseContent}
+                onClose={() => setChatOpen(false)}
+              />
+            )}
+          </div>
         </>
       )}
 
-      {devoirWizardOpen && (
-        <DevoirConseilWizard
-          onClose={() => setDevoirWizardOpen(false)}
-          onSubmit={(data) => {
-            console.log("Devoir de conseil generated:", data);
-            setDevoirWizardOpen(false);
-          }}
-          insurers={mutableInsurers}
-          profile={mutableProfile}
-          principalProduct={task?.principalProduct ?? task?.products[0] ?? null}
-          template={{ id: "tpl-1", name: "Modèle DDA standard — Howden", updatedAt: "02/04/2026" }}
+      {templateExport && (
+        <TemplateExportDialog
+          clientName={mutableProfile.clientLabel || cotation.client || "Client"}
+          currentProduct={productLabel}
+          preselectedTemplateId={
+            templateExport.mode === "direct" ? templateExport.templateId : null
+          }
+          onClose={() => setTemplateExport(null)}
         />
       )}
     </div>
