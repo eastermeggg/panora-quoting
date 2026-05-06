@@ -204,3 +204,167 @@ body {
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
 }
+
+/* Floating toast slide-in */
+@keyframes slide-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Synthèse doc — WYSIWYG markdown editor ─────────────────────── */
+
+.synthese-doc {
+  color: var(--color-panora-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 24px;
+  caret-color: var(--color-panora-green);
+}
+
+.synthese-doc h1 {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--color-panora-text);
+  margin: 0 0 8px;
+}
+
+.synthese-doc h2 {
+  font-family: "Inter Display", "Inter", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--color-panora-text);
+  margin: 28px 0 8px;
+}
+
+.synthese-doc h3 {
+  font-family: "Inter Display", "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-panora-text);
+  margin: 20px 0 6px;
+}
+
+.synthese-doc p {
+  margin: 0 0 12px;
+}
+
+.synthese-doc strong {
+  font-weight: 600;
+}
+
+.synthese-doc em {
+  font-style: italic;
+}
+
+.synthese-doc ul,
+.synthese-doc ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.synthese-doc ul {
+  list-style: disc;
+}
+
+.synthese-doc ol {
+  list-style: decimal;
+}
+
+.synthese-doc li {
+  margin: 4px 0;
+}
+
+.synthese-doc li::marker {
+  color: var(--color-panora-text-muted);
+}
+
+.synthese-doc hr {
+  border: none;
+  border-top: 1px solid var(--color-panora-border);
+  margin: 24px 0;
+}
+
+.synthese-doc a {
+  color: var(--color-panora-green);
+  text-decoration: none;
+}
+
+.synthese-doc a:hover {
+  text-decoration: underline;
+}
+
+.synthese-doc code {
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: var(--color-panora-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+}
+
+.synthese-doc blockquote {
+  border-left: 2px solid rgba(0, 162, 114, 0.4);
+  padding-left: 16px;
+  font-style: italic;
+  color: var(--color-panora-text-muted);
+  margin: 12px 0;
+}
+
+.synthese-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+  border: 1px solid var(--color-panora-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.synthese-doc thead {
+  background: rgba(250, 248, 245, 0.8);
+}
+
+.synthese-doc th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  color: var(--color-panora-text-muted);
+  border-bottom: 1px solid var(--color-panora-border);
+}
+
+.synthese-doc td {
+  padding: 8px 12px;
+  font-size: 13px;
+  vertical-align: top;
+  border-left: 1px solid var(--color-panora-border);
+  border-top: 1px solid var(--color-panora-border);
+}
+
+.synthese-doc td:first-child,
+.synthese-doc th:first-child {
+  border-left: none;
+}
+
+.synthese-doc tr:first-child td {
+  border-top: none;
+}
+
+/* Empty-state placeholder shown when content is empty */
+.synthese-doc:empty::before {
+  content: "Cliquez pour rédiger votre synthèse, ou demandez au copilote de la générer.";
+  color: var(--color-panora-text-muted);
+  font-style: italic;
+}

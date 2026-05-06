@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ComparisonCell } from "@/components/quoting/ComparisonCell";
 import { Check, X as XIcon, ChevronDown, ChevronUp, ChevronRight, Plus, Eye, EyeOff, Info, ArrowRight, Sparkles, Search } from "lucide-react";
-import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, AnalysisSyntheseItem, DynamicFieldValues, FleetEntity } from "@/data/mock";
+import type { InsurerData, ComparisonData, CellValue, CellIdentifier, CellDetail, ExclusionCellValue, ExclusionOrigin, ExclusionRow, DynamicFieldValues, FleetEntity } from "@/data/mock";
 
 interface ComparisonTableProps {
   insurers: InsurerData[];
@@ -17,14 +17,7 @@ interface ComparisonTableProps {
   onUpdateExclusionLabel?: (exclusionId: string, label: string) => void;
   onDiscardExclusion?: (exclusionId: string) => void;
   cellDisplayModes?: Record<string, boolean>;
-  syntheseData?: AnalysisSyntheseItem[];
-  onUpdateSynthese?: (updated: AnalysisSyntheseItem[]) => void;
-  onViewAnalysis?: () => void;
   onOpenProfile?: () => void;
-  isStreaming?: boolean;
-  onStreamingDone?: () => void;
-  /** When false, shows empty state in synthese row prompting user to complete the profile */
-  hasClientProfile?: boolean;
   /** Current dynamic field values for rate computation */
   dynamicFieldValues?: DynamicFieldValues;
   /** Fleet view mode — controlled by parent for multi-entity products */
@@ -330,7 +323,7 @@ function OfferFilterDropdown({
   );
 }
 
-export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, syntheseData, onUpdateSynthese, onViewAnalysis, onOpenProfile, isStreaming, onStreamingDone, hasClientProfile = true, dynamicFieldValues, fleetViewMode, onFleetViewChange, principalProduct }: ComparisonTableProps) {
+export function ComparisonTable({ insurers, comparisonData, selectedCell, onCellSelect, onAddExclusion, onUpdateExclusionLabel, onDiscardExclusion, cellDisplayModes, onOpenProfile, dynamicFieldValues, fleetViewMode, onFleetViewChange, principalProduct }: ComparisonTableProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [shownRows, setShownRows] = useState<Set<string>>(new Set());
@@ -499,7 +492,7 @@ export function ComparisonTable({ insurers, comparisonData, selectedCell, onCell
         );
       })()}
 
-      {/* Section: Synthese IA — hidden for demo */}
+      {/* Synthese IA section moved to dedicated tab — see ComparisonSynthesis */}
 
       {/* Section: Synthèse parc auto — both views for multi-entity */}
       {isMultiEntity && multiEntity && (

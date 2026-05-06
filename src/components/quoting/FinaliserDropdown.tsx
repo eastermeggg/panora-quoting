@@ -1,24 +1,34 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronDown, Check, Copy, FileSignature, FileDown, Eye, ArrowDown, Palette, AlignLeft, Table } from "lucide-react";
+import { ChevronDown, Check, Copy, FileDown, Eye, ArrowDown, Palette, FileText, Plus, Sparkles } from "lucide-react";
+import type { DocumentTemplate } from "@/data/templates-mock";
+
+const FORMAT_BADGE_CLASS: Record<string, string> = {
+  pdf: "bg-[#fdecec] text-[#952617]",
+  docx: "bg-[#e9f0f9] text-[#1a3a52]",
+  pptx: "bg-[#fdf1e8] text-[#cb8052]",
+};
 
 interface ExportDropdownProps {
   clientName?: string;
   presentationUrl?: string;
-  onGenerateDevoirConseil: () => void;
+  /** Templates pre-filtered by the page to match the current product */
+  availableTemplates?: DocumentTemplate[];
+  /** Label shown in the section header — usually the comparison's principal product */
+  productLabel?: string;
+  onUseTemplate?: (templateId: string) => void;
+  onOpenTemplateLibrary?: () => void;
   onDownloadEtudePDF: () => void;
-  onDownloadSynthesePDF: () => void;
-  onExportTableauXLS?: () => void;
 }
 
 export function FinaliserDropdown({
-  clientName = "Marble Tech SAS",
   presentationUrl = "#",
-  onGenerateDevoirConseil,
+  availableTemplates = [],
+  productLabel,
+  onUseTemplate,
+  onOpenTemplateLibrary,
   onDownloadEtudePDF,
-  onDownloadSynthesePDF,
-  onExportTableauXLS,
 }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -146,32 +156,52 @@ export function FinaliserDropdown({
 
           <div className="h-px bg-panora-border" />
 
-          {/* Autres actions */}
+          {/* Templates section — matched to current product */}
           <div className="flex flex-col gap-1 p-1.5">
             <div className="px-1.5 py-0.5">
-              <span className="text-[12px] font-medium text-[#85827b]">Autres actions</span>
+              <span className="text-[12px] font-medium text-[#85827b]">
+                {availableTemplates.length > 0
+                  ? `Modèles${productLabel ? ` pour ${productLabel}` : ""}`
+                  : "Documents personnalisés"}
+              </span>
             </div>
-            <button
-              onClick={() => handleAction(onGenerateDevoirConseil)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
-            >
-              <FileSignature className="w-4 h-4 text-panora-text-muted shrink-0" />
-              <span className="text-[13px] text-panora-text">Generer le devoir de conseil</span>
-            </button>
-            <button
-              onClick={() => handleAction(onDownloadSynthesePDF)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
-            >
-              <AlignLeft className="w-4 h-4 text-panora-text-muted shrink-0" />
-              <span className="text-[13px] text-panora-text">Telecharger la synthese (PDF)</span>
-            </button>
-            <button
-              onClick={() => handleAction(onExportTableauXLS ?? (() => {}))}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left"
-            >
-              <Table className="w-4 h-4 text-panora-text-muted shrink-0" />
-              <span className="text-[13px] text-panora-text">Telecharger le tableau (XLS)</span>
-            </button>
+            {availableTemplates.length > 0 &&
+              availableTemplates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleAction(() => onUseTemplate?.(tpl.id))}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left group"
+                >
+                  <FileText className="w-4 h-4 text-panora-text-muted shrink-0" />
+                  <span className="text-[13px] text-panora-text flex-1 truncate">
+                    {tpl.name}
+                  </span>
+                  <span
+                    className={`inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider shrink-0 ${
+                      FORMAT_BADGE_CLASS[tpl.fileFormat] ?? "bg-panora-secondary text-panora-text-secondary"
+                    }`}
+                  >
+                    {tpl.fileFormat}
+                  </span>
+                </button>
+              ))}
+            {onOpenTemplateLibrary && (
+              <button
+                onClick={() => handleAction(() => onOpenTemplateLibrary())}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left text-panora-green"
+              >
+                {availableTemplates.length > 0 ? (
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                ) : (
+                  <Plus className="w-4 h-4 shrink-0" />
+                )}
+                <span className="text-[13px] font-medium">
+                  {availableTemplates.length > 0
+                    ? "Générer un autre document"
+                    : "Déposer un modèle pour générer"}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}
