@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, AlertTriangle, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DocumentTemplate, FileFormat } from "@/data/templates-mock";
 
@@ -58,10 +58,6 @@ export function ExportGenerationProgress({
     return () => clearTimeout(t);
   }, [stageIdx, clientName, template, format]);
 
-  const unmappedSections = template.extraction.semantic.sections.filter(
-    (s) => s.semanticRole === "unmapped"
-  );
-
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
       <div className="bg-white rounded-xl shadow-[0px_8px_32px_0px_rgba(0,0,0,0.16)] w-full max-w-[460px] mx-4 overflow-hidden">
@@ -107,17 +103,6 @@ export function ExportGenerationProgress({
             );
           })}
 
-          {done && unmappedSections.length > 0 && (
-            <div className="mt-2 flex items-start gap-2.5 bg-[#fdf6ec] border border-[#cb8052]/30 rounded-lg px-3.5 py-2.5">
-              <AlertTriangle className="w-4 h-4 text-[#cb8052] shrink-0 mt-0.5" />
-              <p className="text-[12px] text-panora-text leading-[18px]">
-                {unmappedSections.length} section{unmappedSections.length > 1 ? "s" : ""} non
-                {unmappedSections.length > 1 ? " " : ""}identifiée{unmappedSections.length > 1 ? "s" : ""} —
-                conservée{unmappedSections.length > 1 ? "s" : ""} avec leur contenu d&apos;exemple.
-                À compléter manuellement avant envoi.
-              </p>
-            </div>
-          )}
         </div>
         <div className="border-t border-panora-border px-6 py-3 flex justify-end">
           <button
