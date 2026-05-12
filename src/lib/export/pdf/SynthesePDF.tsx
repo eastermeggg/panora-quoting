@@ -11,6 +11,7 @@ import {
 } from "@react-pdf/renderer";
 import {
   BrandingSettings,
+  getLogoDimensions,
   getOnColorPalette,
   getTitleFontOption,
 } from "@/data/branding";
@@ -239,9 +240,10 @@ function makeStyles(branding: BrandingSettings): PdfStyles {
       alignItems: "center",
     },
     coverLogo: {
-      height: 18,
-      maxWidth: 160,
+      width: getLogoDimensions(branding).width,
+      height: getLogoDimensions(branding).height,
       objectFit: "contain",
+      objectPosition: "left center",
     },
     coverLogoFallback: {
       fontFamily: "Inter",

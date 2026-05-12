@@ -9,6 +9,31 @@ interface ExportOpts {
   syntheseMarkdown: string;
 }
 
+/**
+ * Measure the logo's natural width/height ratio from its data URL. Used to
+ * keep the logo homothetic in PDF/DOCX even when an older upload didn't capture
+ * the ratio.
+ */
+function measureAspectRatio(dataUrl: string | null): Promise<number | null> {
+  if (!dataUrl) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () =>
+      resolve(
+        img.naturalHeight ? img.naturalWidth / img.naturalHeight : null
+      );
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+async function withMeasuredLogo(opts: ExportOpts): Promise<ExportOpts> {
+  if (!opts.branding.logoDataUrl) return opts;
+  const ratio = await measureAspectRatio(opts.branding.logoDataUrl);
+  if (!ratio || ratio === opts.branding.logoAspectRatio) return opts;
+  return { ...opts, branding: { ...opts.branding, logoAspectRatio: ratio } };
+}
+
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -22,11 +47,12 @@ function triggerDownload(blob: Blob, filename: string) {
 
 export async function downloadSynthesePdf(opts: ExportOpts) {
   try {
+    const resolved = await withMeasuredLogo(opts);
     const [{ pdf }, { SynthesePDFDocument }] = await Promise.all([
       import("@react-pdf/renderer"),
       import("./pdf/SynthesePDF"),
     ]);
-    const blob = await pdf(<SynthesePDFDocument {...opts} />).toBlob();
+    const blob = await pdf(<SynthesePDFDocument {...resolved} />).toBlob();
     triggerDownload(blob, `${opts.clientName} - Synthèse.pdf`);
   } catch (err) {
     console.error("[PDF export] failed:", err);
@@ -40,8 +66,9 @@ export async function downloadSynthesePdf(opts: ExportOpts) {
 
 export async function downloadSyntheseDocx(opts: ExportOpts) {
   try {
+    const resolved = await withMeasuredLogo(opts);
     const { buildSyntheseDocxBlob } = await import("./docx/SyntheseDocx");
-    const blob = await buildSyntheseDocxBlob(opts);
+    const blob = await buildSyntheseDocxBlob(resolved);
     triggerDownload(blob, `${opts.clientName} - Synthèse.docx`);
   } catch (err) {
     console.error("[DOCX export] failed:", err);
@@ -79,11 +106,12 @@ export async function previewSynthesePdf(opts: ExportOpts) {
   }
 
   try {
+    const resolved = await withMeasuredLogo(opts);
     const [{ pdf }, { SynthesePDFDocument }] = await Promise.all([
       import("@react-pdf/renderer"),
       import("./pdf/SynthesePDF"),
     ]);
-    const blob = await pdf(<SynthesePDFDocument {...opts} />).toBlob();
+    const blob = await pdf(<SynthesePDFDocument {...resolved} />).toBlob();
     const url = URL.createObjectURL(blob);
     win.location.replace(url);
     // Keep the blob alive long enough for the user to read / save / reload.

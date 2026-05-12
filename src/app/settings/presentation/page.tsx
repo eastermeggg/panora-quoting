@@ -5,6 +5,7 @@ import { Upload, X, Check } from "lucide-react";
 import {
   BrandingSettings,
   DEFAULT_BRANDING,
+  LogoSize,
   TITLE_FONT_OPTIONS,
   loadBranding,
   saveBranding,
@@ -47,7 +48,25 @@ export default function PresentationSettingsPage() {
   const onUploadLogo = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
-      setBranding((b) => ({ ...b, logoDataUrl: reader.result as string }));
+      const dataUrl = reader.result as string;
+      // Probe the image to capture aspect ratio (needed for DOCX, which requires
+      // explicit pixel dimensions).
+      const img = new Image();
+      img.onload = () => {
+        const ratio =
+          img.naturalWidth && img.naturalHeight
+            ? img.naturalWidth / img.naturalHeight
+            : 3;
+        setBranding((b) => ({
+          ...b,
+          logoDataUrl: dataUrl,
+          logoAspectRatio: ratio,
+        }));
+      };
+      img.onerror = () => {
+        setBranding((b) => ({ ...b, logoDataUrl: dataUrl, logoAspectRatio: 3 }));
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -195,6 +214,41 @@ export default function PresentationSettingsPage() {
                   e.currentTarget.value = "";
                 }}
               />
+
+              {branding.logoDataUrl && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-panora-text-secondary">
+                    Taille d&apos;affichage
+                  </span>
+                  <div className="inline-flex rounded-md border border-panora-border bg-white p-0.5 self-start">
+                    {(["small", "default", "big"] as LogoSize[]).map((size) => {
+                      const isActive =
+                        (branding.logoSize ?? "default") === size;
+                      const label =
+                        size === "small"
+                          ? "Petit"
+                          : size === "default"
+                            ? "Standard"
+                            : "Grand";
+                      return (
+                        <button
+                          key={size}
+                          onClick={() =>
+                            setBranding((b) => ({ ...b, logoSize: size }))
+                          }
+                          className={`px-3 h-7 rounded-[5px] text-[12px] font-medium transition-colors ${
+                            isActive
+                              ? "bg-panora-secondary text-panora-text"
+                              : "text-panora-text-muted hover:text-panora-text"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Title font */}

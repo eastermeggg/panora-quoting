@@ -1,7 +1,11 @@
 "use client";
 
 import { Lock, ArrowRight, User, Calendar } from "lucide-react";
-import { BrandingSettings, getOnColorPalette } from "@/data/branding";
+import {
+  BrandingSettings,
+  getLogoSize,
+  getOnColorPalette,
+} from "@/data/branding";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 
 interface PresentationCoverProps {
@@ -35,6 +39,7 @@ export function PresentationCover({
   const titleFontFamily = `"${branding.titleFont}", "Inter Display", serif`;
   const initial = clientName.charAt(0).toUpperCase();
   const palette = getOnColorPalette(branding.primaryColor);
+  const logoBox = getLogoSize(branding.logoSize);
 
   return (
     <div
@@ -200,7 +205,8 @@ export function PresentationCover({
             <img
               src={branding.logoDataUrl}
               alt={cabinetName ?? "Cabinet"}
-              className="h-[22px] w-auto max-w-[180px] object-contain"
+              className="w-auto object-contain"
+              style={{ maxHeight: logoBox.maxHeight, maxWidth: logoBox.maxWidth }}
             />
           ) : (
             <span className="text-[14px] font-bold text-[#0e1116]/40 tracking-tight">

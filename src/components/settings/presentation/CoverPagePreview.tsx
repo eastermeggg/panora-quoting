@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import {
   BrandingSettings,
   ensureTitleFontLoaded,
+  getLogoSize,
   getOnColorPalette,
 } from "@/data/branding";
 
@@ -204,7 +205,12 @@ function CoverPageA4({
           <img
             src={branding.logoDataUrl}
             alt="Logo"
-            style={{ height: 20, width: "auto", maxWidth: 180, objectFit: "contain" }}
+            style={{
+              maxHeight: getLogoSize(branding.logoSize).maxHeight,
+              width: "auto",
+              maxWidth: getLogoSize(branding.logoSize).maxWidth,
+              objectFit: "contain",
+            }}
           />
         ) : (
           <div
