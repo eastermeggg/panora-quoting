@@ -21,7 +21,7 @@ import {
   TableLayoutType,
   TabStopType,
 } from "docx";
-import { BrandingSettings } from "@/data/branding";
+import { BrandingSettings, getLogoDimensions } from "@/data/branding";
 import { MdBlock, MdSpan, parseMarkdownBlocks } from "../markdown";
 
 interface SyntheseDocxOpts {
@@ -94,6 +94,8 @@ export async function buildSyntheseDocxBlob({
   const titleFont = branding.titleFont;
   const logo = await logoImageData(branding.logoDataUrl);
 
+  const logoDimensions = getLogoDimensions(branding);
+
   const coverTable = buildCoverTable({
     primaryHex,
     titleFont,
@@ -101,6 +103,7 @@ export async function buildSyntheseDocxBlob({
     productLabel,
     today,
     logo,
+    logoDimensions,
   });
 
   const contentChildren: (Paragraph | Table)[] = [];
@@ -192,6 +195,7 @@ interface CoverTableArgs {
   productLabel: string;
   today: string;
   logo: { bytes: Uint8Array; type: "png" | "jpg" } | null;
+  logoDimensions: { width: number; height: number };
 }
 
 function buildCoverTable({
@@ -201,6 +205,7 @@ function buildCoverTable({
   productLabel,
   today,
   logo,
+  logoDimensions,
 }: CoverTableArgs): Table {
   // ---- Banner row content ----
   const eyebrow = new Paragraph({
@@ -323,7 +328,7 @@ function buildCoverTable({
     footerChildren.push(
       new ImageRun({
         data: logo.bytes,
-        transformation: { width: 80, height: 20 },
+        transformation: logoDimensions,
         type: logo.type,
       })
     );

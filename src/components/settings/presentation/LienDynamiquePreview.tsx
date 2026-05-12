@@ -5,6 +5,7 @@ import { Lock, ArrowRight, User, Calendar } from "lucide-react";
 import {
   BrandingSettings,
   ensureTitleFontLoaded,
+  getLogoSize,
   getOnColorPalette,
 } from "@/data/branding";
 
@@ -325,7 +326,12 @@ function LienDynamiqueA4({
             <img
               src={branding.logoDataUrl}
               alt=""
-              style={{ height: 20, width: "auto", maxWidth: 180, objectFit: "contain" }}
+              style={{
+                maxHeight: getLogoSize(branding.logoSize).maxHeight,
+                width: "auto",
+                maxWidth: getLogoSize(branding.logoSize).maxWidth,
+                objectFit: "contain",
+              }}
             />
           ) : (
             <span

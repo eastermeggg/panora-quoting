@@ -1,10 +1,53 @@
 "use client";
 
+export type LogoSize = "small" | "default" | "big";
+
 export interface BrandingSettings {
   primaryColor: string;
   logoDataUrl: string | null;
+  /** Aspect ratio (width / height) captured at upload time, used by DOCX which
+   * requires explicit pixel dimensions. Optional for back-compat. */
+  logoAspectRatio?: number;
+  logoSize?: LogoSize;
   titleFont: string;
 }
+
+/** Max display dimensions for the cabinet logo, indexed by user-chosen size.
+ * Aspect ratio is preserved (HTML uses object-contain, DOCX scales by ratio). */
+export const LOGO_SIZE_MAP: Record<
+  LogoSize,
+  { maxHeight: number; maxWidth: number }
+> = {
+  small: { maxHeight: 24, maxWidth: 140 },
+  default: { maxHeight: 36, maxWidth: 180 },
+  big: { maxHeight: 56, maxWidth: 240 },
+};
+
+export function getLogoSize(size: LogoSize | undefined) {
+  return LOGO_SIZE_MAP[size ?? "default"];
+}
+
+/** Compute explicit pixel dimensions for the logo (preserving aspect ratio,
+ * capped to the chosen size's max box). Used by surfaces that don't honor
+ * `object-contain` correctly (DOCX, and @react-pdf which can leave whitespace
+ * inside a max-bounded box). */
+export function getLogoDimensions(branding: BrandingSettings): {
+  width: number;
+  height: number;
+} {
+  const box = getLogoSize(branding.logoSize);
+  const ratio = branding.logoAspectRatio ?? 3; // sensible default (wordmark)
+  // Try fitting by height first
+  const widthByHeight = box.maxHeight * ratio;
+  if (widthByHeight <= box.maxWidth) {
+    return { width: Math.round(widthByHeight), height: box.maxHeight };
+  }
+  // Otherwise fit by width
+  return { width: box.maxWidth, height: Math.round(box.maxWidth / ratio) };
+}
+
+/** @deprecated use `getLogoDimensions` */
+export const getLogoDocxDimensions = getLogoDimensions;
 
 export interface TitleFontOption {
   /** Family name used in CSS and PDF font registration */
@@ -96,6 +139,7 @@ export const TITLE_FONT_OPTIONS: TitleFontOption[] = [
 export const DEFAULT_BRANDING: BrandingSettings = {
   primaryColor: "#1F4D3F",
   logoDataUrl: null,
+  logoSize: "default",
   titleFont: "Inter",
 };
 
