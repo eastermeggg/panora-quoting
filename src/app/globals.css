@@ -220,6 +220,7 @@ body {
 /* ── Synthèse doc — WYSIWYG markdown editor ─────────────────────── */
 
 .synthese-doc {
+  --brand-primary: #1f4d3f;
   color: var(--color-panora-text);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -237,13 +238,19 @@ body {
   margin: 0 0 8px;
 }
 
+.synthese-doc h1 + p {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--color-panora-text-secondary);
+}
+
 .synthese-doc h2 {
   font-family: "Inter Display", "Inter", system-ui, sans-serif;
   font-size: 18px;
-  line-height: 28px;
+  line-height: 26px;
   font-weight: 600;
   color: var(--color-panora-text);
-  margin: 28px 0 8px;
+  margin: 28px 0 10px;
 }
 
 .synthese-doc h3 {
@@ -261,32 +268,71 @@ body {
 
 .synthese-doc strong {
   font-weight: 600;
+  color: var(--color-panora-text);
 }
 
 .synthese-doc em {
   font-style: italic;
+  color: var(--color-panora-text-secondary);
 }
 
 .synthese-doc ul,
 .synthese-doc ol {
-  margin: 0 0 12px;
-  padding-left: 22px;
+  margin: 0 0 14px;
+  padding-left: 0;
 }
 
 .synthese-doc ul {
-  list-style: disc;
+  list-style: none;
+}
+
+.synthese-doc ul > li {
+  position: relative;
+  padding-left: 22px;
+  margin: 6px 0;
+}
+
+.synthese-doc ul > li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  opacity: 0.75;
 }
 
 .synthese-doc ol {
-  list-style: decimal;
+  list-style: none;
+  counter-reset: synth-counter;
 }
 
-.synthese-doc li {
-  margin: 4px 0;
+.synthese-doc ol > li {
+  counter-increment: synth-counter;
+  position: relative;
+  padding-left: 36px;
+  margin: 12px 0;
+  min-height: 24px;
 }
 
-.synthese-doc li::marker {
-  color: var(--color-panora-text-muted);
+.synthese-doc ol > li::before {
+  content: counter(synth-counter);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand-primary) 14%, white);
+  color: var(--brand-primary);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
 }
 
 .synthese-doc hr {
@@ -313,49 +359,61 @@ body {
 }
 
 .synthese-doc blockquote {
-  border-left: 2px solid rgba(0, 162, 114, 0.4);
-  padding-left: 16px;
+  border-left: 2px solid var(--color-panora-border);
+  padding: 4px 14px;
   font-style: italic;
   color: var(--color-panora-text-muted);
-  margin: 12px 0;
+  margin: 14px 0;
 }
 
-.synthese-doc table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 13px;
+.synthese-doc .synth-table-wrap {
   border: 1px solid var(--color-panora-border);
   border-radius: 8px;
   overflow: hidden;
+  margin: 16px 0 20px;
+}
+
+.synthese-doc .synth-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 0;
 }
 
 .synthese-doc thead {
-  background: rgba(250, 248, 245, 0.8);
+  background: color-mix(in srgb, var(--brand-primary) 5%, white);
 }
 
 .synthese-doc th {
   text-align: left;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 500;
+  letter-spacing: 0.06em;
+  font-weight: 600;
   color: var(--color-panora-text-muted);
+  border-right: 1px solid var(--color-panora-border);
   border-bottom: 1px solid var(--color-panora-border);
 }
 
-.synthese-doc td {
-  padding: 8px 12px;
-  font-size: 13px;
-  vertical-align: top;
-  border-left: 1px solid var(--color-panora-border);
-  border-top: 1px solid var(--color-panora-border);
+.synthese-doc th:last-child {
+  border-right: none;
 }
 
-.synthese-doc td:first-child,
-.synthese-doc th:first-child {
-  border-left: none;
+.synthese-doc td {
+  padding: 10px 14px;
+  font-size: 13px;
+  vertical-align: top;
+  border-top: 1px solid var(--color-panora-border);
+  border-right: 1px solid var(--color-panora-border);
+}
+
+.synthese-doc td:last-child {
+  border-right: none;
+}
+
+.synthese-doc tbody tr:nth-child(even) td {
+  background: rgba(250, 248, 245, 0.45);
 }
 
 .synthese-doc tr:first-child td {

@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@joplin/turndown-plugin-gfm": "^1.0.64",
+    "@react-pdf/renderer": "^4.5.1",
     "@types/turndown": "^5.0.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "docx": "^9.6.1",
     "lucide-react": "^0.577.0",
     "marked": "^18.0.3",
     "next": "16.1.6",

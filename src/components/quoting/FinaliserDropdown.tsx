@@ -1,38 +1,119 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronDown, Check, Copy, FileDown, Eye, ArrowDown, Palette, FileText, Plus, Sparkles } from "lucide-react";
-import type { DocumentTemplate } from "@/data/templates-mock";
+import {
+  ChevronDown,
+  Check,
+  Copy,
+  FileDown,
+  Eye,
+  Palette,
+  Link as LinkIcon,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  BrandingSettings,
+  DEFAULT_BRANDING,
+  loadBranding,
+} from "@/data/branding";
+import { CoverPagePreview } from "@/components/settings/presentation/CoverPagePreview";
 
-const FORMAT_BADGE_CLASS: Record<string, string> = {
-  pdf: "bg-[#fdecec] text-[#952617]",
-  docx: "bg-[#e9f0f9] text-[#1a3a52]",
-  pptx: "bg-[#fdf1e8] text-[#cb8052]",
-};
+// Format-icon glyphs — colored tiles with the file-type initial, evocative of
+// the Microsoft/Adobe brand marks without copying them verbatim.
+function PdfIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden>
+      <rect x="0.5" y="0.5" width="15" height="15" rx="2.5" fill="#E11D2A" />
+      <text
+        x="8"
+        y="11"
+        textAnchor="middle"
+        fill="#ffffff"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontSize="5.5"
+        fontWeight="700"
+        letterSpacing="0.04em"
+      >
+        PDF
+      </text>
+    </svg>
+  );
+}
+
+function WordIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden>
+      <rect x="0.5" y="0.5" width="15" height="15" rx="2.5" fill="#2B579A" />
+      <text
+        x="8"
+        y="11.5"
+        textAnchor="middle"
+        fill="#ffffff"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontSize="9"
+        fontWeight="700"
+      >
+        W
+      </text>
+    </svg>
+  );
+}
+
+function ExcelIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden>
+      <rect x="0.5" y="0.5" width="15" height="15" rx="2.5" fill="#217346" />
+      <text
+        x="8"
+        y="11.5"
+        textAnchor="middle"
+        fill="#ffffff"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontSize="9"
+        fontWeight="700"
+      >
+        X
+      </text>
+    </svg>
+  );
+}
 
 interface ExportDropdownProps {
   clientName?: string;
+  productLabel: string;
   presentationUrl?: string;
-  /** Templates pre-filtered by the page to match the current product */
-  availableTemplates?: DocumentTemplate[];
-  /** Label shown in the section header — usually the comparison's principal product */
-  productLabel?: string;
-  onUseTemplate?: (templateId: string) => void;
-  onOpenTemplateLibrary?: () => void;
-  onDownloadEtudePDF: () => void;
+  onPreviewSynthesePDF: () => void;
+  onDownloadSynthesePDF: () => void;
+  onDownloadSyntheseDocx: () => void;
+  onDownloadTableauXLS: () => void;
 }
 
 export function FinaliserDropdown({
-  presentationUrl = "#",
-  availableTemplates = [],
+  clientName,
   productLabel,
-  onUseTemplate,
-  onOpenTemplateLibrary,
-  onDownloadEtudePDF,
+  presentationUrl = "#",
+  onPreviewSynthesePDF,
+  onDownloadSynthesePDF,
+  onDownloadSyntheseDocx,
+  onDownloadTableauXLS,
 }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setBranding(loadBranding());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "panora.branding.v1") setBranding(loadBranding());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) setBranding(loadBranding());
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,7 +141,7 @@ export function FinaliserDropdown({
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
+        className="btn-primary h-8 flex items-center gap-2 px-4 text-[13px] font-medium"
       >
         <FileDown className="w-4 h-4" />
         Exporter
@@ -68,141 +149,109 @@ export function FinaliserDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1.5 w-[320px] bg-white border border-panora-border rounded-[14px] shadow-[0px_18px_18px_0px_rgba(0,0,0,0.04),0px_4px_10px_0px_rgba(0,0,0,0.05)] z-50 overflow-hidden">
-          {/* Presenter au client */}
-          <div className="flex flex-col gap-3 p-3.5 bg-[#faf8f5] rounded-[8px]">
-            <div className="flex flex-col gap-1">
-              <p className="text-[14px] font-semibold text-panora-text">
-                Presenter au client
-              </p>
-              <p className="text-[12px] text-[#85827b] leading-4">
-                Un lien pour tout partager avec votre client
-              </p>
+        <div className="absolute right-0 top-full mt-1.5 w-[360px] bg-white border border-panora-border rounded-[12px] shadow-[0px_30px_60px_-15px_rgba(0,0,0,0.18),0px_12px_24px_-8px_rgba(0,0,0,0.10),0px_4px_8px_-2px_rgba(0,0,0,0.06)] z-50 overflow-hidden">
+          {/* Synthèse client — with cover thumbnail */}
+          <div className="flex gap-3 p-3 bg-[#faf8f5]">
+            <div className="shrink-0">
+              <CoverPagePreview
+                branding={branding}
+                clientName={clientName || "Client"}
+                productLabel={productLabel}
+                scale={0.12}
+              />
             </div>
-
-            {/* Link + copy button */}
-            <div className="flex gap-2">
-              <div className="flex-1 min-w-0 flex items-center px-2 py-1.5 bg-panora-secondary rounded-[8px]">
-                <span className="text-[13px] text-[#85827b] truncate">
-                  {presentationUrl}
-                </span>
-              </div>
-              <button
-                onClick={copyLink}
-                className={`shrink-0 flex items-center justify-center gap-2 px-3 py-1.5 rounded-[8px] text-[13px] font-medium shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors border ${
-                  linkCopied
-                    ? "bg-panora-green border-panora-green text-white"
-                    : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg"
-                }`}
-              >
-                {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {linkCopied ? "Copie !" : "Copier lien"}
-              </button>
-            </div>
-
-            {/* Preview card */}
-            <div className="rounded-[8px] border border-[rgba(34,32,26,0.15)] overflow-hidden shadow-[0px_1px_2px_rgba(0,0,0,0.05)]">
-              <div className="bg-[#304370] h-[126px] flex">
-                <div className="flex-1 flex flex-col justify-between px-3 py-[13px]">
-                  <div className="bg-white rounded-[4px] p-1 w-fit">
-                    <div className="flex items-center gap-[3px]">
-                      <div className="w-[9px] h-[9px] rounded-full bg-panora-green" />
-                      <span className="text-[6px] font-semibold text-panora-text tracking-tight">Panora</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[13px] text-white font-serif tracking-[-0.26px]">
-                      Etude des offres d&apos;assurance
-                    </p>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="h-[7px] w-[101px] rounded-full bg-white/15" />
-                      <div className="h-[7px] w-[146px] rounded-full bg-white/15" />
-                    </div>
-                  </div>
-                </div>
-                <div className="w-[56px] bg-white/[0.06]" />
-              </div>
-
-              {/* Action bar: Voir | Telecharger | Customiser */}
-              <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-                <a
-                  href={presentationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
+            <div className="flex flex-col gap-2 min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-panora-text leading-5">
+                Synthèse client
+              </p>
+              <div className="flex items-center gap-1.5 mt-auto">
+                <button
+                  onClick={() => handleAction(onPreviewSynthesePDF)}
+                  className="inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text transition-colors"
+                  aria-label="Aperçu PDF de la synthèse"
+                  title="Aperçu PDF"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Voir
-                </a>
-                <div className="w-px h-3.5 bg-panora-border" />
-                <button
-                  onClick={() => handleAction(onDownloadEtudePDF)}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
-                >
-                  <ArrowDown className="w-3.5 h-3.5" />
-                  Telecharger
                 </button>
-                <div className="w-px h-3.5 bg-panora-border" />
-                <a
-                  href="/settings/presentation"
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#85827b] hover:text-panora-text transition-colors"
+                <button
+                  onClick={() => handleAction(onDownloadSynthesePDF)}
+                  className="inline-flex items-center gap-1.5 h-[28px] pl-2 pr-3 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border border-panora-border bg-white text-panora-text-muted hover:bg-[#fdecec] hover:border-[#fdecec] hover:text-[#952617] transition-colors"
                 >
-                  <Palette className="w-3.5 h-3.5" />
-                  Customiser
-                </a>
+                  <PdfIcon className="w-[14px] h-[14px]" />
+                  PDF
+                </button>
+                <button
+                  onClick={() => handleAction(onDownloadSyntheseDocx)}
+                  className="inline-flex items-center gap-1.5 h-[28px] pl-2 pr-3 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border border-panora-border bg-white text-panora-text-muted hover:bg-[#e9f0f9] hover:border-[#e9f0f9] hover:text-[#1a3a52] transition-colors"
+                >
+                  <WordIcon className="w-[14px] h-[14px]" />
+                  DOCX
+                </button>
               </div>
             </div>
           </div>
 
           <div className="h-px bg-panora-border" />
 
-          {/* Templates section — matched to current product */}
-          <div className="flex flex-col gap-1 p-1.5">
-            <div className="px-1.5 py-0.5">
-              <span className="text-[12px] font-medium text-[#85827b]">
-                {availableTemplates.length > 0
-                  ? `Modèles${productLabel ? ` pour ${productLabel}` : ""}`
-                  : "Documents personnalisés"}
-              </span>
-            </div>
-            {availableTemplates.length > 0 &&
-              availableTemplates.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => handleAction(() => onUseTemplate?.(tpl.id))}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left group"
-                >
-                  <FileText className="w-4 h-4 text-panora-text-muted shrink-0" />
-                  <span className="text-[13px] text-panora-text flex-1 truncate">
-                    {tpl.name}
-                  </span>
-                  <span
-                    className={`inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-semibold uppercase tracking-wider shrink-0 ${
-                      FORMAT_BADGE_CLASS[tpl.fileFormat] ?? "bg-panora-secondary text-panora-text-secondary"
-                    }`}
-                  >
-                    {tpl.fileFormat}
-                  </span>
-                </button>
-              ))}
-            {onOpenTemplateLibrary && (
+          {/* Secondary actions — Tableau & Lien dynamique at equal hierarchy */}
+          <div className="flex flex-col gap-1 p-2">
+            <div className="flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-panora-bg transition-colors">
+              <ExcelIcon className="w-[18px] h-[18px] shrink-0" />
+              <span className="text-[13px] font-medium text-panora-text flex-1">Tableau comparatif</span>
               <button
-                onClick={() => handleAction(() => onOpenTemplateLibrary())}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[6px] hover:bg-panora-bg transition-colors text-left text-panora-green"
+                onClick={() => handleAction(onDownloadTableauXLS)}
+                className="inline-flex items-center gap-1.5 h-[26px] pl-1.5 pr-2.5 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border border-panora-border bg-white text-panora-text-muted hover:bg-[#eaf3ec] hover:border-[#eaf3ec] hover:text-[#2d6a4f] transition-colors"
               >
-                {availableTemplates.length > 0 ? (
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                ) : (
-                  <Plus className="w-4 h-4 shrink-0" />
-                )}
-                <span className="text-[13px] font-medium">
-                  {availableTemplates.length > 0
-                    ? "Générer un autre document"
-                    : "Déposer un modèle pour générer"}
-                </span>
+                <ExcelIcon className="w-[14px] h-[14px]" />
+                .XLS
               </button>
-            )}
+            </div>
+
+            <div className="flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-panora-bg transition-colors">
+              <LinkIcon className="w-[18px] h-[18px] text-panora-text-muted shrink-0" />
+              <span className="text-[13px] font-medium text-panora-text flex-1">Lien dynamique</span>
+              <a
+                href={presentationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center w-[26px] h-[26px] rounded-[6px] border border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text transition-colors"
+                aria-label="Voir l'aperçu"
+              >
+                <Eye className="w-3.5 h-3.5" />
+              </a>
+              <button
+                onClick={copyLink}
+                className={`inline-flex items-center h-[26px] px-2.5 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border transition-colors ${
+                  linkCopied
+                    ? "bg-panora-green border-panora-green text-white"
+                    : "border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text"
+                }`}
+                aria-label="Copier le lien"
+              >
+                {linkCopied ? (
+                  <>
+                    <Check className="w-3 h-3 mr-1" />
+                    Copié
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3 mr-1" />
+                    Copier
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Footer link — personalize exports */}
+          <Link
+            href="/settings/presentation"
+            onClick={() => setIsOpen(false)}
+            className="border-t border-panora-border px-3 py-2.5 flex items-center justify-center gap-1.5 bg-[#faf8f5] text-[13px] font-medium text-panora-text-muted hover:text-panora-text hover:bg-panora-bg transition-colors"
+          >
+            <Palette className="w-3.5 h-3.5" />
+            Personnaliser les exports à ma marque
+          </Link>
         </div>
       )}
     </div>

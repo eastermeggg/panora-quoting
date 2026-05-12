@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { marked } from "marked";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Pencil, Eye } from "lucide-react";
+import { marked, type Tokens } from "marked";
 import TurndownService from "turndown";
 // @ts-expect-error - no types ship with the GFM plugin
 import { gfm } from "@joplin/turndown-plugin-gfm";
@@ -15,6 +17,8 @@ import type {
   GuaranteeRow,
   InsurerData,
 } from "@/data/mock";
+import { BrandingSettings, DEFAULT_BRANDING, loadBranding } from "@/data/branding";
+import { CoverPagePreview } from "@/components/settings/presentation/CoverPagePreview";
 
 interface ComparisonSynthesisProps {
   insurers: InsurerData[];
@@ -23,11 +27,39 @@ interface ComparisonSynthesisProps {
   clientName: string;
   content: string;
   onContentChange: (next: string) => void;
+  /** Triggers PDF preview in a new tab. */
+  onPreviewPdf?: () => void;
 }
 
 // ── Markdown ⇄ HTML configuration ──────────────────────────────────
 
 marked.setOptions({ gfm: true, breaks: false });
+
+// Wrap tables in a styled container, render headings as plain markdown (no class
+// injection — explicit override prevents stale extensions from a previous HMR
+// pass from sneaking in a "synth-reco-banner" or similar class).
+marked.use({
+  renderer: {
+    heading(this, token: Tokens.Heading) {
+      const text = this.parser.parseInline(token.tokens);
+      return `<h${token.depth}>${text}</h${token.depth}>\n`;
+    },
+    table(this, token: Tokens.Table) {
+      const header = token.header
+        .map((cell) => `<th>${this.parser.parseInline(cell.tokens)}</th>`)
+        .join("");
+      const body = token.rows
+        .map(
+          (row) =>
+            `<tr>${row
+              .map((cell) => `<td>${this.parser.parseInline(cell.tokens)}</td>`)
+              .join("")}</tr>`
+        )
+        .join("");
+      return `<div class="synth-table-wrap"><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>\n`;
+    },
+  },
+});
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -47,9 +79,25 @@ function htmlToMd(html: string): string {
 
 // ── WYSIWYG editor ────────────────────────────────────────────────
 
-export function ComparisonSynthesis({ content, onContentChange }: ComparisonSynthesisProps) {
+export function ComparisonSynthesis({
+  content,
+  onContentChange,
+  clientName,
+  productLabel,
+  onPreviewPdf,
+}: ComparisonSynthesisProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastMarkdownRef = useRef<string>(content);
+  const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
+
+  useEffect(() => {
+    setBranding(loadBranding());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "panora.branding.v1") setBranding(loadBranding());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // Set initial HTML on mount and whenever the content prop changes from outside
   // (e.g. chat accepted an edit). We avoid re-rendering during user edits.
@@ -80,7 +128,46 @@ export function ComparisonSynthesis({ content, onContentChange }: ComparisonSynt
 
   return (
     <div className="flex-1 overflow-auto bg-white">
-      <div className="max-w-[760px] mx-auto px-10 py-10">
+      <div className="max-w-[760px] mx-auto px-10 pt-6 pb-10">
+        {/* De-emphasized cover preview — represents the export's first page. */}
+        <div className="flex items-start gap-4 pb-5 mb-6 border-b border-panora-border">
+          <div className="shrink-0">
+            <CoverPagePreview
+              branding={branding}
+              clientName={clientName}
+              productLabel={productLabel}
+              scale={0.09}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 min-w-0 flex-1 pt-0.5">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-panora-text-secondary">
+              Page de couverture
+            </span>
+            <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+              Générée à l&apos;export à partir de votre charte.
+            </p>
+            <div className="flex items-center gap-4 mt-1">
+              {onPreviewPdf && (
+                <button
+                  onClick={onPreviewPdf}
+                  className="inline-flex items-center gap-1 text-[12px] font-medium text-panora-green hover:underline w-fit"
+                  title="Aperçu PDF (nouvel onglet)"
+                >
+                  <Eye className="w-3 h-3" />
+                  Aperçu
+                </button>
+              )}
+              <Link
+                href="/settings/presentation"
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-panora-green hover:underline w-fit"
+              >
+                <Pencil className="w-3 h-3" />
+                Personnaliser
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div
           ref={editorRef}
           contentEditable
@@ -88,6 +175,7 @@ export function ComparisonSynthesis({ content, onContentChange }: ComparisonSynt
           spellCheck
           onBlur={commit}
           className="synthese-doc outline-none focus:outline-none"
+          style={{ ["--brand-primary" as string]: branding.primaryColor }}
         />
       </div>
     </div>
@@ -113,93 +201,97 @@ export function buildDefaultSynthese(args: BuildDefaultSyntheseArgs): string {
     args.insurers[0];
 
   if (!recommended || completed.length === 0) {
-    return `# Synthèse — ${args.clientName}\n\nNous étudions les offres reçues pour ${args.productLabel}. La synthèse sera générée dès que les premiers devis seront disponibles.`;
+    return `# Synthèse · ${args.clientName}\n\nNous étudions les offres reçues pour ${args.productLabel}. La synthèse sera générée dès que les premiers devis seront disponibles.`;
   }
 
-  const insurersForTables = completed;
-
+  const synthese = args.analysisData?.synthese ?? [];
   const sections: string[] = [];
+  const nbInsurers = completed.length;
+  const isOnly = nbInsurers === 1;
 
-  sections.push(`# Synthèse — ${args.clientName}`);
+  // ── Title & intro ──
+  sections.push(`# Synthèse · ${args.clientName}`);
   sections.push(
-    `*Étude personnalisée pour la couverture **${args.productLabel}**, basée sur les devis reçus de ${completed.length} assureur${completed.length > 1 ? "s" : ""}.*`
+    `*Cette étude réunit les retours marché obtenus pour votre couverture **${args.productLabel}** auprès de ${isOnly ? `**${recommended.name}**` : `**${nbInsurers} assureurs**`}. Elle vous permet de comparer les offres en toute transparence et de retenir celle qui correspond le mieux à votre situation.*`
   );
 
-  // ── Vos besoins ──
+  // ── 1. Récapitulatif de vos besoins ──
+  sections.push(`## Récapitulatif de vos besoins`);
   const besoins = (args.besoinsClient ?? []).filter((b) => b.value.trim().length > 0);
   if (besoins.length > 0) {
-    sections.push(`## Vos besoins`);
+    sections.push(
+      `Pour rappel, voici les enjeux que nous avons identifiés ensemble et qui ont guidé la sélection des offres :`
+    );
     sections.push(besoins.map((b) => `- ${b.value}`).join("\n"));
+  } else {
+    sections.push(
+      `*Aucun besoin spécifique n'a été consigné. La synthèse s'appuie sur le profil ${args.productLabel} standard. N'hésitez pas à nous remonter toute particularité à affiner.*`
+    );
   }
 
-  // ── Assureurs consultés ──
+  // ── 2. Assureurs consultés ──
   sections.push(`## Assureurs consultés`);
   sections.push(
-    `Nous avons interrogé **${completed.length} assureur${completed.length > 1 ? "s" : ""}** sur ce périmètre. ${completed.length > 1 ? "Tous ont remis " : "L'assureur a remis "}un devis détaillé.`
+    isOnly
+      ? `Nous avons sollicité **${recommended.name}**, qui a remis un devis détaillé. Compte tenu du périmètre, cette offre constitue la base de notre recommandation.`
+      : `Nous avons sollicité **${nbInsurers} assureurs** que nous jugeons les mieux positionnés sur ce risque. Tous ont remis un devis complet, ce qui nous permet une analyse comparée précise.`
   );
-  sections.push(buildInsurersTable(insurersForTables, recommended.id));
+  sections.push(buildInsurersTable(completed, recommended.id));
 
-  // ── Garanties clés ──
-  const keyGuarantees = pickKeyGuarantees(args.comparisonData, insurersForTables, 6);
-  if (keyGuarantees.length > 0) {
-    sections.push(`## Garanties clés`);
-    sections.push(
-      `Comparaison sur les ${keyGuarantees.length} garanties les plus discriminantes pour votre profil.`
-    );
-    sections.push(buildGuaranteesTable(keyGuarantees, insurersForTables));
-  }
-
-  // ── Exclusions clés ──
-  const keyExclusions = pickKeyExclusions(args.comparisonData, insurersForTables, 5);
-  if (keyExclusions.length > 0) {
-    sections.push(`## Exclusions clés à noter`);
-    sections.push(
-      `Points d'attention identifiés sur les conditions générales et particulières.`
-    );
-    sections.push(buildExclusionsTable(keyExclusions, insurersForTables));
-  }
-
-  // ── Points forts par offre ──
-  const synthese = args.analysisData?.synthese ?? [];
-  const fortsParOffre = insurersForTables
-    .map((ins) => ({ ins, item: synthese.find((s) => s.insurerId === ins.id) }))
-    .filter((x) => x.item && x.item.pointsForts.length > 0);
-  if (fortsParOffre.length > 0) {
-    sections.push(`## Points forts par offre`);
-    sections.push(
-      fortsParOffre
-        .map(({ ins, item }) =>
-          `**${ins.name}**\n${item!.pointsForts.map((p) => `- ${p}`).join("\n")}`
-        )
-        .join("\n\n")
-    );
-  }
-
-  // ── Points faibles ──
-  const faiblesParOffre = insurersForTables
-    .map((ins) => ({ ins, item: synthese.find((s) => s.insurerId === ins.id) }))
-    .filter((x) => x.item && x.item.pointsFaibles.length > 0);
-  if (faiblesParOffre.length > 0) {
-    sections.push(`## Points de vigilance`);
-    sections.push(
-      faiblesParOffre
-        .map(({ ins, item }) =>
-          `**${ins.name}**\n${item!.pointsFaibles.map((p) => `- ${p}`).join("\n")}`
-        )
-        .join("\n\n")
-    );
-  }
-
-  // ── Recommandation ──
-  sections.push(`## Notre recommandation`);
+  // ── 3. Les offres reçues — comparison TABLE ──
+  sections.push(`## Les offres reçues`);
   sections.push(
-    `**${recommended.name}** — l'offre la mieux adaptée à votre profil sur ce périmètre de couverture.`
+    isOnly
+      ? `Voici les points distinctifs de l'offre, analysés au regard de votre profil.`
+      : `Chaque assureur a structuré sa proposition différemment. Le tableau ci-dessous met en évidence les éléments distinctifs identifiés à l'analyse : bénéfices à valoriser et points à garder en tête.`
   );
+  sections.push(buildOffersTable(completed, synthese, recommended.id));
+  if (!isOnly) {
+    sections.push(
+      `> ★ **${recommended.name}** se détache comme l'offre la mieux équilibrée pour votre profil. Le détail des garanties et exclusions de cette offre est présenté ci-dessous.`
+    );
+  }
 
-  // ── Pourquoi ──
+  // ── 4. Détail des garanties clés — offre recommandée ──
+  const keyGuaranteesReco = pickReccoKeyGuarantees(
+    args.comparisonData,
+    completed,
+    recommended,
+    6
+  );
+  if (keyGuaranteesReco.length > 0) {
+    sections.push(`## Détail des garanties clés · ${recommended.name}`);
+    sections.push(
+      `Voici les niveaux retenus par ${recommended.name} sur les garanties que nous avons identifiées comme les plus structurantes${besoins.length > 0 ? " pour votre activité" : ""}. Chaque ligne correspond à un point sur lequel la couverture peut faire la différence en cas de sinistre.`
+    );
+    sections.push(buildRecoGuaranteesTable(keyGuaranteesReco, recommended));
+  }
+
+  // ── 5. Détail des exclusions clés — offre recommandée ──
+  const keyExclusionsReco = pickReccoKeyExclusions(
+    args.comparisonData,
+    completed,
+    recommended,
+    5
+  );
+  if (keyExclusionsReco.length > 0) {
+    sections.push(`## Détail des exclusions clés · ${recommended.name}`);
+    sections.push(
+      `Toute police comporte des exclusions. Voici celles que nous avons relevées sur l'offre recommandée et qui méritent votre attention avant signature. Nous restons à votre disposition pour les revoir une à une.`
+    );
+    sections.push(buildRecoExclusionsTable(keyExclusionsReco, recommended));
+  }
+
+  // ── 6. Notre recommandation + Pourquoi ──
+  sections.push(`## Notre recommandation : ${recommended.name}`);
+  sections.push(
+    isOnly
+      ? `Au vu du périmètre et de l'analyse menée, nous vous recommandons de retenir l'offre **${recommended.name}**, dont les principaux atouts sont détaillés ci-dessous.`
+      : `À l'issue de cette analyse, **${recommended.name}** se détache comme l'offre la mieux équilibrée entre étendue de couverture, conditions et tarif, au regard de vos besoins.`
+  );
   const reasons = buildPourquoi(
     recommended,
-    insurersForTables,
+    completed,
     args.comparisonData,
     args.analysisData
   );
@@ -207,8 +299,145 @@ export function buildDefaultSynthese(args: BuildDefaultSyntheseArgs): string {
     sections.push(`### Pourquoi ${recommended.name} ?`);
     sections.push(reasons.map((r, i) => `${i + 1}. ${r}`).join("\n"));
   }
+  sections.push(
+    `*Nous restons disponibles pour échanger sur cette recommandation, ajuster un niveau de garantie ou demander un avenant si nécessaire.*`
+  );
 
   return sections.join("\n\n") + "\n";
+}
+
+function buildOffersTable(
+  insurers: InsurerData[],
+  synthese: AnalysisData["synthese"],
+  recommendedId: string
+): string {
+  const header = `| Assureur | Prime annuelle | Bénéfices clés | Points de vigilance |`;
+  const sep = `| --- | --- | --- | --- |`;
+  const rows = insurers
+    .map((ins) => {
+      const item = synthese.find((s) => s.insurerId === ins.id);
+      const isReco = ins.id === recommendedId;
+      const namePrefix = isReco ? `★ **${ins.name}** ` : `**${ins.name}**`;
+      const recoTag = isReco ? `<br>*Recommandée*` : "";
+      const prime =
+        ins.pricing?.[0]?.details?.find((d) => /annuel|prime|total|ttc/i.test(d.label))
+          ?.value ?? "n/c";
+      const forts =
+        item?.pointsForts && item.pointsForts.length > 0
+          ? joinForCell(item.pointsForts, 2)
+          : "n/c";
+      const faibles =
+        item?.pointsFaibles && item.pointsFaibles.length > 0
+          ? joinForCell(item.pointsFaibles, 2)
+          : "n/c";
+      return `| ${namePrefix}${recoTag} | ${prime} | ${forts} | ${faibles} |`;
+    })
+    .join("\n");
+  return `${header}\n${sep}\n${rows}`;
+}
+
+function joinForCell(items: string[], limit: number): string {
+  const trimmed = items
+    .slice(0, limit)
+    .map((s) => s.replace(/\|/g, "\\|").replace(/\n+/g, " "));
+  return trimmed.join(" · ");
+}
+
+function pickReccoKeyGuarantees(
+  comparisonData: ComparisonData | undefined,
+  insurers: InsurerData[],
+  recommended: InsurerData,
+  limit: number
+): KeyGuarantee[] {
+  if (!comparisonData) return [];
+  const flatSections =
+    comparisonData.products?.flatMap((p) => p.subGroups) ?? comparisonData.sections ?? [];
+  const allRows: GuaranteeRow[] = flatSections.flatMap((s) => s.rows);
+
+  // Score: discriminating between insurers + the reco has a meaningful value
+  const scored = allRows.map((row) => {
+    const types = new Set<string>();
+    insurers.forEach((ins) => {
+      const cell = row.values?.[ins.id];
+      types.add(cell?.type ?? "empty");
+    });
+    const recoCell = row.values?.[recommended.id];
+    const recoHasValue = recoCell && recoCell.type !== "empty" && recoCell.type !== "cross";
+    return { row, score: types.size, recoHasValue };
+  });
+
+  const discriminating = scored
+    .filter((s) => s.score > 1 && s.recoHasValue)
+    .slice(0, limit);
+  if (discriminating.length >= 3) {
+    return discriminating.map((s) => ({ label: s.row.label, rows: s.row }));
+  }
+  return allRows
+    .filter((r) => {
+      const c = r.values?.[recommended.id];
+      return c && c.type !== "empty";
+    })
+    .slice(0, limit)
+    .map((r) => ({ label: r.label, rows: r }));
+}
+
+function buildRecoGuaranteesTable(
+  items: KeyGuarantee[],
+  recommended: InsurerData
+): string {
+  const header = `| Garantie | ${recommended.name} |`;
+  const sep = `| --- | --- |`;
+  const rows = items
+    .map((item) => {
+      const cell = item.rows.values?.[recommended.id];
+      const detail = item.rows.details?.[recommended.id];
+      return `| ${item.label} | ${formatGuaranteeCell(cell, detail?.mainLimit)} |`;
+    })
+    .join("\n");
+  return `${header}\n${sep}\n${rows}`;
+}
+
+function pickReccoKeyExclusions(
+  comparisonData: ComparisonData | undefined,
+  insurers: InsurerData[],
+  recommended: InsurerData,
+  limit: number
+): ExclusionRow[] {
+  if (!comparisonData?.exclusions) return [];
+
+  // Prefer exclusions where the reco has an actual stance (exclu / inclus / exclu-text)
+  const recoActive = comparisonData.exclusions.filter((row) => {
+    const c = row.values?.[recommended.id];
+    return c && c.type !== "empty";
+  });
+
+  // Within those, prioritize ones that diverge across insurers
+  const scored = recoActive.map((row) => {
+    const types = new Set<string>();
+    insurers.forEach((ins) => {
+      const cell = row.values?.[ins.id];
+      types.add(cell?.type ?? "empty");
+    });
+    return { row, score: types.size };
+  });
+
+  const diverging = scored.filter((s) => s.score > 1).slice(0, limit);
+  if (diverging.length >= 2) return diverging.map((s) => s.row);
+  return recoActive.slice(0, limit);
+}
+
+function buildRecoExclusionsTable(
+  items: ExclusionRow[],
+  recommended: InsurerData
+): string {
+  const header = `| Exclusion | ${recommended.name} |`;
+  const sep = `| --- | --- |`;
+  const rows = items
+    .map((item) => {
+      return `| ${item.label} | ${formatExclusionCell(item.values?.[recommended.id])} |`;
+    })
+    .join("\n");
+  return `${header}\n${sep}\n${rows}`;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -219,9 +448,9 @@ function buildInsurersTable(insurers: InsurerData[], recommendedId: string): str
     .map((ins) => {
       const prime =
         ins.pricing?.[0]?.details?.find((d) => /annuel|prime|total|ttc/i.test(d.label))
-          ?.value ?? "—";
+          ?.value ?? "n/c";
       const reco = ins.id === recommendedId ? " ✓" : "";
-      const ref = ins.reference || "—";
+      const ref = ins.reference || "n/c";
       return `| ${ins.name}${reco} | ${prime} | ${ref} |`;
     })
     .join("\n");
@@ -233,98 +462,20 @@ interface KeyGuarantee {
   rows: GuaranteeRow;
 }
 
-function pickKeyGuarantees(
-  comparisonData: ComparisonData | undefined,
-  insurers: InsurerData[],
-  limit: number
-): KeyGuarantee[] {
-  if (!comparisonData) return [];
-  const flatSections =
-    comparisonData.products?.flatMap((p) => p.subGroups) ?? comparisonData.sections ?? [];
-  const allRows: GuaranteeRow[] = flatSections.flatMap((s) => s.rows);
-
-  const scored = allRows.map((row) => {
-    const types = new Set<string>();
-    insurers.forEach((ins) => {
-      const cell = row.values?.[ins.id];
-      types.add(cell?.type ?? "empty");
-    });
-    return { row, score: types.size };
-  });
-
-  const discriminating = scored.filter((s) => s.score > 1).slice(0, limit);
-  if (discriminating.length >= 3) {
-    return discriminating.map((s) => ({ label: s.row.label, rows: s.row }));
-  }
-  return allRows
-    .filter((r) =>
-      insurers.some((ins) => r.values?.[ins.id]?.type && r.values[ins.id].type !== "empty")
-    )
-    .slice(0, limit)
-    .map((r) => ({ label: r.label, rows: r }));
-}
-
-function buildGuaranteesTable(items: KeyGuarantee[], insurers: InsurerData[]): string {
-  const header = `| Garantie | ${insurers.map((i) => i.name).join(" | ")} |`;
-  const sep = `| --- | ${insurers.map(() => "---").join(" | ")} |`;
-  const rows = items
-    .map((item) => {
-      const cells = insurers.map((ins) => {
-        const cell = item.rows.values?.[ins.id];
-        const detail = item.rows.details?.[ins.id];
-        return formatGuaranteeCell(cell, detail?.mainLimit);
-      });
-      return `| ${item.label} | ${cells.join(" | ")} |`;
-    })
-    .join("\n");
-  return `${header}\n${sep}\n${rows}`;
-}
-
 function formatGuaranteeCell(cell: CellValue | undefined, mainLimit?: string): string {
-  if (!cell) return "—";
+  if (!cell) return "n/c";
   if (cell.type === "text" && cell.value) return cell.value.replace(/\|/g, "\\|");
   if (cell.type === "check") return mainLimit ? `✓ ${mainLimit.replace(/\|/g, "\\|")}` : "✓";
   if (cell.type === "cross") return "✕";
-  return "—";
-}
-
-function pickKeyExclusions(
-  comparisonData: ComparisonData | undefined,
-  insurers: InsurerData[],
-  limit: number
-): ExclusionRow[] {
-  if (!comparisonData?.exclusions) return [];
-  const scored = comparisonData.exclusions.map((row) => {
-    const types = new Set<string>();
-    insurers.forEach((ins) => {
-      const cell = row.values?.[ins.id];
-      types.add(cell?.type ?? "empty");
-    });
-    return { row, score: types.size };
-  });
-  const diverging = scored.filter((s) => s.score > 1).slice(0, limit);
-  if (diverging.length >= 2) return diverging.map((s) => s.row);
-  return comparisonData.exclusions.slice(0, limit);
-}
-
-function buildExclusionsTable(items: ExclusionRow[], insurers: InsurerData[]): string {
-  const header = `| Exclusion | ${insurers.map((i) => i.name).join(" | ")} |`;
-  const sep = `| --- | ${insurers.map(() => "---").join(" | ")} |`;
-  const rows = items
-    .map((item) => {
-      const cells = insurers.map((ins) => formatExclusionCell(item.values?.[ins.id]));
-      return `| ${item.label} | ${cells.join(" | ")} |`;
-    })
-    .join("\n");
-  return `${header}\n${sep}\n${rows}`;
+  return "n/c";
 }
 
 function formatExclusionCell(cell: ExclusionCellValue | undefined): string {
-  if (!cell) return "—";
+  if (!cell) return "n/c";
   if (cell.type === "exclu") return "Exclu";
   if (cell.type === "inclus") return "Inclus";
   if (cell.type === "exclu-text" && cell.value) return cell.value.replace(/\|/g, "\\|");
-  return "—";
+  return "n/c";
 }
 
 function buildPourquoi(
@@ -337,7 +488,7 @@ function buildPourquoi(
 
   const recoSynthese = analysisData?.synthese.find((s) => s.insurerId === recommended.id);
   if (recoSynthese?.pointsForts && recoSynthese.pointsForts.length > 0) {
-    reasons.push(`**Couverture** — ${recoSynthese.pointsForts[0]}`);
+    reasons.push(`**Couverture** : ${recoSynthese.pointsForts[0]}`);
   }
 
   if (comparisonData) {
@@ -357,7 +508,7 @@ function buildPourquoi(
     });
     if (uniqueWin) {
       reasons.push(
-        `**${uniqueWin.label}** — seul **${recommended.name}** propose cette garantie sur les devis reçus.`
+        `**${uniqueWin.label}** : seul **${recommended.name}** propose cette garantie sur les devis reçus.`
       );
     }
   }
@@ -372,11 +523,11 @@ function buildPourquoi(
     if (recoPrime < max) {
       const pct = Math.round(((max - recoPrime) / max) * 100);
       reasons.push(
-        `**Tarif maîtrisé** — prime annuelle ${pct}% sous l'offre la plus chère du panel.`
+        `**Tarif maîtrisé** : prime annuelle ${pct}% sous l'offre la plus chère du panel.`
       );
     } else if (recoPrime > Math.min(...othersPrimes)) {
       reasons.push(
-        `**Justification du surcoût** — prime supérieure à la moins-disante mais compensée par la couverture et la qualité de gestion.`
+        `**Justification du surcoût** : prime supérieure à la moins-disante mais compensée par la couverture et la qualité de gestion.`
       );
     }
   }
@@ -399,13 +550,13 @@ function buildPourquoi(
     );
     if (recoCount < othersMaxCount) {
       reasons.push(
-        `**Moins d'exclusions** — ${recoCount} exclusion${recoCount > 1 ? "s" : ""} appliquée${recoCount > 1 ? "s" : ""} contre ${othersMaxCount} pour le concurrent le plus restrictif.`
+        `**Moins d'exclusions** : ${recoCount} exclusion${recoCount > 1 ? "s" : ""} appliquée${recoCount > 1 ? "s" : ""} contre ${othersMaxCount} pour le concurrent le plus restrictif.`
       );
     }
   }
 
   reasons.push(
-    `**Adéquation au profil** — combinaison la plus équilibrée entre étendue de couverture, tarif et conditions, au regard des besoins exprimés.`
+    `**Adéquation au profil** : combinaison la plus équilibrée entre étendue de couverture, tarif et conditions, au regard des besoins exprimés.`
   );
 
   return reasons.slice(0, 4);
