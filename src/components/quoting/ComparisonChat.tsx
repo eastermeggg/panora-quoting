@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, MessageCircle, Sparkles, X } from "lucide-react";
+import { ArrowUp, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InsurerData } from "@/data/mock";
 import {
@@ -100,9 +100,9 @@ export function ComparisonChat({
   }
 
   return (
-    <aside className="w-[380px] shrink-0 h-full border-l border-panora-border bg-white flex flex-col">
+    <aside className="w-[380px] shrink-0 h-full border-l border-panora-border bg-[#faf8f5] flex flex-col">
       {/* Header */}
-      <div className="h-[44px] shrink-0 border-b border-panora-border px-4 flex items-center justify-between">
+      <div className="h-[52px] shrink-0 border-b border-panora-border px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-panora-green" />
           <span className="text-[13px] font-semibold text-panora-text">Copilote</span>
@@ -187,27 +187,29 @@ function EmptyState({
   const [a, b] = insurers;
   const suggestions = [
     a && b ? `Compare les exclusions entre ${a.name} et ${b.name}` : null,
-    `Reformule l'argumentaire pour un dirigeant non-technique`,
     `Quelle offre couvre la perte d'exploitation ?`,
+    `Reformule la synthèse pour un dirigeant non-technique`,
   ].filter((s): s is string => Boolean(s));
 
   return (
-    <div className="flex flex-col items-center text-center gap-3 py-6">
-      <div className="w-9 h-9 rounded-full bg-panora-green/10 flex items-center justify-center">
-        <MessageCircle className="w-4 h-4 text-panora-green" />
+    <div className="flex-1 flex flex-col justify-center gap-4">
+      <div className="flex flex-col items-center text-center gap-1.5">
+        <h3 className="text-[16px] font-serif text-panora-text leading-[22px] tracking-[-0.01em] m-0">
+          Votre copilote, à vos côtés.
+        </h3>
+        <p className="text-[12px] text-panora-text-secondary leading-[18px] max-w-[260px]">
+          Posez une question sur les offres reçues, ou demandez d&apos;affiner la synthèse client.
+        </p>
       </div>
-      <p className="text-[13px] font-medium text-panora-text leading-5 max-w-[280px]">
-        Demande une reformulation, une comparaison, ou interroge les offres.
-      </p>
-      <p className="text-[12px] text-panora-text-muted leading-[18px] max-w-[280px]">
-        Le copilote s&apos;appuie sur les devis reçus, ne fabrique pas de données absentes.
-      </p>
-      <div className="flex flex-col gap-1.5 w-full mt-1">
+      <div className="flex flex-col gap-2">
+        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-panora-text-muted text-center">
+          Pour démarrer
+        </span>
         {suggestions.map((s) => (
           <button
             key={s}
             onClick={() => onSuggestion(s)}
-            className="text-left text-[12px] text-panora-text px-3 py-2 rounded-lg border border-panora-border hover:bg-panora-bg transition-colors"
+            className="text-left text-[12px] leading-[18px] text-panora-text px-3 py-2 rounded-[8px] border border-panora-border bg-white hover:border-panora-text-secondary/40 hover:shadow-[0px_1px_2px_rgba(0,0,0,0.04)] transition-all"
           >
             {s}
           </button>
@@ -236,7 +238,7 @@ function MessageBubble({
           "max-w-[88%] rounded-xl px-3 py-2 text-[13px] leading-[20px]",
           isUser
             ? "bg-panora-green text-white"
-            : "bg-panora-bg text-panora-text border border-panora-border"
+            : "bg-panora-secondary text-panora-text"
         )}
       >
         <p className="whitespace-pre-wrap break-words">{renderMarkdown(message.content)}</p>

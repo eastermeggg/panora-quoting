@@ -7,11 +7,11 @@ import {
   User,
   Building2,
   Users,
-  FileOutput,
   Globe,
   MessageCircle,
   ChevronDown,
   PanelLeftClose,
+  Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
@@ -20,7 +20,7 @@ const settingsNavItems = [
   { label: "Votre compte", href: "/settings/account", icon: User },
   { label: "Espace de travail", href: "/settings/workspace", icon: Building2 },
   { label: "Collaborateurs", href: "/settings/collaborators", icon: Users },
-  { label: "Modèles de sortie", href: "/settings/templates", icon: FileOutput },
+  { label: "Présentation", href: "/settings/presentation", icon: Palette },
   { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
 ];
 
