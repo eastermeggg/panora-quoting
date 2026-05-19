@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   getFollowupData,
   getComparisonData,
@@ -21,7 +22,13 @@ import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import { ComparisonSynthesis, buildDefaultSynthese } from "@/components/quoting/ComparisonSynthesis";
 import { ComparisonChat } from "@/components/quoting/ComparisonChat";
 import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
+import { DevoirConseilWizard } from "@/components/quoting/DevoirConseilWizard";
+import {
+  SendToVeosModal,
+  type SendToVeosState,
+} from "@/components/quoting/SendToVeosModal";
 import { getSynthesisOverride, setSynthesisOverride } from "@/data/chatMock";
+import { isIntegrationConnected } from "@/data/integrations-mock";
 import { loadBranding } from "@/data/branding";
 import {
   downloadSynthesePdf,
@@ -58,21 +65,45 @@ function downloadMockFile(fileName: string, content: string) {
 
 function ComparisonListView() {
   const [wizardOpen, setWizardOpen] = useState(false);
-  const router = useRouter();
-  const inProgress = comparisonTasks.filter((t) => t.status === "in_progress");
-  const done = comparisonTasks.filter((t) => t.status === "done");
+  const [, setTick] = useState(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const rerender = useCallback(() => {
+    if (mountedRef.current) setTick((t) => t + 1);
+  }, []);
 
-  const handleWizardSubmit = (data: { client: string; products: string[]; principalProduct: string | null; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
+  const inProgress = [...comparisonTasks]
+    .filter((t) => t.status === "in_progress")
+    .sort((a, b) => parseFrDate(b.date) - parseFrDate(a.date));
+  const done = [...comparisonTasks]
+    .filter((t) => t.status === "done")
+    .sort((a, b) => parseFrDate(b.date) - parseFrDate(a.date));
+
+  const markRead = useCallback((taskId: string) => {
+    const task = comparisonTasks.find((t) => t.id === taskId);
+    if (task?.isUnread) {
+      task.isUnread = false;
+      rerender();
+    }
+  }, [rerender]);
+
+  const handleWizardSubmit = (data: { client: string; clientId: string | null; clientSiren: string | null; products: string[]; principalProduct: string | null; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
     const cotationId = "cot-1";
+    const taskId = `cmp-${Date.now()}`;
     // Update client profile with wizard besoins
     updateClientProfile(cotationId, {
       clientLabel: data.client,
-      clientSiren: "00007U26464",
+      clientSiren: data.clientSiren ?? "—",
       besoinsClient: data.besoinsClient,
     });
     // Add new in_progress task (unshift so it's found first by detail view)
     comparisonTasks.unshift({
-      id: `cmp-${Date.now()}`,
+      id: taskId,
       cotationId,
       client: data.client,
       products: data.products,
@@ -83,7 +114,18 @@ function ComparisonListView() {
       status: "in_progress",
     });
     setWizardOpen(false);
-    router.push(`/quoting/comparison?id=${cotationId}`);
+    rerender();
+
+    // Simulate analysis completing — row jumps from "En cours" to "Terminé"
+    // with the unread highlight until the user opens it.
+    window.setTimeout(() => {
+      const task = comparisonTasks.find((t) => t.id === taskId);
+      if (task) {
+        task.status = "done";
+        task.isUnread = true;
+      }
+      rerender();
+    }, 5500);
   };
 
   return (
@@ -104,12 +146,12 @@ function ComparisonListView() {
 
       {/* Column headers */}
       <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Client</div>
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Produits</div>
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Date</div>
-        <div className="flex-1 px-4 text-[12px] text-panora-text-muted">Progrès</div>
+        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Client</div>
+        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Produits</div>
+        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
+        <div className="w-[140px] shrink-0 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
+        <div className="w-[100px] shrink-0 px-4 text-[12px] text-panora-text-muted">Date</div>
+        <div className="w-[180px] shrink-0 px-4 text-[12px] text-panora-text-muted">Progrès</div>
         <div className="w-10 shrink-0" />
       </div>
 
@@ -120,7 +162,7 @@ function ComparisonListView() {
           <>
             <StatusGroupHeader label="En cours" color="bg-[#be93e4]" bgColor="bg-[#fbf7fe]" />
             {inProgress.map((task) => (
-              <TaskRow key={task.id} task={task} />
+              <TaskRow key={task.id} task={task} onOpen={markRead} />
             ))}
             <div className="h-1.5 border-y border-panora-border" />
           </>
@@ -131,7 +173,7 @@ function ComparisonListView() {
           <>
             <StatusGroupHeader label="Terminé" color="bg-[#94ce9a]" bgColor="bg-[#f5fbf5]" />
             {done.map((task) => (
-              <TaskRow key={task.id} task={task} />
+              <TaskRow key={task.id} task={task} onOpen={markRead} />
             ))}
           </>
         )}
@@ -147,6 +189,25 @@ function ComparisonListView() {
   );
 }
 
+/** Parse "DD/MM/YYYY" into a sortable timestamp. Returns 0 when malformed. */
+function parseFrDate(date: string): number {
+  const [d, m, y] = date.split("/").map((n) => Number.parseInt(n, 10));
+  if (!d || !m || !y) return 0;
+  return new Date(y, m - 1, d).getTime();
+}
+
+const productLabelMap: Record<string, string> = {
+  "Flotte automobile": "Flotte Auto.",
+  "Flotte automobile (stock)": "Flotte Auto. (stock)",
+  "Auto": "Auto.",
+  "Prévoyance / AT": "Prev/AT",
+  "Accident du Travail": "AT",
+};
+
+function shortProductLabel(product: string): string {
+  return productLabelMap[product] ?? product;
+}
+
 function StatusGroupHeader({ label, color, bgColor }: { label: string; color: string; bgColor: string }) {
   return (
     <div className={`${bgColor} px-4 py-2`}>
@@ -158,7 +219,7 @@ function StatusGroupHeader({ label, color, bgColor }: { label: string; color: st
   );
 }
 
-function TaskRow({ task }: { task: ComparisonTask }) {
+function TaskRow({ task, onOpen }: { task: ComparisonTask; onOpen: (taskId: string) => void }) {
   const maxVisible = 2;
   const visibleInsurers = task.insurerIds.slice(0, maxVisible);
   const extraCount = task.insurerIds.length - maxVisible;
@@ -166,43 +227,49 @@ function TaskRow({ task }: { task: ComparisonTask }) {
   const insurerNames: Record<string, string> = {
     axa: "Axa", allianz: "Allianz", generali: "Generali", chubb: "Chubb", maif: "MAIF",
   };
+  const isUnread = task.status === "done" && task.isUnread === true;
 
   return (
-    <div className="flex items-center bg-white border-b border-panora-border hover:bg-panora-bg/30 transition-colors">
+    <div
+      className={cn(
+        "group flex items-center bg-white border-b border-panora-border border-l-2 hover:bg-panora-bg/30 transition-colors",
+        isUnread ? "border-l-panora-green" : "border-l-transparent"
+      )}
+    >
       {/* Client */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 min-w-0 px-4 py-4">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-[6px] bg-panora-green/20 border border-black/10 flex items-center justify-center shrink-0">
             <span className="text-[9px] font-bold text-panora-green">{task.client.charAt(0)}</span>
           </div>
-          <span className="text-[13px] font-medium text-panora-text truncate">{task.client}</span>
+          <span
+            className={cn(
+              "text-[13px] text-panora-text truncate",
+              isUnread ? "font-semibold" : "font-medium"
+            )}
+          >
+            {task.client}
+          </span>
         </div>
       </div>
 
       {/* Products */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 min-w-0 px-4 py-4">
         <div className="flex flex-wrap gap-1.5">
-          {task.products.map((p) => {
-            const isPrincipal = p === task.principalProduct;
-            return (
-              <span
-                key={p}
-                className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-[12px] font-medium leading-4 ${
-                  isPrincipal
-                    ? "bg-[#dbeee5] text-[#173c2d]"
-                    : "bg-panora-secondary text-panora-text-muted"
-                }`}
-              >
-                {isPrincipal && <span className="w-[6px] h-[6px] rounded-full bg-[#00a272] shrink-0" />}
-                {p}
-              </span>
-            );
-          })}
+          {task.products.map((p) => (
+            <span
+              key={p}
+              title={p}
+              className="inline-flex items-center h-5 px-2 rounded-full text-[11.5px] font-medium leading-4 bg-panora-secondary/70 text-panora-text-secondary"
+            >
+              {shortProductLabel(p)}
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Insurers */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 min-w-0 px-4 py-4">
         <div className="flex flex-wrap items-center gap-1.5">
           {visibleInsurers.map((id) => (
             <span key={id} className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-panora-secondary text-[12px] text-panora-text-muted">
@@ -219,37 +286,45 @@ function TaskRow({ task }: { task: ComparisonTask }) {
       </div>
 
       {/* Created by */}
-      <div className="flex-1 px-4 py-4">
-        <div className="flex items-center gap-2">
+      <div className="w-[140px] shrink-0 px-4 py-4">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="w-4 h-4 rounded-full bg-panora-green/20 flex items-center justify-center shrink-0">
             <span className="text-[8px] font-bold text-panora-green">{task.createdBy.charAt(0)}</span>
           </div>
-          <span className="text-[13px] text-panora-text-muted">{task.createdBy}</span>
+          <span className="text-[13px] text-panora-text-muted truncate">{task.createdBy}</span>
         </div>
       </div>
 
       {/* Date */}
-      <div className="flex-1 px-4 py-4">
-        <span className="text-[13px] text-panora-text-muted">{task.date}</span>
+      <div className="w-[100px] shrink-0 px-4 py-4">
+        <span className="text-[13px] text-panora-text-muted whitespace-nowrap">{task.date}</span>
       </div>
 
       {/* Progress */}
-      <div className="flex-1 px-4 py-4">
+      <div className="w-[180px] shrink-0 px-4 py-4">
         {task.status === "in_progress" ? (
           <div className="inline-flex items-center gap-1.5 h-[25px] px-2.5 rounded-full bg-panora-secondary">
             <Loader2 className="w-3.5 h-3.5 text-panora-text-muted animate-spin" />
-            <span className="text-[12px] text-panora-text-muted">
+            <span className="text-[12px] text-panora-text-muted whitespace-nowrap">
               En analyse <span className="font-medium">&lt; 1 min</span>
             </span>
           </div>
         ) : (
-          <Link
-            href={`/quoting/comparison?id=${task.cotationId}`}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green"
-          >
-            Voir le comparatif
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            {isUnread && (
+              <span className="inline-flex items-center px-2 h-5 rounded-full text-[11px] font-medium leading-4 bg-panora-green-light text-panora-green-dark whitespace-nowrap group-hover:hidden">
+                Nouveau
+              </span>
+            )}
+            <Link
+              href={`/quoting/comparison?id=${task.cotationId}`}
+              onClick={() => onOpen(task.id)}
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity whitespace-nowrap"
+            >
+              Voir le comparatif
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         )}
       </div>
 
@@ -384,6 +459,33 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
     () => getComparisonData(cotParamId)?.dynamicFieldValues ?? {}
   );
   const hasClientProfile = mutableProfile.besoinsClient.filter((b) => b.value.trim()).length > 0;
+
+  // ── Devoir de conseil wizard ──
+  const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
+
+  // ── Send-to-VEOS post-export prompt ──
+  // Only surfaces when VEOS is connected; otherwise the export happens silently.
+  const [exportToast, setExportToast] = useState<SendToVeosState | null>(null);
+  const wrapExport = useCallback(
+    (label: string, run: () => void) => () => {
+      run();
+      if (isIntegrationConnected("veos")) {
+        setExportToast({ status: "prompt", label });
+      }
+    },
+    []
+  );
+  const handleSendToVeos = useCallback(() => {
+    setExportToast((prev) =>
+      prev ? { status: "sending", label: prev.label } : prev
+    );
+    // Simulate ERP round-trip.
+    window.setTimeout(() => {
+      setExportToast((prev) =>
+        prev ? { status: "sent", label: prev.label } : prev
+      );
+    }, 1100);
+  }, []);
 
   const openProfile = useCallback(() => {
     setSelectedCell(null);
@@ -647,23 +749,29 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               syntheseMarkdown: syntheseContent,
             })
           }
-          onDownloadSynthesePDF={() =>
+          onDownloadSynthesePDF={wrapExport("Synthèse.pdf", () =>
             downloadSynthesePdf({
               branding: loadBranding(),
               clientName: mutableProfile.clientLabel || cotation.client || "Client",
               productLabel,
               syntheseMarkdown: syntheseContent,
             })
-          }
-          onDownloadSyntheseDocx={() =>
+          )}
+          onDownloadSyntheseDocx={wrapExport("Synthèse.docx", () =>
             downloadSyntheseDocx({
               branding: loadBranding(),
               clientName: mutableProfile.clientLabel || cotation.client || "Client",
               productLabel,
               syntheseMarkdown: syntheseContent,
             })
-          }
-          onDownloadTableauXLS={() => downloadMockFile(`${cotation.client} - Tableau comparatif.xlsx`, "Tableau comparatif — export XLS (démo)")}
+          )}
+          onDownloadTableauXLS={wrapExport("Tableau comparatif.xlsx", () =>
+            downloadMockFile(
+              `${cotation.client} - Tableau comparatif.xlsx`,
+              "Tableau comparatif — export XLS (démo)"
+            )
+          )}
+          onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
         />
       </div>
 
@@ -808,6 +916,33 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           syntheseContent={syntheseContent}
           onAcceptContentEdit={updateSyntheseContent}
           onClose={() => setChatOpen(false)}
+        />
+      )}
+
+      {devoirWizardOpen && (
+        <DevoirConseilWizard
+          insurers={mutableInsurers}
+          profile={mutableProfile}
+          principalProduct={task?.principalProduct ?? null}
+          onClose={() => setDevoirWizardOpen(false)}
+          onSubmit={() => {
+            wrapExport("Devoir de conseil.pdf", () => {
+              downloadMockFile(
+                `${cotation.client} - Devoir de conseil.pdf`,
+                "Devoir de conseil — export PDF (démo)"
+              );
+            })();
+            setDevoirWizardOpen(false);
+          }}
+        />
+      )}
+
+      {exportToast && (
+        <SendToVeosModal
+          state={exportToast}
+          clientName={mutableProfile.clientLabel || cotation.client}
+          onDismiss={() => setExportToast(null)}
+          onSend={handleSendToVeos}
         />
       )}
     </div>

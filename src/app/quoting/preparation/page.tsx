@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
@@ -8,29 +8,28 @@ import {
   Car,
   Shield,
   ChevronDown,
-  Search,
   ExternalLink,
   X,
   CloudUpload,
   FileText,
   ListChecks,
+  Plus,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
+import { ClientSelector } from "@/components/quoting/ClientSelector";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
 import type { ExtractedSection } from "@/data/scenarios";
+import {
+  addContract,
+  getClientContracts,
+  veosClients,
+  type VeosContract,
+} from "@/data/clients-mock";
+import { getActiveErpAdapter } from "@/data/erp-adapters";
 import Link from "next/link";
-
-// Mock clients for dropdown
-const mockClients = [
-  { id: "acme", name: "ACME Corp SAS", siren: "523 847 196", color: "bg-purple-600" },
-  { id: "marble", name: "Marble Tech SAS", siren: "00007U26464", color: "bg-blue-600" },
-  { id: "techvision", name: "TechVision SAS", siren: "891 234 567", color: "bg-emerald-600" },
-  { id: "greenway", name: "Greenway SARL", siren: "345 678 912", color: "bg-amber-600" },
-  { id: "blueleaf", name: "BlueLeaf Industries SA", siren: "456 789 123", color: "bg-sky-600" },
-  { id: "marchand", name: "Sophie Marchand", siren: "", color: "bg-rose-600" },
-];
 
 // Mock products for dropdown
 const mockProducts = [
@@ -42,107 +41,13 @@ const mockProducts = [
   { id: "auto", name: "Auto", icon: "car" },
 ];
 
-/* ── Client Logo (colored square with initial) ── */
-function ClientLogo({ name, color }: { name: string; color: string }) {
-  return (
-    <div
-      className={cn(
-        "w-4 h-4 rounded text-white text-[9px] font-bold flex items-center justify-center shrink-0",
-        color
-      )}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
+/** Best-effort: map a scenario.client name to a VEOS client id. */
+function resolveScenarioClientId(name: string | undefined): string {
+  if (!name) return "marble";
+  const match = veosClients.find(
+    (c) => c.name.toLowerCase() === name.toLowerCase()
   );
-}
-
-/* ── Searchable dropdown for Client ── */
-function ClientDropdown({
-  selectedId,
-  onSelect,
-}: {
-  selectedId: string;
-  onSelect: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-  const current = mockClients.find((c) => c.id === selectedId)!;
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const filtered = mockClients.filter((c) =>
-    `${c.name} ${c.siren}`.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div ref={ref} className="relative">
-      {!open ? (
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 w-full bg-white border border-panora-border rounded-lg px-3 py-2.5 text-left shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] hover:border-panora-text-muted transition-colors"
-        >
-          <ClientLogo name={current.name} color={current.color} />
-          <span className="text-[13px] text-panora-text-primary flex-1">
-            {current.name} -{" "}
-            <span className="text-panora-text-secondary">SIREN {current.siren}</span>
-          </span>
-          <ChevronDown className="w-4 h-4 text-panora-text-muted" />
-        </button>
-      ) : (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-panora-text-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            autoFocus
-            placeholder="Rechercher un client..."
-            className="w-full bg-white border border-panora-green rounded-lg pl-9 pr-4 py-2.5 text-[13px] outline-none ring-2 ring-panora-green/20"
-          />
-        </div>
-      )}
-      {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-panora-border rounded-lg shadow-lg z-20 overflow-hidden">
-          <div className="max-h-[200px] overflow-y-auto">
-            {filtered.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  onSelect(c.id);
-                  setOpen(false);
-                  setSearch("");
-                }}
-                className={cn(
-                  "flex items-center gap-2 w-full px-3 py-2.5 text-left text-[13px] hover:bg-panora-tag/50 transition-colors",
-                  c.id === selectedId && "bg-panora-green-light/50"
-                )}
-              >
-                <ClientLogo name={c.name} color={c.color} />
-                <span className="text-panora-text">
-                  {c.name} - SIREN {c.siren}
-                </span>
-              </button>
-            ))}
-            {filtered.length === 0 && (
-              <div className="px-3 py-2.5 text-[13px] text-panora-text-muted">
-                Aucun résultat
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return match?.id ?? "marble";
 }
 
 /* ── Warning/Error badge with ! icon ── */
@@ -175,8 +80,8 @@ function PreparationContent() {
   const scenario = getScenario(scenarioId) || scenarios["rc-pro"];
 
   const [projectName, setProjectName] = useState(scenario.defaultProjectName);
-  const [selectedClient, setSelectedClient] = useState(
-    mockClients.find((c) => c.name === scenario.client)?.id || mockClients[1].id
+  const [selectedClient, setSelectedClient] = useState<string | null>(
+    resolveScenarioClientId(scenario.client)
   );
   const [selectedProduct, setSelectedProduct] = useState(scenarioId);
   const [selectedInsurers, setSelectedInsurers] = useState<string[]>(
@@ -187,8 +92,51 @@ function PreparationContent() {
     scenario.extractedSections
   );
 
+  // ── Étude picker ──
+  const erp = getActiveErpAdapter();
+  const productName = useMemo(
+    () => mockProducts.find((p) => p.id === selectedProduct)?.name ?? scenario.product,
+    [selectedProduct, scenario.product]
+  );
+  const clientContracts = useMemo(
+    () => (selectedClient ? getClientContracts(selectedClient) : []),
+    [selectedClient]
+  );
+  // "new" means we'll create a fresh étude on launch.
+  const [etudeChoice, setEtudeChoice] = useState<string>("new");
+  // When picking an existing étude, default to one whose product matches.
+  useMemo(() => {
+    if (!selectedClient) return;
+    const match = clientContracts.find(
+      (c) => c.status === "etude" && c.product.toLowerCase() === productName.toLowerCase()
+    );
+    setEtudeChoice(match?.id ?? "new");
+  }, [selectedClient, productName, clientContracts]);
+  const suggestedEtudeNumber = useMemo(() => {
+    const year = new Date().getFullYear();
+    const rand = Math.floor(Math.random() * 900 + 100);
+    return `${erp.container.numberPrefix}-${year}-${rand}`;
+  }, [erp.container.numberPrefix]);
+  const [newEtude, setNewEtude] = useState({
+    title: `${erp.container.Singular} ${productName} ${new Date().getFullYear()}`,
+    number: suggestedEtudeNumber,
+    product: productName,
+  });
+  // Keep autofill in sync when product/year change before user touches the field.
+  useMemo(() => {
+    setNewEtude((prev) => ({
+      ...prev,
+      title:
+        prev.title.startsWith(erp.container.Singular)
+          ? `${erp.container.Singular} ${productName} ${new Date().getFullYear()}`
+          : prev.title,
+      product: prev.product || productName,
+    }));
+  }, [productName, erp.container.Singular]);
+
   const stats = useMemo(() => getValidationStats(sections), [sections]);
   const noInsurers = selectedInsurers.length === 0;
+  const creatingEtude = etudeChoice === "new";
 
   const handleToggleInsurer = (id: string) => {
     setSelectedInsurers((prev) =>
@@ -197,6 +145,19 @@ function PreparationContent() {
   };
 
   const handleLaunch = () => {
+    // Persist the étude to the shared mock so the followup page's bulk modal
+    // picks it up by default.
+    if (creatingEtude && selectedClient && newEtude.title.trim()) {
+      const created: VeosContract = {
+        id: `ctr-${Date.now()}`,
+        clientId: selectedClient,
+        product: newEtude.product || productName,
+        label: `${newEtude.title.trim()} · ${newEtude.number.trim()}`,
+        insurer: "—",
+        status: "etude",
+      };
+      addContract(created);
+    }
     const followupId = scenarioId === "auto" ? "cot-13" : "cot-1";
     router.push(`/quoting/followup?id=${followupId}`);
   };
@@ -351,10 +312,118 @@ function PreparationContent() {
                   <label className="text-[13px] font-medium text-panora-text-primary block mb-1.5">
                     Client
                   </label>
-                  <ClientDropdown
-                    selectedId={selectedClient}
-                    onSelect={setSelectedClient}
+                  <ClientSelector
+                    value={selectedClient}
+                    onChange={setSelectedClient}
                   />
+                </div>
+
+                {/* Étude — picked at launch so the cotation lands in the right VEOS container */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <label className="text-[13px] font-medium text-panora-text-primary">
+                      {erp.container.Singular}
+                    </label>
+                    <span className="text-[12px] text-panora-text-muted leading-5">
+                      Statut <span className="font-medium text-panora-text-secondary">Étude</span> dans {erp.name}
+                    </span>
+                  </div>
+                  {creatingEtude ? (
+                    <div className="rounded-lg border border-panora-border bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] divide-y divide-panora-border">
+                      <div className="flex items-center gap-2 px-3 py-2.5">
+                        <Plus className="w-3.5 h-3.5 text-panora-green shrink-0" />
+                        <span className="text-[13px] font-medium text-panora-text flex-1">
+                          Nouvelle {erp.container.singular} dans {erp.name}
+                        </span>
+                        {clientContracts.some((c) => c.status === "etude") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const first = clientContracts.find((c) => c.status === "etude");
+                              if (first) setEtudeChoice(first.id);
+                            }}
+                            className="inline-flex items-center gap-1 text-[12px] font-medium text-panora-text-muted hover:text-panora-text-secondary transition-colors"
+                          >
+                            <ArrowLeft className="w-3 h-3" />
+                            Reprendre une étude existante
+                          </button>
+                        )}
+                      </div>
+                      <div className="px-3 py-3 grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1.5 col-span-2">
+                          <label className="text-[13px] font-medium text-panora-text leading-5">
+                            {erp.container.formLabels.title}
+                            <span className="text-panora-error ml-1">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newEtude.title}
+                            onChange={(e) =>
+                              setNewEtude((prev) => ({ ...prev, title: e.target.value }))
+                            }
+                            placeholder={`${erp.container.Singular} ${productName} 2026`}
+                            className="w-full h-9 px-3 bg-white border border-panora-border rounded-md text-[13px] text-panora-text placeholder:text-panora-text-muted outline-none focus:border-panora-green/40 transition-colors"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[13px] font-medium text-panora-text leading-5">
+                            {erp.container.formLabels.number}
+                          </label>
+                          <input
+                            type="text"
+                            value={newEtude.number}
+                            onChange={(e) =>
+                              setNewEtude((prev) => ({ ...prev, number: e.target.value }))
+                            }
+                            className="w-full h-9 px-3 bg-white border border-panora-border rounded-md text-[13px] text-panora-text font-mono tabular-nums outline-none focus:border-panora-green/40 transition-colors"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[13px] font-medium text-panora-text leading-5">
+                            {erp.container.formLabels.product}
+                          </label>
+                          <input
+                            type="text"
+                            value={newEtude.product}
+                            onChange={(e) =>
+                              setNewEtude((prev) => ({ ...prev, product: e.target.value }))
+                            }
+                            placeholder={productName}
+                            className="w-full h-9 px-3 bg-white border border-panora-border rounded-md text-[13px] text-panora-text outline-none focus:border-panora-green/40 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <div className="relative">
+                        <select
+                          value={etudeChoice}
+                          onChange={(e) => setEtudeChoice(e.target.value)}
+                          className="w-full h-10 pl-3 pr-9 bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] text-[13px] text-panora-text outline-none focus:border-panora-green/40 transition-colors appearance-none"
+                        >
+                          {clientContracts.map((c) => {
+                            const badge = erp.container.statuses[c.status];
+                            return (
+                              <option key={c.id} value={c.id}>
+                                {c.label}
+                                {badge ? ` · ${badge}` : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-panora-text-muted pointer-events-none" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEtudeChoice("new")}
+                        className="self-start inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-dashed border-panora-border text-[13px] font-medium text-panora-text hover:bg-panora-secondary/40 hover:border-panora-text-muted/40 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-panora-text-secondary" />
+                        Nouvelle {erp.container.singular} dans {erp.name}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Produit - full width */}

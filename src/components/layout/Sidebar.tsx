@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   Settings,
   LogOut,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
@@ -34,7 +35,7 @@ const navItems = [
   {
     label: "Assistant cotation",
     href: "/quoting/dashboard",
-    icon: null,
+    icon: FileText,
     type: "item" as const,
   },
 ];
@@ -103,7 +104,7 @@ export function Sidebar() {
           {dropdownOpen && (
             <div className="absolute top-full left-0 mt-1 w-full bg-white border border-panora-border rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] z-50 py-1">
               <Link
-                href="/settings/extranets"
+                href="/settings/integrations"
                 onClick={() => setDropdownOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-panora-text-secondary hover:bg-panora-border/30 transition-colors"
               >

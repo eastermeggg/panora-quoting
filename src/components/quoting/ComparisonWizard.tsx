@@ -8,12 +8,16 @@ import {
   Search,
   Check,
   Sparkles,
-  ChevronDown,
   ArrowLeft,
   Plus,
 } from "lucide-react";
 import { BesoinTag } from "@/components/ui/BesoinTag";
 import { PRODUCT_PRIORITY } from "@/data/mock";
+import { ClientSelector } from "@/components/quoting/ClientSelector";
+import { CreateClientModal } from "@/components/quoting/CreateClientModal";
+import { getVeosClient, type VeosClient } from "@/data/clients-mock";
+import { isIntegrationConnected } from "@/data/integrations-mock";
+import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -21,6 +25,8 @@ interface ComparisonWizardProps {
   onClose: () => void;
   onSubmit: (data: {
     client: string;
+    clientId: string | null;
+    clientSiren: string | null;
     products: string[];
     principalProduct: string | null;
     insurerIds: string[];
@@ -98,6 +104,15 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
   const [besoinsClient, setBesoinsClient] =
     useState<BesoinRow[]>(INITIAL_AI_BESOINS);
   const [newBesoinInput, setNewBesoinInput] = useState("");
+  // Client is auto-matched from the uploaded docs (mock); user can clear and re-pick.
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    "marble"
+  );
+  // When the user hits "Create client" inside Step 3, we swap this wizard out
+  // for the create modal — no double overlay.
+  const [createClientState, setCreateClientState] = useState<
+    { initialName: string } | null
+  >(null);
 
   // Auto-detect principal product based on priority
   useEffect(() => {
@@ -179,8 +194,11 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
     const insurerIds = offers
       .filter((o) => o.insurerName)
       .map((o) => o.insurerName!.toLowerCase());
+    const client = selectedClientId ? getVeosClient(selectedClientId) : null;
     onSubmit({
-      client: "Marble Tech SAS",
+      client: client?.name ?? "",
+      clientId: selectedClientId,
+      clientSiren: client?.siren ?? null,
       products: selectedProducts,
       principalProduct,
       insurerIds,
@@ -197,8 +215,19 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
 
   const aiCount = besoinsClient.filter((b) => b.source === "ai").length;
 
+  const handleClientCreated = (client: VeosClient) => {
+    setSelectedClientId(client.id);
+    setCreateClientState(null);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+    <>
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/30",
+        createClientState && "hidden"
+      )}
+    >
       <div className="w-[600px] max-h-[800px] bg-white rounded-[16px] flex flex-col shadow-xl overflow-hidden">
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-4 bg-panora-bg border-b border-panora-border">
@@ -269,6 +298,11 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
               onAddBesoin={handleAddBesoin}
               onRemoveBesoin={handleRemoveBesoin}
               aiCount={aiCount}
+              selectedClientId={selectedClientId}
+              onClientChange={setSelectedClientId}
+              onRequestCreateClient={(initialName) =>
+                setCreateClientState({ initialName })
+              }
             />
           )}
         </div>
@@ -328,6 +362,15 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
         </div>
       </div>
     </div>
+    {createClientState && (
+      <CreateClientModal
+        veosConnected={isIntegrationConnected("veos")}
+        initialName={createClientState.initialName}
+        onCancel={() => setCreateClientState(null)}
+        onCreated={handleClientCreated}
+      />
+    )}
+    </>
   );
 }
 
@@ -572,6 +615,9 @@ function Step3Profile({
   onAddBesoin,
   onRemoveBesoin,
   aiCount,
+  selectedClientId,
+  onClientChange,
+  onRequestCreateClient,
 }: {
   besoinsClient: BesoinRow[];
   newBesoinInput: string;
@@ -579,6 +625,9 @@ function Step3Profile({
   onAddBesoin: () => void;
   onRemoveBesoin: (id: string) => void;
   aiCount: number;
+  selectedClientId: string | null;
+  onClientChange: (id: string | null) => void;
+  onRequestCreateClient: (initialName: string) => void;
 }) {
   return (
     <div className="space-y-5">
@@ -586,33 +635,24 @@ function Step3Profile({
         Profil client
       </h2>
 
-      {/* Client selector (read-only) */}
-      <div>
-        <label className="text-[13px] text-panora-text-muted mb-1.5 block">
-          Client
-        </label>
-        <div className="flex items-center gap-3 bg-white border border-[#e2dfd8] rounded-[8px] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] px-3 py-2.5 cursor-default">
-          <div className="w-6 h-6 rounded-[6px] bg-panora-green/20 border border-black/10 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-bold text-panora-green">M</span>
-          </div>
-          <span className="text-[13px] text-panora-text flex-1">
-            Marble Tech SAS — SIREN 00007U26464
-          </span>
-          <ChevronDown className="w-4 h-4 text-panora-text-muted" />
-        </div>
-      </div>
+      <ClientSelector
+        label="Client"
+        value={selectedClientId}
+        onChange={onClientChange}
+        onRequestCreate={onRequestCreateClient}
+      />
 
       {/* Besoins client */}
       <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <Sparkles className="w-3.5 h-3.5 text-[#8b5cf6]" />
+        <div className="flex items-baseline gap-1.5 mb-2">
           <label className="text-[13px] font-medium text-panora-text">
-            Synthese &amp; analyse IA — besoins client
+            Besoins du client
           </label>
+          <span className="inline-flex items-center gap-1 text-[11px] text-panora-text-muted">
+            <Sparkles className="w-3 h-3 text-[#8b5cf6]" />
+            critères pour évaluer chaque offre
+          </span>
         </div>
-        <p className="text-[12px] text-panora-text-muted mb-3 leading-[18px]">
-          Chaque offre sera evaluee au regard de ces criteres pour generer votre synthese comparative.
-        </p>
 
         <div className="space-y-2">
           {besoinsClient.map((besoin) => (

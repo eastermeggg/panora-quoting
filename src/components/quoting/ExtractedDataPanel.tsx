@@ -12,11 +12,14 @@ import type {
 interface ExtractedDataPanelProps {
   sections: ExtractedSection[];
   onSectionsChange?: (sections: ExtractedSection[]) => void;
+  /** When false, the "Donnée consolidées…" heading is hidden. Default: true. */
+  showHeading?: boolean;
 }
 
 export function ExtractedDataPanel({
   sections: initialSections,
   onSectionsChange,
+  showHeading = true,
 }: ExtractedDataPanelProps) {
   const [sections, setSections] = useState<ExtractedSection[]>(initialSections);
 
@@ -92,12 +95,16 @@ export function ExtractedDataPanel({
 
   return (
     <div>
-      <h2 className="text-[15px] font-semibold text-panora-text mb-1">
-        Donnée consolidées extraites pour cotation
-      </h2>
-      <p className="text-[13px] text-panora-text-secondary mb-5 leading-5">
-        Déposez tous les documents utiles à la cotation.
-      </p>
+      {showHeading && (
+        <>
+          <h2 className="text-[15px] font-semibold text-panora-text mb-1">
+            Donnée consolidées extraites pour cotation
+          </h2>
+          <p className="text-[13px] text-panora-text-secondary mb-5 leading-5">
+            Déposez tous les documents utiles à la cotation.
+          </p>
+        </>
+      )}
 
       <div className="space-y-2">
         {sections.map((section) => (

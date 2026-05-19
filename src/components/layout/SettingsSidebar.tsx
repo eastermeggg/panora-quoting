@@ -12,6 +12,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   Palette,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
@@ -22,6 +23,7 @@ const settingsNavItems = [
   { label: "Collaborateurs", href: "/settings/collaborators", icon: Users },
   { label: "Présentation", href: "/settings/presentation", icon: Palette },
   { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
+  { label: "Intégrations", href: "/settings/integrations", icon: Plug },
 ];
 
 export function SettingsSidebar() {
