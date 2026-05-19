@@ -6,11 +6,10 @@ import {
   Check,
   Copy,
   FileDown,
+  FileSignature,
   Eye,
-  Palette,
   Link as LinkIcon,
 } from "lucide-react";
-import Link from "next/link";
 import {
   BrandingSettings,
   DEFAULT_BRANDING,
@@ -86,6 +85,7 @@ interface ExportDropdownProps {
   onDownloadSynthesePDF: () => void;
   onDownloadSyntheseDocx: () => void;
   onDownloadTableauXLS: () => void;
+  onGenerateDevoirConseil?: () => void;
 }
 
 export function FinaliserDropdown({
@@ -96,6 +96,7 @@ export function FinaliserDropdown({
   onDownloadSynthesePDF,
   onDownloadSyntheseDocx,
   onDownloadTableauXLS,
+  onGenerateDevoirConseil,
 }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -150,8 +151,8 @@ export function FinaliserDropdown({
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-1.5 w-[360px] bg-white border border-panora-border rounded-[12px] shadow-[0px_30px_60px_-15px_rgba(0,0,0,0.18),0px_12px_24px_-8px_rgba(0,0,0,0.10),0px_4px_8px_-2px_rgba(0,0,0,0.06)] z-50 overflow-hidden">
-          {/* Synthèse client — with cover thumbnail */}
-          <div className="flex gap-3 p-3 bg-[#faf8f5]">
+          {/* Hero card — synthèse export */}
+          <div className="flex gap-3 p-3.5 bg-[#faf8f5]">
             <div className="shrink-0">
               <CoverPagePreview
                 branding={branding}
@@ -160,11 +161,14 @@ export function FinaliserDropdown({
                 scale={0.12}
               />
             </div>
-            <div className="flex flex-col gap-2 min-w-0 flex-1">
+            <div className="flex flex-col min-w-0 flex-1">
               <p className="text-[13px] font-semibold text-panora-text leading-5">
-                Synthèse client
+                Exporter la synthèse client
               </p>
-              <div className="flex items-center gap-1.5 mt-auto">
+              <p className="text-[11.5px] text-panora-text-muted leading-4 mt-0.5">
+                Un livrable prêt à partager avec votre client.
+              </p>
+              <div className="flex items-center gap-1.5 mt-auto pt-3">
                 <button
                   onClick={() => handleAction(onPreviewSynthesePDF)}
                   className="inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text transition-colors"
@@ -193,23 +197,41 @@ export function FinaliserDropdown({
 
           <div className="h-px bg-panora-border" />
 
-          {/* Secondary actions — Tableau & Lien dynamique at equal hierarchy */}
-          <div className="flex flex-col gap-1 p-2">
-            <div className="flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-panora-bg transition-colors">
-              <ExcelIcon className="w-[18px] h-[18px] shrink-0" />
-              <span className="text-[13px] font-medium text-panora-text flex-1">Tableau comparatif</span>
-              <button
-                onClick={() => handleAction(onDownloadTableauXLS)}
-                className="inline-flex items-center gap-1.5 h-[26px] pl-1.5 pr-2.5 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border border-panora-border bg-white text-panora-text-muted hover:bg-[#eaf3ec] hover:border-[#eaf3ec] hover:text-[#2d6a4f] transition-colors"
-              >
-                <ExcelIcon className="w-[14px] h-[14px]" />
-                .XLS
-              </button>
+          {/* Secondary list */}
+          <div className="flex flex-col gap-0.5 p-2">
+            <div className="px-2 pt-1 pb-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-panora-text-muted leading-4">
+                Autres actions
+              </span>
             </div>
 
-            <div className="flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-panora-bg transition-colors">
-              <LinkIcon className="w-[18px] h-[18px] text-panora-text-muted shrink-0" />
-              <span className="text-[13px] font-medium text-panora-text flex-1">Lien dynamique</span>
+            <button
+              onClick={() => handleAction(onDownloadTableauXLS)}
+              className="flex items-center gap-3 px-2 py-2 rounded-[8px] hover:bg-panora-bg transition-colors text-left"
+            >
+              <ExcelIcon className="w-[18px] h-[18px] shrink-0" />
+              <span className="text-[13px] font-medium text-panora-text flex-1">
+                Télécharger le tableau
+              </span>
+            </button>
+
+            {onGenerateDevoirConseil && (
+              <button
+                onClick={() => handleAction(onGenerateDevoirConseil)}
+                className="flex items-center gap-3 px-2 py-2 rounded-[8px] hover:bg-panora-bg transition-colors text-left"
+              >
+                <FileSignature className="w-[18px] h-[18px] text-panora-text-secondary shrink-0" />
+                <span className="text-[13px] font-medium text-panora-text flex-1">
+                  Générer le devoir de conseil
+                </span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-3 px-2 py-2 rounded-[8px] hover:bg-panora-bg transition-colors">
+              <LinkIcon className="w-[18px] h-[18px] text-panora-text-secondary shrink-0" />
+              <span className="text-[13px] font-medium text-panora-text flex-1">
+                Lien dynamique
+              </span>
               <a
                 href={presentationUrl}
                 target="_blank"
@@ -221,7 +243,7 @@ export function FinaliserDropdown({
               </a>
               <button
                 onClick={copyLink}
-                className={`inline-flex items-center h-[26px] px-2.5 rounded-[6px] text-[11px] font-semibold uppercase tracking-wider border transition-colors ${
+                className={`inline-flex items-center gap-1 h-[26px] px-2.5 rounded-[6px] text-[11.5px] font-medium border transition-colors ${
                   linkCopied
                     ? "bg-panora-green border-panora-green text-white"
                     : "border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text"
@@ -230,28 +252,18 @@ export function FinaliserDropdown({
               >
                 {linkCopied ? (
                   <>
-                    <Check className="w-3 h-3 mr-1" />
+                    <Check className="w-3 h-3" />
                     Copié
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3 h-3 mr-1" />
+                    <Copy className="w-3 h-3" />
                     Copier
                   </>
                 )}
               </button>
             </div>
           </div>
-
-          {/* Footer link — personalize exports */}
-          <Link
-            href="/settings/presentation"
-            onClick={() => setIsOpen(false)}
-            className="border-t border-panora-border px-3 py-2.5 flex items-center justify-center gap-1.5 bg-[#faf8f5] text-[13px] font-medium text-panora-text-muted hover:text-panora-text hover:bg-panora-bg transition-colors"
-          >
-            <Palette className="w-3.5 h-3.5" />
-            Personnaliser les exports à ma marque
-          </Link>
         </div>
       )}
     </div>

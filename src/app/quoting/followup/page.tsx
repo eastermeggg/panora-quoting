@@ -2,10 +2,16 @@
 
 import { useState, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { InsurerCard } from "@/components/quoting/InsurerCard";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { SessionExpiredModal } from "@/components/quoting/SessionExpiredModal";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import {
+  BulkSendToVeosModal,
+  type BulkDocument,
+  type CrmSection,
+} from "@/components/quoting/BulkSendToVeosModal";
 import { scenarios } from "@/data/scenarios";
 import {
   getFollowupData,
@@ -14,6 +20,9 @@ import {
   quotingEmail,
 } from "@/data/mock";
 import type { InsurerData } from "@/data/mock";
+import { isIntegrationConnected } from "@/data/integrations-mock";
+import { veosClients } from "@/data/clients-mock";
+import { getActiveErpAdapter } from "@/data/erp-adapters";
 import Link from "next/link";
 import { parsePriceEuros, formatPriceEuros } from "@/lib/utils";
 import {
@@ -80,6 +89,143 @@ function FollowupContent() {
   // In production this would be triggered by the agent runtime, not a button.
   const [expiredModalOpen, setExpiredModalOpen] = useState(false);
   const expiredCarrier = insurersList[0] ?? { id: "generali", name: "Generali" };
+
+  // ── Bulk send to ERP ──
+  const erpAdapter = getActiveErpAdapter();
+  const [veosModalOpen, setVeosModalOpen] = useState(false);
+  const veosConnected = isIntegrationConnected(erpAdapter.id);
+  // Heuristic match: look up VEOS client by name (best-effort for the demo).
+  const matchedClientId = useMemo(() => {
+    const target = clientName.toLowerCase();
+    return (
+      veosClients.find((c) => c.name.toLowerCase() === target)?.id ??
+      veosClients[0]?.id ??
+      null
+    );
+  }, [clientName]);
+
+  const veosDocuments: BulkDocument[] = useMemo(() => {
+    const docs: BulkDocument[] = [];
+    for (const ins of insurersList) {
+      docs.push({
+        id: `devis-${ins.id}`,
+        label: `Devis ${ins.name} — ${productName}.pdf`,
+        meta: "Reçu de l'assureur",
+        category: "devis",
+        insurerId: ins.id,
+        insurerName: ins.name,
+        defaultChecked: true,
+      });
+      docs.push({
+        id: `cg-${ins.id}`,
+        label: `CG ${ins.name} — ${productName}.pdf`,
+        meta: "Conditions générales",
+        category: "conditions_generales",
+        insurerId: ins.id,
+        insurerName: ins.name,
+        defaultChecked: true,
+      });
+    }
+    docs.push({
+      id: "synthese",
+      label: `Synthèse comparative — ${clientName}.pdf`,
+      meta: "Document Panora",
+      category: "synthese",
+      defaultChecked: true,
+    });
+    docs.push({
+      id: "recap",
+      label: "Récapitulatif demande Panora.pdf",
+      meta: "Auto-généré · Besoins client & contexte",
+      category: "recap_demande",
+      defaultChecked: true,
+    });
+    return docs;
+  }, [insurersList, productName, clientName]);
+
+  const veosCrmSections: CrmSection[] = useMemo(() => {
+    const annualPrices = insurersList
+      .flatMap((ins) =>
+        (ins.pricing ?? []).map((p) => parsePriceEuros(p.details[0]?.value ?? ""))
+      )
+      .filter((n) => n > 0);
+    const minPrice = annualPrices.length ? Math.min(...annualPrices) : 0;
+    const maxPrice = annualPrices.length ? Math.max(...annualPrices) : 0;
+    const primeLabel =
+      minPrice && maxPrice
+        ? minPrice === maxPrice
+          ? `${formatPriceEuros(minPrice)} / an`
+          : `${formatPriceEuros(minPrice)} – ${formatPriceEuros(maxPrice)} / an`
+        : "—";
+
+    // 1. Contract-level "Données contrat" — always first.
+    const contractSection: CrmSection = {
+      key: "contrat",
+      label: "Données contrat",
+      fields: [
+        {
+          label: "Référence",
+          value: cotId,
+          erpField: "contrat.reference_courtier",
+          erpFieldOptions: ["contrat.reference_externe", "contrat.numero_dossier"],
+        },
+        {
+          label: "Produit",
+          value: productName,
+          erpField: "contrat.produit",
+          erpFieldOptions: ["contrat.branche", "contrat.categorie"],
+        },
+        {
+          label: "Courtier",
+          value: "Delphine Howden",
+          erpField: "contrat.gestionnaire",
+          erpFieldOptions: ["contrat.apporteur", "contrat.charge_clientele"],
+        },
+        {
+          label: "Assureurs sollicités",
+          value: insurersList.map((i) => i.name).join(", ") || "—",
+          erpField: "contrat.assureurs_consultes",
+          erpFieldOptions: ["contrat.notes"],
+        },
+        {
+          label: "Statut",
+          value: `${insurersList.length} devis reçus`,
+          erpField: "contrat.statut",
+          erpFieldOptions: ["contrat.etape", "contrat.workflow"],
+        },
+        {
+          label: "Prime estimée",
+          value: primeLabel,
+          erpField: "contrat.prime_estimee_ttc",
+          erpFieldOptions: ["contrat.prime_ht", "contrat.budget_client"],
+        },
+        {
+          label: "Date de demande",
+          value: new Date().toLocaleDateString("fr-FR"),
+          erpField: "contrat.date_demande",
+          erpFieldOptions: ["contrat.date_creation"],
+        },
+      ],
+    };
+
+    // 2. Product-aware sections lifted from the extraction recap — each field
+    // gets a synthetic ERP path so the user sees where it lands.
+    const scenarioBlock = scenarios[scenarioId] ?? scenarios["rc-pro"];
+    const extractedSections: CrmSection[] = scenarioBlock.extractedSections.map(
+      (s) => ({
+        key: s.key,
+        label: s.label,
+        fields: s.fields.map((f) => ({
+          label: f.label,
+          value: f.value.trim() === "" ? "—" : f.value,
+          erpField: `contrat.${s.key}.${f.key}`,
+          erpFieldOptions: [`risque.${f.key}`, `client.${f.key}`],
+        })),
+      })
+    );
+
+    return [contractSection, ...extractedSections];
+  }, [cotId, productName, insurersList, scenarioId]);
 
   const completed = useMemo(
     () => Object.values(statuses).filter((s) => s === "completed").length,
@@ -164,32 +310,50 @@ function FollowupContent() {
 
       {/* Info / Tab bar area */}
       <div className="shrink-0 border-b border-panora-border p-6 flex flex-col gap-4">
-        {/* Row 1: Title + email pill */}
-        <div className="flex items-start justify-between">
+        {/* Row 1: Title + actions */}
+        <div className="flex items-start justify-between gap-4">
           <h1 className="text-2xl text-panora-text-primary font-serif tracking-[-0.24px] leading-7">
             {projectName}
           </h1>
-          {createdVia === "email" && (
-            <div className="border border-[#dad7d0] rounded-[6px] px-2 py-1.5 flex items-center gap-1.5 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-[15px] h-[15px] rounded-full bg-panora-green flex items-center justify-center shrink-0">
-                  <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
-                    <path d="M5.5 4L0.5 7.46V0.54L5.5 4Z" fill="white" />
-                  </svg>
-                </div>
-                <span className="text-[12px] font-medium text-panora-text leading-4">
-                  Initiée par e-mail
-                </span>
-              </div>
-              <span className="text-[12px] text-panora-text leading-4 max-w-[200px] truncate">
-                {emailSubject}
-              </span>
-              <button className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green leading-[18px]">
-                Voir
-                <ExternalLink className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2.5 shrink-0">
+            {veosConnected && allDone && (
+              <button
+                type="button"
+                onClick={() => setVeosModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 h-[34px] rounded-md border border-panora-border bg-white text-[13px] font-medium text-panora-text hover:bg-panora-secondary/40 transition-colors"
+              >
+                <Image
+                  src={`/logos/${erpAdapter.id}.svg`}
+                  alt=""
+                  width={14}
+                  height={14}
+                  className="rounded-[3px]"
+                />
+                Envoyer à {erpAdapter.name}
               </button>
-            </div>
-          )}
+            )}
+            {createdVia === "email" && !allDone && (
+              <div className="border border-[#dad7d0] rounded-[6px] px-2 py-1.5 flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-[15px] h-[15px] rounded-full bg-panora-green flex items-center justify-center shrink-0">
+                    <svg width="6" height="8" viewBox="0 0 6 8" fill="none">
+                      <path d="M5.5 4L0.5 7.46V0.54L5.5 4Z" fill="white" />
+                    </svg>
+                  </div>
+                  <span className="text-[12px] font-medium text-panora-text leading-4">
+                    Initiée par e-mail
+                  </span>
+                </div>
+                <span className="text-[12px] text-panora-text leading-4 max-w-[200px] truncate">
+                  {emailSubject}
+                </span>
+                <button className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green leading-[18px]">
+                  Voir
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Row 2: Tags */}
@@ -220,35 +384,37 @@ function FollowupContent() {
           </div>
         </div>
 
-        {/* Row 3: Progress + status badges */}
+        {/* Row 3: Progress OR status badge */}
         <div className="flex items-center gap-2.5">
-          {/* Progress pill */}
-          <div className="inline-flex items-center gap-[9px] bg-panora-secondary rounded-full px-2.5 h-[25px]">
-            <div className="w-20 h-2 bg-black/15 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-panora-text-primary rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
-              {completed} / {total} devis reçus
-            </span>
-          </div>
-
-          <div className="w-px h-[14px] bg-[#d9d9d9]" />
-
-          {actionRequired > 0 && (
-            <span className="inline-flex items-center px-2 h-6 rounded-full text-[12px] font-medium bg-[#f2ddc1] text-panora-warning-text">
-              {actionRequired} action{actionRequired > 1 ? "s" : ""} requise
-              {actionRequired > 1 ? "s" : ""}
-            </span>
-          )}
-
-          {allDone && (
-            <span className="inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[12px] font-medium bg-[#dbeee5] text-[#173c2d]">
+          {allDone ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 h-[25px] rounded-full text-[12px] font-medium bg-panora-green-light text-panora-green-dark">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Toutes les cotations sont terminées
+              Terminé
             </span>
+          ) : (
+            <>
+              <div className="inline-flex items-center gap-[9px] bg-panora-secondary rounded-full px-2.5 h-[25px]">
+                <div className="w-20 h-2 bg-black/15 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-panora-text-primary rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+                  {completed} / {total} devis reçus
+                </span>
+              </div>
+
+              {actionRequired > 0 && (
+                <>
+                  <div className="w-px h-[14px] bg-[#d9d9d9]" />
+                  <span className="inline-flex items-center px-2 h-6 rounded-full text-[12px] font-medium bg-[#f2ddc1] text-panora-warning-text">
+                    {actionRequired} action{actionRequired > 1 ? "s" : ""} requise
+                    {actionRequired > 1 ? "s" : ""}
+                  </span>
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -257,7 +423,14 @@ function FollowupContent() {
       <div className="flex-1 overflow-y-auto bg-panora-bg">
         <div className="max-w-[1046px] mx-auto px-6 py-6">
           {/* All done banner — rich mini-comparison */}
-          {allDone && <AllDoneBanner insurers={insurersList} clientName={clientName} productName={productName} cotParamId={cotationParamId ?? ""} />}
+          {allDone && (
+            <AllDoneBanner
+              insurers={insurersList}
+              clientName={clientName}
+              productName={productName}
+              cotParamId={cotationParamId ?? ""}
+            />
+          )}
 
           {/* Insurer cards */}
           <div className="space-y-3">
@@ -291,6 +464,16 @@ function FollowupContent() {
         insurerName={expiredCarrier.name}
         onResolved={() => setExpiredModalOpen(false)}
         onDismiss={() => setExpiredModalOpen(false)}
+      />
+
+      <BulkSendToVeosModal
+        open={veosModalOpen}
+        clientId={matchedClientId}
+        clientName={clientName}
+        principalProduct={productName}
+        documents={veosDocuments}
+        crmSections={veosCrmSections}
+        onCancel={() => setVeosModalOpen(false)}
       />
     </div>
   );
@@ -411,6 +594,26 @@ function RecapSection({
   const [expanded, setExpanded] = useState(false);
   const scenario = scenarios[scenarioId] ?? scenarios["rc-pro"];
 
+  // The followup page only shows finished cotations — by construction every
+  // field is resolved. Normalize statuses so the extracted-data panel never
+  // surfaces a warning ("À compléter") or error chrome here.
+  const finishedSections = useMemo(
+    () =>
+      scenario.extractedSections.map((section) => ({
+        ...section,
+        status: "complete" as const,
+        missingCount: 0,
+        invalidCount: 0,
+        fields: section.fields.map((field) => ({
+          ...field,
+          status: "ok" as const,
+          error: undefined,
+          value: field.value.trim() === "" ? "—" : field.value,
+        })),
+      })),
+    [scenario.extractedSections]
+  );
+
   return (
     <div className="bg-white border border-panora-border rounded-[10px] overflow-hidden shadow-[0px_3px_6px_0px_rgba(0,0,0,0.02),0px_11px_11px_0px_rgba(0,0,0,0.02)]">
       {/* Header */}
@@ -448,47 +651,45 @@ function RecapSection({
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 border-t border-panora-border pt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left - Documents & Instructions */}
-            <div className="space-y-5">
-              <div>
-                <h4 className="text-[13px] font-medium text-panora-text mb-3">
-                  Documents fournis
-                </h4>
-                <div className="space-y-1.5">
-                  {attachments.map((att) => (
-                    <div
-                      key={att.name}
-                      className="flex items-center gap-2 px-3 py-2 bg-panora-bg border border-panora-border rounded-lg"
-                    >
-                      <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
-                      <span className="text-[13px] text-panora-text truncate flex-1">
-                        {att.name}
-                      </span>
-                      <span className="text-[12px] text-panora-text-muted shrink-0">
-                        {att.fieldsExtracted} champs extraits
-                      </span>
-                    </div>
-                  ))}
+        <div className="px-5 pb-5 border-t border-panora-border pt-4 space-y-6">
+          {/* Consolidated data first */}
+          <ExtractedDataPanel sections={finishedSections} showHeading={false} />
+
+          {/* Documents fournis */}
+          <div>
+            <h4 className="text-[13px] font-medium text-panora-text mb-1">
+              Documents fournis
+            </h4>
+            <p className="text-[12px] text-panora-text-muted leading-[18px] mb-3">
+              Déposez tous les documents utiles à la cotation.
+            </p>
+            <div className="space-y-1.5">
+              {attachments.map((att) => (
+                <div
+                  key={att.name}
+                  className="flex items-center gap-2 px-3 py-2 bg-panora-bg border border-panora-border rounded-lg"
+                >
+                  <Paperclip className="w-4 h-4 text-panora-text-muted shrink-0" />
+                  <span className="text-[13px] text-panora-text truncate flex-1">
+                    {att.name}
+                  </span>
+                  <span className="text-[12px] text-panora-text-muted shrink-0">
+                    {att.fieldsExtracted} champs extraits
+                  </span>
                 </div>
-              </div>
-
-              <div>
-                <h4 className="text-[13px] font-medium text-panora-text mb-2">
-                  Instructions à l&apos;agent de cotation
-                </h4>
-                <p className="text-[13px] text-panora-text-secondary leading-5">
-                  Informations supplémentaires non couvertes par les champs à
-                  droite. Contexte, préférences, consignes spécifiques.
-                </p>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Right - Extracted data */}
-            <div>
-              <ExtractedDataPanel sections={scenario.extractedSections} />
-            </div>
+          {/* Instructions */}
+          <div>
+            <h4 className="text-[13px] font-medium text-panora-text mb-2">
+              Instructions à l&apos;agent de cotation
+            </h4>
+            <p className="text-[13px] text-panora-text-secondary leading-5">
+              Informations supplémentaires non couvertes par les champs
+              extraits. Contexte, préférences, consignes spécifiques.
+            </p>
           </div>
         </div>
       )}

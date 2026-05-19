@@ -4907,6 +4907,8 @@ export type ComparisonTask = {
   createdBy: string;
   date: string;
   status: ComparisonTaskStatus;
+  /** True when the comparison just finished and the user hasn't opened it yet. */
+  isUnread?: boolean;
 };
 
 export const comparisonTasks: ComparisonTask[] = [
@@ -5030,6 +5032,7 @@ export const comparisonTasks: ComparisonTask[] = [
     createdBy: "Delphine",
     date: "20/04/2026",
     status: "done",
+    isUnread: true,
   },
   {
     id: "cmp-12",
@@ -5041,6 +5044,7 @@ export const comparisonTasks: ComparisonTask[] = [
     createdBy: "Delphine",
     date: "22/04/2026",
     status: "done",
+    isUnread: true,
   },
 ];
 
