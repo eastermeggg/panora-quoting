@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronDown,
   CheckCircle2,
+  Check,
   Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -165,12 +166,20 @@ function AlertCircleIcon({ variant }: { variant: "warning" | "error" }) {
   );
 }
 
+function VerifiedBadge() {
+  return (
+    <div className="w-5 h-5 rounded-full bg-panora-green flex items-center justify-center shrink-0">
+      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+    </div>
+  );
+}
+
 /* ── Pending (complete-but-unverified) marker ──
    A plain empty circle — the classic "to-do" affordance. Distinct from the
    filled green check (done) without raising alarm like warning/error. */
 function PendingIcon() {
   return (
-    <div className="w-5 h-5 rounded-full shrink-0 border border-panora-text-muted/40 bg-white" />
+    <div className="w-5 h-5 rounded-full shrink-0 border-2 border-panora-border bg-white" />
   );
 }
 
@@ -216,47 +225,40 @@ function DataSection({
     >
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-panora-drop/50 transition-colors"
+        className="flex items-center gap-2.5 w-full px-4 py-3 text-left hover:bg-panora-drop/50 transition-colors"
       >
-        {isVerified && (
-          <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
-        )}
+        {isVerified && <VerifiedBadge />}
         {isPending && <PendingIcon />}
         {isIncomplete && <AlertCircleIcon variant="warning" />}
         {isInvalid && <AlertCircleIcon variant="error" />}
 
-        <span className="text-[13px] font-medium text-panora-text flex-1">
+        <span className="text-[14px] font-medium text-panora-text flex-1">
           {section.label}
         </span>
 
-        {/* Right-side status hint (text only — no buttons in header) */}
+        {/* Right-side status hint — only shown when there's something to act on */}
         {isIncomplete && section.missingCount! > 0 && (
-          <span className="text-[12px] text-panora-warning-text mr-2">
+          <span className="text-[12px] font-medium text-panora-warning-text mr-1">
             {section.missingCount} champ{section.missingCount! > 1 ? "s" : ""} à
             compléter
           </span>
         )}
         {isInvalid && section.invalidCount! > 0 && (
-          <span className="text-[12px] text-panora-error mr-2">
+          <span className="text-[12px] font-medium text-panora-error mr-1">
             {section.invalidCount} champ{section.invalidCount! > 1 ? "s" : ""}{" "}
             invalide{section.invalidCount! > 1 ? "s" : ""}
           </span>
         )}
         {isPending && (
-          <span className="text-[12px] text-panora-text-muted mr-2">
-            Non vérifié
-          </span>
-        )}
-        {showVerification && isVerified && (
-          <span className="text-[12px] font-medium text-panora-green-dark mr-2">
-            Vérifié
+          <span className="text-[12px] font-medium text-panora-text-muted mr-1">
+            Vérifier les infos
           </span>
         )}
 
         {expanded ? (
-          <ChevronDown className="w-4 h-4 text-panora-text-muted shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-panora-text-muted shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
         )}
       </button>
 
@@ -275,32 +277,28 @@ function DataSection({
 
           {/* Pending: invite verification */}
           {isPending && (
-            <div className="border-t border-panora-border bg-panora-drop/40 px-4 py-2.5 flex items-center justify-between gap-3">
-              <span className="text-[12px] text-panora-text-secondary leading-4">
+            <div className="bg-white px-4 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-[12px] text-panora-text-muted leading-4">
                 Vérifiez les valeurs ci-dessus puis confirmez.
               </span>
               <button
                 onClick={onMarkVerified}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white border border-panora-border text-[12px] font-medium text-panora-text hover:border-panora-green/40 hover:text-panora-green-dark transition-colors shrink-0"
+                className="inline-flex items-center gap-2 h-8 px-3 rounded-lg bg-panora-green-light text-[13px] font-medium text-panora-green-dark hover:bg-panora-green-light/70 transition-colors shrink-0"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
+                <CheckCircle2 className="w-4 h-4" />
                 Marquer comme vérifié
               </button>
             </div>
           )}
 
-          {/* Verified: confirmation + escape hatch back to editing */}
+          {/* Verified: escape hatch back to editing */}
           {showVerification && isVerified && (
-            <div className="border-t border-panora-green-border/60 bg-panora-green-light/50 px-4 py-2.5 flex items-center justify-between gap-3">
-              <span className="text-[12px] text-panora-green-dark leading-4 inline-flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Section vérifiée
-              </span>
+            <div className="bg-white px-4 py-2.5 flex items-center justify-end gap-3">
               <button
                 onClick={onUnverify}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white border border-panora-border text-[12px] font-medium text-panora-text-secondary hover:text-panora-text hover:border-panora-text-muted transition-colors shrink-0"
+                className="inline-flex items-center gap-2 h-8 px-3 rounded-lg bg-panora-secondary text-[13px] font-medium text-panora-text-secondary hover:bg-panora-tag transition-colors shrink-0"
               >
-                <Pencil className="w-3 h-3" />
+                <Pencil className="w-4 h-4" />
                 Modifier
               </button>
             </div>

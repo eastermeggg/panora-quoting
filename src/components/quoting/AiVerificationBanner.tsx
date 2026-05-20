@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, CheckCircle2 } from "lucide-react";
+import { Sparkles, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AiVerificationBannerProps {
@@ -15,7 +15,6 @@ interface AiVerificationBannerProps {
 /**
  * Sits above the extracted-data panel. Names the AI as the *author* of the
  * pre-filled data and assigns the broker as the *verifier* — without scolding.
- * Replaces the previous "Donnée consolidées" heading.
  */
 export function AiVerificationBanner({
   total,
@@ -29,97 +28,84 @@ export function AiVerificationBanner({
   return (
     <div
       className={cn(
-        // Muted plum shell — signals "AI authorship zone" without going neon
-        "rounded-xl border border-[#e3d2d6] bg-[#f5ebec] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.03)] overflow-hidden",
+        // Lilac shell on near-white — signals "AI authorship zone" with a
+        // distinct accent (not the green of broker actions).
+        "rounded-[10px] border-2 bg-[#fdfdfc] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden transition-colors",
+        allDone ? "border-panora-green-border" : "border-[#d4cafe]",
         className
       )}
     >
-      <div className="flex items-start gap-3 p-4">
-        {/* AI mark — small, deliberate, not glowing */}
-        <div
-          className={cn(
-            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-inset transition-colors",
-            allDone
-              ? "bg-panora-green-light ring-panora-green-border"
-              : "bg-white ring-[#e3d2d6]"
-          )}
-        >
-          {allDone ? (
-            <CheckCircle2 className="w-4 h-4 text-panora-green" />
-          ) : (
-            <Sparkles className="w-4 h-4 text-[#75505d]" />
-          )}
+      <div className="flex flex-col gap-3 p-4">
+        {/* Header row: dark IA pill + title on the same baseline */}
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 h-5 px-2 rounded-full shrink-0",
+              allDone ? "bg-panora-green" : "bg-panora-text-primary"
+            )}
+          >
+            {allDone ? (
+              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+            ) : (
+              <Sparkles className="w-3 h-3 text-white" />
+            )}
+            <span className="text-[12px] font-medium text-white leading-4">
+              I.A
+            </span>
+          </span>
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            {allDone
+              ? "Toutes les sections sont vérifiées"
+              : "Pré-rempli par l'IA Panora"}
+          </h2>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 mb-0.5">
-            <h2 className="text-[14px] font-semibold text-panora-text leading-5">
-              {allDone
-                ? "Toutes les sections sont vérifiées"
-                : "Pré-rempli par l'IA Panora"}
-            </h2>
-            <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#75505d]">
-              IA
+        <p className="text-[13px] text-panora-text-secondary leading-5">
+          {allDone ? (
+            <>
+              Vous pouvez lancer la cotation. Les données sont envoyées telles
+              que vous les avez confirmées.
+            </>
+          ) : (
+            <>
+              À partir de l&apos;e-mail et des documents joints.{" "}
+              <span className="font-medium text-panora-text-primary">
+                Vérifiez chaque section
+              </span>{" "}
+              avant de lancer. Vous restez responsable de l&apos;exactitude
+              auprès des assureurs.
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* Progress strip — continuous bar with count + percent */}
+      {showProgress && (
+        <div className="border-t border-panora-border flex items-center justify-between px-4 pt-[11px] pb-[10px]">
+          <span className="text-[12px] font-medium tabular-nums">
+            <span className="text-panora-text-primary">
+              {verified}/{total}
+            </span>
+            <span className="text-panora-text-muted font-normal ml-1">
+              sections vérifiées
+            </span>
+          </span>
+
+          <div className="flex items-center gap-3.5">
+            <div className="relative w-[130px] h-1 rounded-full bg-panora-secondary overflow-hidden">
+              <div
+                className={cn(
+                  "absolute inset-y-0 left-0 rounded-full transition-all duration-300",
+                  allDone ? "bg-panora-green" : "bg-panora-text-primary"
+                )}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <span className="text-[12px] font-medium tabular-nums text-panora-text-muted w-8 text-right">
+              {percent}%
             </span>
           </div>
-          <p className="text-[13px] text-panora-text-secondary leading-5">
-            {allDone ? (
-              <>
-                Vous pouvez lancer la cotation. Les données sont envoyées telles
-                que vous les avez confirmées.
-              </>
-            ) : (
-              <>
-                À partir de l&apos;e-mail et des documents joints.{" "}
-                <span className="text-panora-text">
-                  Vérifiez chaque section
-                </span>{" "}
-                avant de lancer — vous restez responsable de l&apos;exactitude
-                auprès des assureurs.
-              </>
-            )}
-          </p>
         </div>
-      </div>
-
-      {/* Progress strip — section dots, mapped 1:1 to sections */}
-      {showProgress && (
-      <div className="border-t border-[#e3d2d6]/70 bg-white/40 px-4 py-2.5 flex items-center gap-3">
-        <span
-          className={cn(
-            "text-[12px] font-medium tabular-nums",
-            allDone ? "text-panora-green-dark" : "text-panora-text"
-          )}
-        >
-          {verified}
-          <span className="text-panora-text-muted">/{total}</span>
-          <span className="text-panora-text-muted font-normal ml-1">
-            sections vérifiées
-          </span>
-        </span>
-
-        <div className="flex-1 flex items-center gap-1 justify-end">
-          {Array.from({ length: total }).map((_, i) => (
-            <span
-              key={i}
-              aria-hidden
-              className={cn(
-                "h-1.5 w-5 rounded-full transition-colors",
-                i < verified
-                  ? "bg-panora-green"
-                  : "bg-panora-border"
-              )}
-            />
-          ))}
-        </div>
-
-        <span
-          className="text-[11px] font-medium tabular-nums text-panora-text-muted shrink-0 w-8 text-right"
-          aria-hidden
-        >
-          {percent}%
-        </span>
-      </div>
       )}
     </div>
   );
