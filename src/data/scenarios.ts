@@ -22,6 +22,10 @@ export type ExtractedSection = {
   status: "complete" | "incomplete" | "invalid";
   missingCount?: number;
   invalidCount?: number;
+  /** True once the broker has acknowledged the AI-extracted values in this section
+   *  (either by clicking "Marquer vérifié" after expanding it, or by editing any field).
+   *  Sections always start as unverified — "complete" means format-valid, not human-checked. */
+  verified?: boolean;
   fields: ExtractedField[];
 };
 
@@ -543,11 +547,24 @@ export function getAllScenarios(): Scenario[] {
 export function getValidationStats(sections: ExtractedSection[]) {
   let missingFields = 0;
   let invalidFields = 0;
+  let unverifiedSections = 0;
+  let verifiedSections = 0;
   for (const section of sections) {
     for (const field of section.fields) {
       if (field.status === "missing") missingFields++;
       if (field.status === "invalid") invalidFields++;
     }
+    if (section.status === "complete" && section.verified === true) {
+      verifiedSections++;
+    } else if (section.status === "complete" && !section.verified) {
+      unverifiedSections++;
+    }
   }
-  return { missingFields, invalidFields };
+  return {
+    missingFields,
+    invalidFields,
+    unverifiedSections,
+    verifiedSections,
+    totalSections: sections.length,
+  };
 }

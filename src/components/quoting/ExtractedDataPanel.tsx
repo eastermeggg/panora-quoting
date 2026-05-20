@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { ChevronRight, ChevronDown, CheckCircle2, Pencil } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  CheckCircle2,
+  Pencil,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   ExtractedSection,
@@ -14,14 +19,21 @@ interface ExtractedDataPanelProps {
   onSectionsChange?: (sections: ExtractedSection[]) => void;
   /** When false, the "Donnée consolidées…" heading is hidden. Default: true. */
   showHeading?: boolean;
+  /** When false, per-section verification UI is hidden (no Marquer/Modifier
+   *  buttons, no "Non vérifié"/"Vérifié" labels, fields never lock). Used by
+   *  variants that gate verification only at the launch modal. Default: true. */
+  showVerification?: boolean;
 }
 
 export function ExtractedDataPanel({
   sections: initialSections,
   onSectionsChange,
   showHeading = true,
+  showVerification = true,
 }: ExtractedDataPanelProps) {
-  const [sections, setSections] = useState<ExtractedSection[]>(initialSections);
+  const [sections, setSections] = useState<ExtractedSection[]>(() =>
+    initialSections.map((s) => ({ ...s, verified: false }))
+  );
 
   const handleFieldChange = useCallback(
     (sectionKey: string, fieldKey: string, newValue: string) => {
@@ -77,15 +89,31 @@ export function ExtractedDataPanel({
           if (invalidCount > 0) sectionStatus = "invalid";
           else if (missingCount > 0) sectionStatus = "incomplete";
 
+          // Verification is *only* explicit. Filling a missing field doesn't
+          // mean the broker reviewed the AI-extracted ones around it.
           return {
             ...section,
             fields: updatedFields,
             status: sectionStatus,
             missingCount,
             invalidCount,
+            verified: section.verified ?? false,
           };
         });
 
+        onSectionsChange?.(updated);
+        return updated;
+      });
+    },
+    [onSectionsChange]
+  );
+
+  const handleSetVerified = useCallback(
+    (sectionKey: string, verified: boolean) => {
+      setSections((prev) => {
+        const updated = prev.map((section) =>
+          section.key === sectionKey ? { ...section, verified } : section
+        );
         onSectionsChange?.(updated);
         return updated;
       });
@@ -111,6 +139,9 @@ export function ExtractedDataPanel({
           <DataSection
             key={section.key}
             section={section}
+            showVerification={showVerification}
+            onMarkVerified={() => handleSetVerified(section.key, true)}
+            onUnverify={() => handleSetVerified(section.key, false)}
             onFieldChange={(fieldKey, value) =>
               handleFieldChange(section.key, fieldKey, value)
             }
@@ -134,45 +165,91 @@ function AlertCircleIcon({ variant }: { variant: "warning" | "error" }) {
   );
 }
 
+/* ── Pending (complete-but-unverified) marker ──
+   A plain empty circle — the classic "to-do" affordance. Distinct from the
+   filled green check (done) without raising alarm like warning/error. */
+function PendingIcon() {
+  return (
+    <div className="w-5 h-5 rounded-full shrink-0 border border-panora-text-muted/40 bg-white" />
+  );
+}
+
 function DataSection({
   section,
+  showVerification,
+  onMarkVerified,
+  onUnverify,
   onFieldChange,
 }: {
   section: ExtractedSection;
+  showVerification: boolean;
+  onMarkVerified: () => void;
+  onUnverify: () => void;
   onFieldChange: (fieldKey: string, value: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(section.status !== "complete");
+  // Default: everything collapsed. The only exception is sections with
+  // missing fields — broker needs to be drawn into them to fill values.
+  const [expanded, setExpanded] = useState(section.status === "incomplete");
+
+  const isComplete = section.status === "complete";
+  const isIncomplete = section.status === "incomplete";
+  const isInvalid = section.status === "invalid";
+  // In the no-verification variant, "complete" always reads as "done" (green
+  // check) — there's no separate verified/pending split.
+  const isVerified = isComplete && (!showVerification || section.verified === true);
+  const isPending = isComplete && showVerification && !section.verified;
+  // Fields lock only in the verification variant once the section is verified.
+  const fieldsLocked = showVerification && isVerified;
 
   return (
-    <div className="border border-panora-border rounded-lg overflow-hidden bg-white">
+    <div
+      className={cn(
+        "border rounded-lg overflow-hidden bg-white transition-colors",
+        isVerified
+          ? "border-panora-green-border"
+          : isInvalid
+          ? "border-panora-error/30"
+          : isIncomplete
+          ? "border-[#e8d4ba]"
+          : "border-panora-border"
+      )}
+    >
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-panora-drop/50 transition-colors"
       >
-        {section.status === "complete" && (
+        {isVerified && (
           <CheckCircle2 className="w-5 h-5 text-panora-green shrink-0" />
         )}
-        {section.status === "incomplete" && (
-          <AlertCircleIcon variant="warning" />
-        )}
-        {section.status === "invalid" && (
-          <AlertCircleIcon variant="error" />
-        )}
+        {isPending && <PendingIcon />}
+        {isIncomplete && <AlertCircleIcon variant="warning" />}
+        {isInvalid && <AlertCircleIcon variant="error" />}
 
         <span className="text-[13px] font-medium text-panora-text flex-1">
           {section.label}
         </span>
 
-        {section.status === "incomplete" && section.missingCount! > 0 && (
+        {/* Right-side status hint (text only — no buttons in header) */}
+        {isIncomplete && section.missingCount! > 0 && (
           <span className="text-[12px] text-panora-warning-text mr-2">
             {section.missingCount} champ{section.missingCount! > 1 ? "s" : ""} à
             compléter
           </span>
         )}
-        {section.status === "invalid" && section.invalidCount! > 0 && (
+        {isInvalid && section.invalidCount! > 0 && (
           <span className="text-[12px] text-panora-error mr-2">
             {section.invalidCount} champ{section.invalidCount! > 1 ? "s" : ""}{" "}
             invalide{section.invalidCount! > 1 ? "s" : ""}
+          </span>
+        )}
+        {isPending && (
+          <span className="text-[12px] text-panora-text-muted mr-2">
+            Non vérifié
+          </span>
+        )}
+        {showVerification && isVerified && (
+          <span className="text-[12px] font-medium text-panora-green-dark mr-2">
+            Vérifié
           </span>
         )}
 
@@ -190,10 +267,44 @@ function DataSection({
               <FieldRow
                 key={field.key}
                 field={field}
+                locked={fieldsLocked}
                 onChange={(value) => onFieldChange(field.key, value)}
               />
             ))}
           </div>
+
+          {/* Pending: invite verification */}
+          {isPending && (
+            <div className="border-t border-panora-border bg-panora-drop/40 px-4 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-[12px] text-panora-text-secondary leading-4">
+                Vérifiez les valeurs ci-dessus puis confirmez.
+              </span>
+              <button
+                onClick={onMarkVerified}
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white border border-panora-border text-[12px] font-medium text-panora-text hover:border-panora-green/40 hover:text-panora-green-dark transition-colors shrink-0"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Marquer comme vérifié
+              </button>
+            </div>
+          )}
+
+          {/* Verified: confirmation + escape hatch back to editing */}
+          {showVerification && isVerified && (
+            <div className="border-t border-panora-green-border/60 bg-panora-green-light/50 px-4 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-[12px] text-panora-green-dark leading-4 inline-flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Section vérifiée
+              </span>
+              <button
+                onClick={onUnverify}
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white border border-panora-border text-[12px] font-medium text-panora-text-secondary hover:text-panora-text hover:border-panora-text-muted transition-colors shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+                Modifier
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -202,9 +313,11 @@ function DataSection({
 
 function InlineInput({
   field,
+  locked,
   onChange,
 }: {
   field: ExtractedField;
+  locked: boolean;
   onChange: (value: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -242,6 +355,18 @@ function InlineInput({
       : field.type === "phone"
       ? "tel"
       : "text";
+
+  // Locked (section verified): plain text, no interaction. Editing requires
+  // un-verifying the section first.
+  if (locked) {
+    return (
+      <div className="flex items-center gap-1.5 px-2 py-1">
+        <span className="text-[13px] text-panora-text leading-5 truncate">
+          {field.value || "—"}
+        </span>
+      </div>
+    );
+  }
 
   // Editing state: green outer border, inner white field
   if (editing) {
@@ -323,9 +448,11 @@ function InlineInput({
 
 function FieldRow({
   field,
+  locked,
   onChange,
 }: {
   field: ExtractedField;
+  locked: boolean;
   onChange: (value: string) => void;
 }) {
   const isMissing = field.status === "missing";
@@ -337,7 +464,9 @@ function FieldRow({
       <span
         className={cn(
           "text-[13px] shrink-0 w-40 leading-5",
-          isMissing
+          locked
+            ? "text-panora-text-secondary"
+            : isMissing
             ? "text-panora-warning-text"
             : isInvalid
             ? "text-panora-error"
@@ -349,7 +478,7 @@ function FieldRow({
 
       {/* Inline input */}
       <div className="flex-1 min-w-0">
-        <InlineInput field={field} onChange={onChange} />
+        <InlineInput field={field} locked={locked} onChange={onChange} />
       </div>
     </div>
   );

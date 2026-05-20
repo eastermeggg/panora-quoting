@@ -31,7 +31,6 @@ import {
   type VeosContract,
 } from "@/data/clients-mock";
 import { getActiveErpAdapter } from "@/data/erp-adapters";
-import Link from "next/link";
 
 // Mock products for dropdown
 const mockProducts = [
@@ -76,8 +75,8 @@ function PreparationContent() {
     scenario.defaultSelectedInsurers
   );
   const [instructions, setInstructions] = useState("");
-  const [sections, setSections] = useState<ExtractedSection[]>(() =>
-    scenario.extractedSections.map((s) => ({ ...s, verified: false }))
+  const [sections, setSections] = useState<ExtractedSection[]>(
+    scenario.extractedSections
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [etudeModalOpen, setEtudeModalOpen] = useState(false);
@@ -92,17 +91,11 @@ function PreparationContent() {
     () => (selectedClient ? getClientContracts(selectedClient) : []),
     [selectedClient]
   );
-  // The selector only ever shows études — policies/expired contracts are
-  // unrelated containers and shouldn't appear in the cotation picker.
   const clientEtudes = useMemo(
     () => clientContracts.filter((c) => c.status === "etude"),
     [clientContracts]
   );
-  // "new" means we'll create a fresh étude on launch — but we never AUTO-enter
-  // that state. The broker must click "Créer une étude" explicitly.
   const [etudeChoice, setEtudeChoice] = useState<string>("");
-  // Default to a product-matching étude when possible; otherwise the first
-  // existing étude for this client. Empty string when nothing exists.
   useMemo(() => {
     if (!selectedClient) return;
     const match = clientEtudes.find(
@@ -120,7 +113,6 @@ function PreparationContent() {
     number: suggestedEtudeNumber,
     product: productName,
   });
-  // Keep autofill in sync when product/year change before user touches the field.
   useMemo(() => {
     setNewEtude((prev) => ({
       ...prev,
@@ -135,11 +127,11 @@ function PreparationContent() {
   const stats = useMemo(() => getValidationStats(sections), [sections]);
   const noInsurers = selectedInsurers.length === 0;
   const creatingEtude = etudeChoice === "new";
+
+  // No per-section verification gate in this variant — the modal carries the
+  // attestation. Launch only requires fields-valid + insurers selected.
   const allChecksPass =
-    stats.missingFields === 0 &&
-    stats.invalidFields === 0 &&
-    stats.unverifiedSections === 0 &&
-    !noInsurers;
+    stats.missingFields === 0 && stats.invalidFields === 0 && !noInsurers;
 
   const handleToggleInsurer = (id: string) => {
     setSelectedInsurers((prev) =>
@@ -153,8 +145,6 @@ function PreparationContent() {
   };
 
   const handleConfirmLaunch = () => {
-    // Persist the étude to the shared mock so the followup page's bulk modal
-    // picks it up by default.
     if (creatingEtude && selectedClient && newEtude.title.trim()) {
       const created: VeosContract = {
         id: `ctr-${Date.now()}`,
@@ -194,6 +184,9 @@ function PreparationContent() {
               </span>
               <span className="text-[12px] text-panora-text-secondary">
                 {scenario.cotationId || "COT-XXX"}
+              </span>
+              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium tracking-wide uppercase text-panora-text-muted bg-panora-tag/60">
+                Variante · Modal seul
               </span>
             </div>
           </div>
@@ -244,7 +237,6 @@ function PreparationContent() {
               </h3>
 
               <div className="space-y-4">
-                {/* Nom du projet - half width */}
                 <div className="max-w-[50%]">
                   <label className="text-[13px] font-medium text-panora-text block mb-1.5">
                     Nom du projet
@@ -257,7 +249,6 @@ function PreparationContent() {
                   />
                 </div>
 
-                {/* Client - full width */}
                 <div>
                   <label className="text-[13px] font-medium text-panora-text-primary block mb-1.5">
                     Client
@@ -268,7 +259,6 @@ function PreparationContent() {
                   />
                 </div>
 
-                {/* Étude — picked at launch so the cotation lands in the right VEOS container */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between gap-2">
                     <label className="text-[13px] font-medium text-panora-text-primary">
@@ -300,7 +290,6 @@ function PreparationContent() {
                   )}
                 </div>
 
-                {/* Produit - full width */}
                 <div>
                   <label className="text-[13px] font-medium text-panora-text block mb-1.5">
                     Produit
@@ -319,7 +308,6 @@ function PreparationContent() {
                   </div>
                 </div>
 
-                {/* Assureurs - full width */}
                 <div>
                   <label className="text-[13px] font-medium text-panora-text-primary block mb-2">
                     Assureurs à solliciter
@@ -340,7 +328,6 @@ function PreparationContent() {
                 Documents & instructions
               </h3>
 
-              {/* Documents sub-section */}
               <div className="mb-5">
                 <p className="text-[13px] font-medium text-panora-text-primary mb-1">
                   Documents
@@ -351,7 +338,6 @@ function PreparationContent() {
                   Vous pouvez ajouter d&apos;autres documents.
                 </p>
 
-                {/* Document list */}
                 <div className="space-y-3">
                   {allAttachments.map((att, i) => (
                     <div key={att.name}>
@@ -372,7 +358,6 @@ function PreparationContent() {
                 </div>
               </div>
 
-              {/* Drop zone */}
               <div className="border-2 border-dashed border-panora-border rounded-2xl py-8 px-6 text-center bg-panora-drop hover:border-panora-green/30 transition-colors cursor-pointer mb-6">
                 <CloudUpload className="w-8 h-8 text-panora-text-muted mx-auto mb-2" />
                 <p className="text-[13px] font-medium text-panora-text">
@@ -387,7 +372,6 @@ function PreparationContent() {
                 </p>
               </div>
 
-              {/* Instructions */}
               <div>
                 <p className="text-[13px] font-medium text-panora-text-primary mb-1">
                   Instructions à l&apos;agent de cotation
@@ -417,11 +401,12 @@ function PreparationContent() {
               </h1>
             </div>
 
-            {/* Sticky AI banner — frames the AI-authored data + tracks verification progress */}
-            <div className="sticky top-0 z-10 bg-panora-bg px-6 pt-6 pb-3">
+            {/* AI banner — frames the responsibility, no progress strip here */}
+            <div className="px-6 pt-6 pb-3">
               <AiVerificationBanner
-                total={stats.totalSections}
-                verified={stats.verifiedSections}
+                total={0}
+                verified={0}
+                showProgress={false}
               />
             </div>
             <div className="px-6 pb-6">
@@ -429,6 +414,7 @@ function PreparationContent() {
                 sections={sections}
                 onSectionsChange={setSections}
                 showHeading={false}
+                showVerification={false}
               />
             </div>
           </div>
@@ -456,6 +442,7 @@ function PreparationContent() {
 
         <LaunchConfirmModal
           open={confirmOpen}
+          requireAcknowledgment
           onClose={() => setConfirmOpen(false)}
           onConfirm={handleConfirmLaunch}
         />
@@ -484,8 +471,7 @@ function PreparationContent() {
   );
 }
 
-/* ── Draft chip shown when the broker has committed to creating a new étude ──
-   Looks similar to a selected étude, but with edit + cancel actions. */
+/* ── Draft chip — same as preparation/page.tsx ── */
 function EtudeDraftChip({
   newEtude,
   erpName,
@@ -536,7 +522,7 @@ function EtudeDraftChip({
   );
 }
 
-/* ── Footer status text — mirrors the checklist in a one-liner ── */
+/* ── Footer status — no "à vérifier" reasons in this variant ── */
 function FooterStatus({
   allChecksPass,
   stats,
@@ -550,11 +536,11 @@ function FooterStatus({
     return (
       <div className="flex items-center gap-1.5 text-[12px] text-panora-green-dark">
         <CheckCircle2 className="w-3.5 h-3.5" />
-        <span>Toutes les sections sont vérifiées</span>
+        <span>Prêt à lancer</span>
       </div>
     );
   }
-  type ReasonVariant = "error" | "warning" | "pending";
+  type ReasonVariant = "error" | "warning";
   const reasons: { label: string; variant: ReasonVariant }[] = [];
   if (stats.invalidFields > 0)
     reasons.push({
@@ -568,11 +554,6 @@ function FooterStatus({
     });
   if (noInsurers)
     reasons.push({ label: "assureurs à sélectionner", variant: "error" });
-  if (stats.unverifiedSections > 0)
-    reasons.push({
-      label: `${stats.unverifiedSections} section${stats.unverifiedSections > 1 ? "s" : ""} à vérifier`,
-      variant: "pending",
-    });
   return (
     <div className="flex items-center gap-2 text-[12px] flex-wrap">
       <span className="text-panora-text-secondary">Avant lancement —</span>
@@ -580,12 +561,18 @@ function FooterStatus({
         <Fragment key={r.label}>
           {i > 0 && <span className="text-panora-text-muted/70">·</span>}
           <span className="inline-flex items-center gap-1.5">
-            <ReasonMark variant={r.variant} />
+            <span
+              className={cn(
+                "w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0",
+                r.variant === "warning" ? "bg-panora-warning" : "bg-panora-error"
+              )}
+            >
+              <span className="text-white text-[8px] font-bold leading-none">!</span>
+            </span>
             <span
               className={cn(
                 r.variant === "error" && "text-panora-error",
-                r.variant === "warning" && "text-panora-warning-text",
-                r.variant === "pending" && "text-[#75505d]"
+                r.variant === "warning" && "text-panora-warning-text"
               )}
             >
               {r.label}
@@ -597,32 +584,7 @@ function FooterStatus({
   );
 }
 
-/* ── Small colored mark for footer reasons — drives visual attention ──
-   error/warning use filled badge with white "!"; pending uses the same
-   plum-tinted outlined circle as the AI banner accent. */
-function ReasonMark({
-  variant,
-}: {
-  variant: "error" | "warning" | "pending";
-}) {
-  if (variant === "pending") {
-    return (
-      <span className="w-3.5 h-3.5 rounded-full shrink-0 border border-[#75505d]/60 bg-white" />
-    );
-  }
-  return (
-    <span
-      className={cn(
-        "w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0",
-        variant === "warning" ? "bg-panora-warning" : "bg-panora-error"
-      )}
-    >
-      <span className="text-white text-[8px] font-bold leading-none">!</span>
-    </span>
-  );
-}
-
-export default function PreparationPage() {
+export default function PreparationModalOnlyPage() {
   return (
     <Suspense
       fallback={

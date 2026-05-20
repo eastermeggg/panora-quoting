@@ -352,8 +352,11 @@ export type VeosContract = {
   clientId: string;
   /** Insurance product. Matches loosely the cotation's `principalProduct`. */
   product: string;
-  /** Human label, e.g. "RC Pro 2024 · AXA". */
+  /** Human label / name, e.g. "Étude RC Pro 2026" or "RC Pro 2024 · AXA". */
   label: string;
+  /** External reference number in the ERP — required for études (e.g. "ETU-2026-014"),
+   *  optional on policies. */
+  number?: string;
   insurer?: string;
   status: VeosContractStatus;
   /** "01/01/2024" — start date. */
@@ -368,7 +371,9 @@ const CONTRACTS: VeosContract[] = [
   // Marble Tech SAS
   { id: "ctr-marble-rcpro", clientId: "marble", product: "RC Pro", label: "RC Pro 2024 · AXA", insurer: "Axa", status: "active", startDate: "01/01/2024", endDate: "31/12/2024", premium: "4 280 € TTC" },
   { id: "ctr-marble-mri", clientId: "marble", product: "MRI", label: "Multirisque bureaux · Generali", insurer: "Generali", status: "active", startDate: "01/03/2023", endDate: "28/02/2025", premium: "1 950 € TTC" },
-  { id: "ctr-marble-cyber", clientId: "marble", product: "Cyber", label: "Étude Cyber-risques 2026", insurer: "—", status: "etude", startDate: "15/06/2023", endDate: "14/06/2024", premium: "3 100 € TTC" },
+  { id: "ctr-marble-cyber", clientId: "marble", product: "Cyber", label: "Étude Cyber-risques 2026", number: "ETU-2026-014", insurer: "—", status: "etude", startDate: "15/06/2023", endDate: "14/06/2024", premium: "3 100 € TTC" },
+  { id: "ctr-marble-etude-rcpro", clientId: "marble", product: "RC Pro", label: "Étude RC Pro 2026", number: "ETU-2026-008", insurer: "—", status: "etude" },
+  { id: "ctr-marble-etude-mrb", clientId: "marble", product: "Multirisque Bureaux", label: "Étude Multirisque 2026", number: "ETU-2026-091", insurer: "—", status: "etude" },
   // ACME Corp
   { id: "ctr-acme-flotte", clientId: "acme", product: "Flotte automobile", label: "Flotte 38 véhicules · Allianz", insurer: "Allianz", status: "active", startDate: "01/04/2024", endDate: "31/03/2025", premium: "42 600 € TTC" },
   { id: "ctr-acme-rcpro", clientId: "acme", product: "RC Pro", label: "RC Pro 2023 · AXA", insurer: "Axa", status: "expired", startDate: "01/01/2023", endDate: "31/12/2023", premium: "5 800 € TTC" },
@@ -379,7 +384,7 @@ const CONTRACTS: VeosContract[] = [
   // GreenWay Industries
   { id: "ctr-greenway-mrp", clientId: "greenway", product: "MRP", label: "Multirisque entrepôt · AXA", insurer: "Axa", status: "active", startDate: "01/09/2023", endDate: "31/08/2025", premium: "9 400 € TTC" },
   { id: "ctr-greenway-flotte", clientId: "greenway", product: "Flotte automobile", label: "Flotte 12 véhicules · Generali", insurer: "Generali", status: "active", startDate: "01/01/2024", endDate: "31/12/2024", premium: "14 800 € TTC" },
-  { id: "ctr-greenway-rcpro", clientId: "greenway", product: "RC Pro", label: "Étude RC Pro 2026", insurer: "—", status: "etude", startDate: "01/01/2024", endDate: "31/12/2024", premium: "6 100 € TTC" },
+  { id: "ctr-greenway-rcpro", clientId: "greenway", product: "RC Pro", label: "Étude RC Pro 2026", number: "ETU-2026-031", insurer: "—", status: "etude", startDate: "01/01/2024", endDate: "31/12/2024", premium: "6 100 € TTC" },
   // BlueLeaf
   { id: "ctr-blueleaf-rcpro", clientId: "blueleaf", product: "RC Pro", label: "RC Pro · Allianz", insurer: "Allianz", status: "active", startDate: "01/03/2024", endDate: "28/02/2026", premium: "4 950 € TTC" },
   { id: "ctr-blueleaf-construction", clientId: "blueleaf", product: "Construction", label: "Décennale · MMA", insurer: "MMA", status: "active", startDate: "01/01/2024", endDate: "31/12/2024", premium: "12 300 € TTC" },
