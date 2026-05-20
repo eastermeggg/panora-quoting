@@ -83,20 +83,10 @@ export const integrationSectionCopy: Record<
  * comparison / quote surfaces can see when the user just connected an
  * integration in Settings without prop-drilling or a global store.
  *
- * VEOS is pre-connected by default for demo purposes so reviewers see the
- * full ERP experience (Send-to-VEOS modals, footer pills, etc.) without
- * having to walk through the configuration flow first. Disconnect from
- * Settings · Intégrations to exercise the "not connected" state.
+ * Default preset: nothing connected. Walk through the connect flow in
+ * Settings · Intégrations to exercise the "connected" state.
  */
-export const currentConnections: IntegrationConnection[] = [
-  {
-    integrationId: "veos",
-    status: "connected",
-    accountLabel: "Token actif",
-    lastSyncLabel: "Dernière sync · Il y a 2 min",
-    connectedAt: "2026-05-18",
-  },
-];
+export const currentConnections: IntegrationConnection[] = [];
 
 export function isIntegrationConnected(integrationId: string): boolean {
   return currentConnections.some(

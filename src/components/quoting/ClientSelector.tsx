@@ -173,9 +173,23 @@ export function ClientSelector({
               <NoResults
                 query={query.trim()}
                 veosConnected={veosConnected}
-                onCreate={openCreateFlow}
               />
             )}
+
+            {/* Bottom CTA — always available */}
+            <button
+              type="button"
+              onClick={openCreateFlow}
+              className="flex items-center gap-2 w-full px-3 h-10 border-t border-panora-border bg-panora-drop/40 text-[13px] font-medium text-panora-text hover:bg-panora-drop/80 transition-colors"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-panora-green" />
+              Créer un client dans {veosConnected ? "VEOS" : "Panora"}
+              {query.trim() && (
+                <span className="text-panora-text-muted font-normal truncate">
+                  « {query.trim()} »
+                </span>
+              )}
+            </button>
           </div>
         )}
 
@@ -288,28 +302,18 @@ function ClientTypeBadge({ type }: { type: VeosClient["type"] }) {
 function NoResults({
   query,
   veosConnected,
-  onCreate,
 }: {
   query: string;
   veosConnected: boolean;
-  onCreate: () => void;
 }) {
   const source = veosConnected ? "VEOS" : "Panora";
   return (
-    <div className="px-3 py-3 flex flex-col items-start gap-2.5">
+    <div className="px-3 py-3">
       <p className="text-[12.5px] text-panora-text-secondary leading-[18px]">
         {query
           ? `Aucun client correspondant à « ${query} » dans ${source}.`
           : `Aucun client trouvé dans ${source}.`}
       </p>
-      <button
-        type="button"
-        onClick={onCreate}
-        className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-panora-border text-[12.5px] font-medium text-panora-text hover:bg-panora-secondary/40 transition-colors"
-      >
-        <UserPlus className="w-3.5 h-3.5 text-panora-text-secondary" />
-        Créer un client dans {source}
-      </button>
     </div>
   );
 }
