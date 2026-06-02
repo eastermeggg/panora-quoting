@@ -1,9 +1,17 @@
 // Mock data for the quoting assistant
 
+import {
+  dupontDoCotation,
+  dupontDoComparisonTask,
+  dupontDoFollowupData,
+  dupontDoComparisonData,
+} from "./mockDupontDO";
+
 export const currentUser = {
   name: "Delphine",
   cabinet: "Howden",
   avatar: "D",
+  avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=facearea&facepad=2.4&w=120&h=120&q=80",
   email: "delphine@howden.fr",
 };
 
@@ -520,6 +528,7 @@ export const cotationsList: Cotation[] = [
       { id: "chubb", name: "Chubb", status: "completed", reference: "CHB-DO-2204", bestPrice: "720 €/an" },
     ],
   },
+  dupontDoCotation,
 ];
 
 // ─── Followup data per cotation ───────────────────────────────────────
@@ -1356,6 +1365,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
       },
     ],
   },
+  "cot-dupont-do": dupontDoFollowupData,
 };
 
 export function getFollowupData(cotationId: string): FollowupData | undefined {
@@ -1370,6 +1380,34 @@ export type CellValue =
   | { type: "cross" }
   | { type: "text"; value: string }
   | { type: "empty" };
+
+/**
+ * Cell state system — legal responsibility (ACPR audit), not cosmetic.
+ * A value entered manually must never look like extracted data.
+ *
+ * - extracted: AI extraction (default) — neutral rendering
+ * - override: broker manual override → pencil marker, distinct from extracted
+ * - unavailable: explicit "non disponible", never an ambiguous blank
+ * - extracting: per-cell loading shimmer
+ *
+ * Note: "extracted_high" is kept as a deprecated alias for `extracted` so the
+ * existing mock data and demo center still type-check. New code should use
+ * `"extracted"`.
+ */
+export type CellState =
+  | "extracted"
+  | "extracted_high"
+  | "override"
+  | "unavailable"
+  | "extracting";
+
+/** Mocked source extract showing where a value comes from in the original document. */
+export type SourceExtract = {
+  snippet: string;
+  page?: string;
+  insurerId?: string;
+  documentLabel?: string;
+};
 
 export type SubLimitRow = {
   id: string;
@@ -1407,6 +1445,12 @@ export type CellDetail = {
   sources?: SourceRef[];
   origin?: ExclusionOrigin;
   exclusionId?: string;
+  /** Cell state. Defaults to "extracted" when undefined. */
+  state?: CellState;
+  /** Original AI-extracted value, kept when broker overrides so they can revert. */
+  originalValue?: CellValue;
+  /** Mocked provenance — where in the source document the value comes from. */
+  sourceExtract?: SourceExtract;
 };
 
 export type CellIdentifier =
@@ -3725,6 +3769,7 @@ const comparisonDataMap: Record<string, ComparisonData> = {
       },
     ],
   },
+  "cot-dupont-do": dupontDoComparisonData,
 };
 
 export function getComparisonData(cotationId: string): ComparisonData | undefined {
@@ -5046,6 +5091,7 @@ export const comparisonTasks: ComparisonTask[] = [
     status: "done",
     isUnread: true,
   },
+  dupontDoComparisonTask,
 ];
 
 export const emailInboxMock = [

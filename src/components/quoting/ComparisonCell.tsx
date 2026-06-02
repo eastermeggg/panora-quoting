@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface ComparisonCellProps {
   isSelected: boolean;
-  onClick: () => void;
+  onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
@@ -21,7 +21,7 @@ export function ComparisonCell({
     <div
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onClick(e);
       }}
       className={cn(
         "cursor-pointer transition-colors",

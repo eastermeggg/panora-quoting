@@ -4,13 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
   ChevronRight,
+  CircleArrowDown,
   Copy,
   FileText,
   Lightbulb,
-  MessageCircleQuestion,
+  MessageCircleMore,
+  Paperclip,
   PenLine,
   ScanText,
   Sparkles,
+  Table2,
   ThumbsDown,
   ThumbsUp,
   X,
@@ -20,13 +23,20 @@ import type { InsurerData } from "@/data/mock";
 import {
   type ChatMessage,
   type ChatContext,
+  type ProposedRowAddition,
+  type ProposedDocDraft,
+  type ChatAttachment,
   appendChatMessage,
   getChatSession,
   recordSyntheseEdit,
   respondToPrompt,
   updateSyntheseEditStatus,
+  updateRowProposalStatus,
 } from "@/data/chatMock";
 import { SyntheseEditDiff } from "./SyntheseEditDiff";
+import { ProposedRowCard } from "./ProposedRowCard";
+import { DocDraftCard } from "./DocDraftCard";
+import { suggestionsForScope } from "./CellActionBar";
 
 interface ComparisonChatProps {
   cotParamId: string;
@@ -36,6 +46,26 @@ interface ComparisonChatProps {
   syntheseContent: string;
   onAcceptContentEdit: (next: string) => void;
   onClose: () => void;
+  /** Bumped by parent when an external trigger (e.g. "+") injects a chat message. */
+  externalTriggerCounter?: number;
+  /** Called the first time the agent emits a row-addition proposal (so the grid can show overlay). */
+  onRowProposalEmitted?: (proposal: ProposedRowAddition) => void;
+  /** Called when the broker accepts a proposed row addition. */
+  onAcceptRowAddition?: (proposal: ProposedRowAddition) => void;
+  /** Called when the broker rejects a proposed row addition. */
+  onRejectRowAddition?: (proposal: ProposedRowAddition) => void;
+  /** Called when the agent emits a generated doc draft (auto-switch to Présenter). */
+  onDocDraftEmitted?: (draft: ProposedDocDraft) => void;
+  /** Open the doc in the Présenter tab preview. */
+  onOpenDocPreview?: (docId: string) => void;
+  /** Trigger a mock download for a generated doc. */
+  onDownloadDoc?: (docId: string, fileName: string, body: string) => void;
+  /** Client name used for filename suggestions on doc artifact cards. */
+  clientName?: string;
+  /** When set, a context pill + suggestion chips are rendered above the composer to scope the question. */
+  contextScope?: import("./CellActionBar").SelectedObject | null;
+  /** Called when broker clears the context pill (X). */
+  onClearContextScope?: () => void;
 }
 
 export function ComparisonChat({
@@ -46,14 +76,63 @@ export function ComparisonChat({
   syntheseContent,
   onAcceptContentEdit,
   onClose,
+  externalTriggerCounter,
+  onRowProposalEmitted,
+  onAcceptRowAddition,
+  onRejectRowAddition,
+  onDocDraftEmitted,
+  onOpenDocPreview,
+  onDownloadDoc,
+  clientName,
+  contextScope,
+  onClearContextScope,
 }: ComparisonChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatSession(cotParamId).messages);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const tipsRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
+
+  function addFiles(files: FileList | File[]) {
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    setAttachments((prev) => [...prev, ...arr]);
+  }
+  function removeAttachment(idx: number) {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  }
+  function handleDragEnter(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDraggingOver(true);
+  }
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDraggingOver(false);
+    }
+  }
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+  }
 
   // Close prompt-ideas popover on outside click + Escape
   useEffect(() => {
@@ -93,6 +172,27 @@ export function ComparisonChat({
     }
   }, [messages, thinking]);
 
+  // External triggers (e.g. broker clicks "+" on the grid) inject an agent
+  // message into the session from the outside. We need to re-read so the
+  // chat picks it up.
+  useEffect(() => {
+    if (externalTriggerCounter !== undefined) {
+      setMessages(getChatSession(cotParamId).messages);
+    }
+  }, [externalTriggerCounter, cotParamId]);
+
+  /** Apply a text to the composer and focus it (used by suggestion chips). */
+  function applySuggestion(text: string) {
+    setDraft(text);
+    window.setTimeout(() => {
+      const ta = composerRef.current;
+      if (!ta) return;
+      ta.focus();
+      ta.setSelectionRange(text.length, text.length);
+      autoGrow(ta);
+    }, 0);
+  }
+
   function autoGrow(el: HTMLTextAreaElement) {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
@@ -100,16 +200,21 @@ export function ComparisonChat({
 
   function send() {
     const text = draft.trim();
-    if (!text || thinking) return;
+    if ((!text && attachments.length === 0) || thinking) return;
+    const userAttachments: ChatAttachment[] | undefined = attachments.length > 0
+      ? attachments.map((f) => ({ name: f.name, size: f.size, type: f.type || "application/octet-stream" }))
+      : undefined;
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-u`,
       role: "user",
-      content: text,
+      content: text || (userAttachments ? `${userAttachments.length} fichier${userAttachments.length > 1 ? "s" : ""} joint${userAttachments.length > 1 ? "s" : ""}` : ""),
+      attachments: userAttachments,
       createdAt: new Date().toISOString(),
     };
     appendChatMessage(cotParamId, userMsg);
     setMessages((prev) => [...prev, userMsg]);
     setDraft("");
+    setAttachments([]);
     if (composerRef.current) {
       composerRef.current.style.height = "auto";
     }
@@ -127,6 +232,12 @@ export function ComparisonChat({
       appendChatMessage(cotParamId, response);
       if (response.proposedSyntheseEdit) {
         recordSyntheseEdit(cotParamId, response.proposedSyntheseEdit);
+      }
+      if (response.proposedRowAddition) {
+        onRowProposalEmitted?.(response.proposedRowAddition);
+      }
+      if (response.proposedDocDraft) {
+        onDocDraftEmitted?.(response.proposedDocDraft);
       }
       setMessages((prev) => [...prev, response]);
       setThinking(false);
@@ -146,8 +257,28 @@ export function ComparisonChat({
     setMessages(getChatSession(cotParamId).messages);
   }
 
+  function handleAcceptRow(message: ChatMessage) {
+    if (!message.proposedRowAddition) return;
+    onAcceptRowAddition?.(message.proposedRowAddition);
+    updateRowProposalStatus(cotParamId, message.id, "accepted");
+    setMessages(getChatSession(cotParamId).messages);
+  }
+
+  function handleRejectRow(message: ChatMessage) {
+    if (!message.proposedRowAddition) return;
+    onRejectRowAddition?.(message.proposedRowAddition);
+    updateRowProposalStatus(cotParamId, message.id, "rejected");
+    setMessages(getChatSession(cotParamId).messages);
+  }
+
   return (
-    <aside className="w-[380px] shrink-0 h-full border-l border-panora-border bg-[#faf8f5] flex flex-col">
+    <aside
+      className="w-[380px] shrink-0 h-full border-l border-panora-border bg-[#faf8f5] flex flex-col relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Header */}
       <div className="h-[52px] shrink-0 border-b border-panora-border px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -177,6 +308,11 @@ export function ComparisonChat({
               insurers={insurers}
               onAccept={() => handleAcceptEdit(msg)}
               onReject={() => handleRejectEdit(msg)}
+              onAcceptRow={() => handleAcceptRow(msg)}
+              onRejectRow={() => handleRejectRow(msg)}
+              onOpenDocPreview={onOpenDocPreview}
+              onDownloadDoc={onDownloadDoc}
+              clientName={clientName}
             />
           ))
         )}
@@ -184,8 +320,49 @@ export function ComparisonChat({
       </div>
 
       {/* Composer */}
-      <div className="border-t border-panora-border p-3">
-        <div className="rounded-xl border border-panora-border bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] focus-within:border-panora-green/40 transition-colors">
+      <div className="p-3 flex flex-col gap-2">
+        {contextScope && (
+          <>
+            <ContextPill scope={contextScope} onClear={onClearContextScope} />
+            <div className="flex flex-wrap gap-1.5">
+              {suggestionsForScope(contextScope).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="inline-flex items-center h-[26px] px-2.5 rounded-full border border-panora-border bg-white text-[12px] text-panora-text hover:bg-panora-bg/40 hover:border-panora-text-secondary/30 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div
+          className={cn(
+            "rounded-2xl bg-white p-2 flex flex-col gap-2 transition-shadow",
+            isDraggingOver
+              ? "shadow-[0px_0px_0px_2px_#9dd5bb,0px_2px_8px_rgba(0,0,0,0.06)]"
+              : draft.trim() || attachments.length > 0
+                ? "shadow-[0px_0px_0px_2px_#9dd5bb,0px_2px_8px_rgba(0,0,0,0.06)]"
+                : "shadow-[0px_0px_0px_1px_#d2cfc8,0px_1px_2px_rgba(0,0,0,0.04)]"
+          )}
+        >
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-1 pt-1">
+              {attachments.map((f, idx) => (
+                <AttachmentChip key={`${f.name}-${idx}`} file={f} onRemove={() => removeAttachment(idx)} />
+              ))}
+            </div>
+          )}
+          {isDraggingOver && (
+            <div className="h-[44px] rounded-xl border border-dashed border-panora-green bg-panora-green/8 flex items-center justify-center gap-1.5">
+              <CircleArrowDown className="w-3.5 h-3.5 text-panora-green" strokeWidth={1.75} />
+              <span className="text-[11px] font-medium text-panora-green">
+                Déposez vos fichiers ici
+              </span>
+            </div>
+          )}
           <textarea
             ref={composerRef}
             value={draft}
@@ -201,49 +378,105 @@ export function ComparisonChat({
             }}
             placeholder="Reformuler, comparer, demander une justification…"
             rows={1}
-            className="w-full px-3 py-2.5 text-[13px] leading-[20px] text-panora-text bg-transparent outline-none resize-none placeholder:text-panora-text-muted"
+            className="w-full px-2 pt-1 text-[13px] leading-[20px] text-panora-text bg-transparent outline-none resize-none placeholder:text-panora-text-muted"
           />
-          <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-panora-border">
-            <div ref={tipsRef} className="relative shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
-                onClick={() => setTipsOpen((v) => !v)}
-                className={cn(
-                  "flex items-center justify-center w-7 h-7 rounded-md transition-colors",
-                  tipsOpen
-                    ? "bg-panora-secondary text-panora-text"
-                    : "text-panora-text-muted hover:bg-panora-secondary hover:text-panora-text-secondary"
-                )}
-                aria-haspopup="menu"
-                aria-expanded={tipsOpen}
-                aria-label="Idées de prompts"
-                title="Idées de prompts"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center w-8 h-8 rounded-lg text-panora-text-muted hover:bg-panora-secondary hover:text-panora-text-secondary transition-colors"
+                aria-label="Joindre un fichier"
+                title="Joindre un fichier"
               >
-                <Lightbulb className="w-3.5 h-3.5" />
+                <Paperclip className="w-4 h-4" strokeWidth={1.75} />
               </button>
-              {tipsOpen && (
-                <PromptIdeasPopover onPick={applyTemplate} />
-              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) addFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <div ref={tipsRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setTipsOpen((v) => !v)}
+                  className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                    tipsOpen
+                      ? "bg-panora-secondary text-panora-text"
+                      : "text-panora-text-muted hover:bg-panora-secondary hover:text-panora-text-secondary"
+                  )}
+                  aria-haspopup="menu"
+                  aria-expanded={tipsOpen}
+                  aria-label="Idées de prompts"
+                  title="Idées de prompts"
+                >
+                  <Lightbulb className="w-4 h-4" strokeWidth={1.75} />
+                </button>
+                {tipsOpen && (
+                  <PromptIdeasPopover onPick={applyTemplate} />
+                )}
+              </div>
             </div>
-            <span className="text-[11px] text-panora-text-muted truncate">
-              Entrée pour envoyer · Maj+Entrée pour aller à la ligne
-            </span>
             <button
               onClick={send}
-              disabled={!draft.trim() || thinking}
+              disabled={(!draft.trim() && attachments.length === 0) || thinking}
               className={cn(
-                "w-7 h-7 shrink-0 flex items-center justify-center rounded-md transition-colors",
-                draft.trim() && !thinking
-                  ? "bg-panora-green text-white hover:opacity-90"
+                "w-8 h-8 shrink-0 flex items-center justify-center rounded-lg transition-colors",
+                (draft.trim() || attachments.length > 0) && !thinking
+                  ? "bg-[#173c2d] text-white hover:opacity-90"
                   : "bg-panora-secondary text-panora-text-muted cursor-not-allowed"
               )}
+              aria-label="Envoyer"
             >
-              <ArrowUp className="w-3.5 h-3.5" />
+              <ArrowUp className="w-4 h-4" strokeWidth={2} />
             </button>
           </div>
         </div>
       </div>
     </aside>
+  );
+}
+
+/** Attachment shown in a sent user message — same shape as the composer chip
+ *  but without the X. */
+function SentAttachment({ attachment }: { attachment: ChatAttachment }) {
+  const ext = attachment.name.split(".").pop()?.toUpperCase() ?? "";
+  const kb = Math.max(1, Math.round(attachment.size / 1024));
+  const sizeLabel = kb < 1024 ? `${kb} Ko` : `${(kb / 1024).toFixed(1)} Mo`;
+  return (
+    <div className="inline-flex items-center gap-1.5 max-w-[260px] bg-white border border-panora-border rounded-md px-2 py-1 shadow-[0px_1px_2px_rgba(0,0,0,0.04)]">
+      <FileText className="w-3.5 h-3.5 text-panora-text-secondary shrink-0" />
+      <div className="flex-1 min-w-0 flex flex-col">
+        <span className="text-[12px] font-medium text-panora-text leading-[14px] truncate">{attachment.name}</span>
+        <span className="text-[10px] text-panora-text-muted leading-[12px]">
+          {ext}{ext && " · "}{sizeLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Compact badge chip — matches Figma chat dropdoc component. */
+function AttachmentChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+  return (
+    <div className="inline-flex items-center h-5 gap-1.5 pl-2 pr-1 bg-panora-secondary rounded-full max-w-[220px]">
+      <Paperclip className="w-3 h-3 text-panora-text-secondary shrink-0" strokeWidth={1.75} />
+      <span className="text-[12px] font-medium text-panora-text leading-none truncate">{file.name}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="w-3.5 h-3.5 flex items-center justify-center rounded-full text-panora-text-muted hover:text-panora-text transition-colors shrink-0"
+        aria-label={`Retirer ${file.name}`}
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
   );
 }
 
@@ -296,17 +529,15 @@ function EmptyState({
   onSuggestion: (s: string) => void;
 }) {
   return (
-    <div className="flex-1 flex flex-col justify-center gap-6 pt-4">
-      <h3 className="text-[28px] font-serif text-panora-text leading-[34px] tracking-[-0.015em] m-0">
+    <div className="flex-1 flex flex-col justify-center gap-5 pt-4">
+      <h3 className="text-[30px] font-serif text-panora-text leading-[36px] tracking-[-0.01em] m-0">
         Votre copilote,
         <br />
         à vos côtés.
       </h3>
 
-      <div className="h-px bg-panora-border" />
-
       <CapabilityGroup
-        Icon={MessageCircleQuestion}
+        Icon={MessageCircleMore}
         label="Posez vos questions"
         suggestions={[
           "Identifie les écarts entre les propositions",
@@ -327,6 +558,18 @@ function EmptyState({
         ]}
         onSuggestion={onSuggestion}
       />
+
+      <div className="h-px bg-panora-border" />
+
+      <CapabilityGroup
+        Icon={Table2}
+        label="Modifiez votre tableau comparatif"
+        suggestions={[
+          "Ajoute la garantie Cyber au comparatif",
+          "Retire la ligne Plafond global",
+        ]}
+        onSuggestion={onSuggestion}
+      />
     </div>
   );
 }
@@ -337,25 +580,25 @@ function CapabilityGroup({
   suggestions,
   onSuggestion,
 }: {
-  Icon: typeof MessageCircleQuestion;
+  Icon: typeof MessageCircleMore;
   label: string;
   suggestions: string[];
   onSuggestion: (s: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-panora-text-secondary" strokeWidth={1.75} />
-        <span className="text-[12px] font-medium text-panora-text-secondary leading-5">
+      <div className="flex items-center gap-1.5 px-px">
+        <Icon className="w-4 h-4 text-panora-text-muted" strokeWidth={1.75} />
+        <span className="text-[12px] font-medium text-panora-text-muted leading-4">
           {label}
         </span>
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2.5">
         {suggestions.map((s) => (
           <button
             key={s}
             onClick={() => onSuggestion(s)}
-            className="text-left text-[13px] leading-5 text-panora-text px-3 py-2.5 rounded-[8px] border border-panora-border bg-white hover:border-panora-text-secondary/40 hover:shadow-[0px_1px_2px_rgba(0,0,0,0.04)] transition-all"
+            className="text-left text-[13px] font-medium leading-5 text-panora-text px-3 py-2.5 rounded-[8px] bg-panora-secondary hover:bg-panora-secondary/70 transition-colors"
           >
             {s}
           </button>
@@ -370,22 +613,41 @@ function MessageBubble({
   insurers,
   onAccept,
   onReject,
+  onAcceptRow,
+  onRejectRow,
+  onOpenDocPreview,
+  onDownloadDoc,
+  clientName,
 }: {
   message: ChatMessage;
   insurers: InsurerData[];
   onAccept: () => void;
   onReject: () => void;
+  onAcceptRow: () => void;
+  onRejectRow: () => void;
+  onOpenDocPreview?: (docId: string) => void;
+  onDownloadDoc?: (docId: string, fileName: string, body: string) => void;
+  clientName?: string;
 }) {
   const isUser = message.role === "user";
 
   if (isUser) {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[88%] rounded-xl px-3 py-2 text-[13px] leading-[20px] bg-[#173c2d] text-white">
-          <p className="whitespace-pre-wrap break-words">
-            {renderMarkdown(message.content)}
-          </p>
-        </div>
+      <div className="flex flex-col items-end gap-1.5 max-w-full">
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap justify-end gap-1.5 max-w-[88%]">
+            {message.attachments.map((a, idx) => (
+              <SentAttachment key={`${a.name}-${idx}`} attachment={a} />
+            ))}
+          </div>
+        )}
+        {message.content && (
+          <div className="max-w-[88%] rounded-xl px-3 py-2 text-[13px] leading-[20px] bg-[#173c2d] text-white">
+            <p className="whitespace-pre-wrap break-words">
+              {renderMarkdown(message.content)}
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -417,6 +679,22 @@ function MessageBubble({
           edit={message.proposedSyntheseEdit}
           onAccept={onAccept}
           onReject={onReject}
+        />
+      )}
+      {message.proposedRowAddition && (
+        <ProposedRowCard
+          proposal={message.proposedRowAddition}
+          insurers={insurers}
+          onAccept={onAcceptRow}
+          onReject={onRejectRow}
+        />
+      )}
+      {message.proposedDocDraft && (
+        <DocDraftCard
+          draft={message.proposedDocDraft}
+          clientName={clientName}
+          onOpenPreview={onOpenDocPreview}
+          onDownload={onDownloadDoc}
         />
       )}
       <AgentActions content={message.content} />
@@ -520,6 +798,40 @@ function AgentActions({ content }: { content: string }) {
         aria-pressed={feedback === "down"}
       >
         <ThumbsDown className="w-3.5 h-3.5" strokeWidth={1.75} />
+      </button>
+    </div>
+  );
+}
+
+/** Pill rendered above the composer when the broker scopes the question. */
+function ContextPill({
+  scope,
+  onClear,
+}: {
+  scope: import("./CellActionBar").SelectedObject;
+  onClear?: () => void;
+}) {
+  const label = (() => {
+    if (scope.kind === "value") return `${scope.insurerName} · ${scope.rowLabel}`;
+    if (scope.kind === "offer") return scope.insurerName;
+    return scope.rowLabel;
+  })();
+  const kindLabel = scope.kind === "value" ? "Cellule" : scope.kind === "offer" ? "Offre" : "Garantie";
+  return (
+    <div className="inline-flex items-center gap-1.5 self-start max-w-full bg-panora-green/8 border border-panora-green/30 rounded-full pl-2 pr-1 py-1">
+      <Sparkles className="w-3 h-3 text-panora-green shrink-0" />
+      <span className="text-[10px] font-medium uppercase tracking-wider text-panora-green shrink-0">
+        {kindLabel}
+      </span>
+      <span className="text-[12px] text-panora-text truncate max-w-[180px]">
+        {label}
+      </span>
+      <button
+        onClick={onClear}
+        className="w-4 h-4 flex items-center justify-center rounded-full text-panora-text-muted hover:bg-panora-green/15 hover:text-panora-text transition-colors shrink-0"
+        aria-label="Annuler le focus"
+      >
+        <X className="w-3 h-3" />
       </button>
     </div>
   );

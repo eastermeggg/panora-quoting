@@ -38,6 +38,19 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Hide scrollbars globally while preserving scroll functionality.
+ * Firefox uses scrollbar-width; WebKit/Blink uses the ::-webkit-scrollbar
+ * pseudo-element; IE/Edge legacy uses -ms-overflow-style. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Primary button: Figma dark green with inner glow */
 .btn-primary {
   position: relative;
