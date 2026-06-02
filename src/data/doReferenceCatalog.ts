@@ -188,7 +188,7 @@ export function generateReferenceValues(
     values[ins.id] = value;
     details[ins.id] = {
       title: entry.label,
-      covered: value.type !== "cross" && value.type !== "empty",
+      covered: value.type !== "cross",
       insurerId: ins.id,
       insurerName: ins.name,
       description: entry.description,
