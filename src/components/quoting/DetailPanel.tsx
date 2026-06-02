@@ -235,36 +235,36 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
             <button
               onClick={() => update({ covered: true })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                "flex items-center gap-2 h-8 px-3 text-[13px] font-medium rounded-[8px] border transition-colors",
                 cellDetail.covered
-                  ? "bg-[#dbeee5] border-[#b5e0cc]"
+                  ? "bg-panora-green-light border-panora-green-border text-panora-green-dark"
                   : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
                 "inline-flex items-center justify-center w-5 h-5 rounded-full",
-                cellDetail.covered ? "bg-panora-green/20" : "bg-panora-border"
+                cellDetail.covered ? "bg-panora-green-dark text-white" : "bg-panora-secondary text-panora-text-muted"
               )}>
-                <Check className={cn("w-3 h-3", cellDetail.covered ? "text-panora-green" : "text-panora-text-muted")} />
+                <Check className="w-3 h-3" strokeWidth={2.5} />
               </span>
-              <span className={cellDetail.covered ? "text-panora-green" : ""}>Couvert</span>
+              <span>Couvert</span>
             </button>
             <button
               onClick={() => update({ covered: false })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                "flex items-center gap-2 h-8 px-3 text-[13px] font-medium rounded-[8px] border transition-colors",
                 !cellDetail.covered
-                  ? "bg-[#fde8e8] border-[#f0c4c4]"
+                  ? "bg-panora-error-bg border-panora-error/30 text-panora-error"
                   : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
                 "inline-flex items-center justify-center w-5 h-5 rounded-full",
-                !cellDetail.covered ? "bg-[#952617]/20" : "bg-panora-border"
+                !cellDetail.covered ? "bg-panora-error text-white" : "bg-panora-secondary text-panora-text-muted"
               )}>
-                <XIcon className={cn("w-3 h-3", !cellDetail.covered ? "text-[#952617]" : "text-panora-text-muted")} />
+                <XIcon className="w-3 h-3" strokeWidth={2.5} />
               </span>
-              <span className={!cellDetail.covered ? "text-[#952617]" : ""}>Non couvert</span>
+              <span>Non couvert</span>
             </button>
           </div>
         )}
@@ -275,45 +275,45 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
             <button
               onClick={() => update({ covered: true })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                "flex items-center gap-2 h-8 px-3 text-[13px] font-medium rounded-[8px] border transition-colors",
                 cellDetail.covered
-                  ? "bg-[#dbeee5] border-[#b5e0cc]"
+                  ? "bg-panora-green-light border-panora-green-border text-panora-green-dark"
                   : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
                 "inline-flex items-center justify-center w-5 h-5 rounded-full",
-                cellDetail.covered ? "bg-panora-green/20" : "bg-panora-border"
+                cellDetail.covered ? "bg-panora-green-dark text-white" : "bg-panora-secondary text-panora-text-muted"
               )}>
-                <Check className={cn("w-3 h-3", cellDetail.covered ? "text-panora-green" : "text-panora-text-muted")} />
+                <Check className="w-3 h-3" strokeWidth={2.5} />
               </span>
-              <span className={cellDetail.covered ? "text-panora-text" : ""}>Incluse</span>
+              <span>Incluse</span>
             </button>
             <button
               onClick={() => update({ covered: false })}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-[8px] border transition-colors",
+                "flex items-center gap-2 h-8 px-3 text-[13px] font-medium rounded-[8px] border transition-colors",
                 !cellDetail.covered
-                  ? "bg-[#fde8e8] border-[#f0c4c4]"
+                  ? "bg-panora-error-bg border-panora-error/30 text-panora-error"
                   : "bg-white border-panora-border text-panora-text-muted hover:bg-panora-bg/50 hover:border-[#d4d2cc]"
               )}
             >
               <span className={cn(
                 "inline-flex items-center justify-center w-5 h-5 rounded-full",
-                !cellDetail.covered ? "bg-[#952617]/20" : "bg-panora-border"
+                !cellDetail.covered ? "bg-panora-error text-white" : "bg-panora-secondary text-panora-text-muted"
               )}>
-                <span className={cn("text-[11px] font-bold leading-none", !cellDetail.covered ? "text-[#952617]" : "text-panora-text-muted")}>!</span>
+                <span className="text-[11px] font-bold leading-none">!</span>
               </span>
-              <span className={!cellDetail.covered ? "text-[#952617]" : ""}>Exclue</span>
+              <span>Exclue</span>
             </button>
           </div>
         )}
 
         {/* Main limit & deductible card — guarantee only */}
         {cellDetail.cellType === "guarantee" && (cellDetail.mainLimit || cellDetail.mainDeductible) && (
-          <div className="border border-panora-border rounded-[10px] overflow-clip">
+          <div className="border border-panora-border rounded-[10px] overflow-clip shadow-xs">
             {cellDetail.mainLimit && (
-              <div className="flex items-center justify-between px-3 py-2 border-b border-panora-border">
+              <div className="flex items-center justify-between h-11 px-3 py-2 border-b border-panora-border">
                 <span className="text-[13px] leading-5 text-panora-text">Limite principale</span>
                 <InlineValue
                   value={cellDetail.mainLimit}
@@ -323,7 +323,7 @@ export function DetailPanel({ cellDetail, onUpdate, onClose, onDelete, showKeyDe
               </div>
             )}
             {cellDetail.mainDeductible && (
-              <div className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center justify-between h-11 px-3 py-2">
                 <span className="text-[13px] leading-5 text-panora-text">Franchise principale</span>
                 <InlineValue
                   value={cellDetail.mainDeductible}

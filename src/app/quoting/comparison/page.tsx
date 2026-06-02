@@ -23,11 +23,24 @@ import { ComparisonSynthesis, buildDefaultSynthese } from "@/components/quoting/
 import { ComparisonChat } from "@/components/quoting/ComparisonChat";
 import { FinaliserDropdown } from "@/components/quoting/FinaliserDropdown";
 import { DevoirConseilWizard } from "@/components/quoting/DevoirConseilWizard";
+import { DemoCommandCenter } from "@/components/quoting/demo/DemoCommandCenter";
+import { useDemoShortcut } from "@/components/quoting/demo/useDemoShortcut";
+import { type SelectedObject } from "@/components/quoting/CellActionBar";
+import { PresentationTab } from "@/components/quoting/PresentationTab";
+import { deleteGeneratedDoc, listGeneratedDocs, suggestFileName, type GeneratedDoc } from "@/data/generatedDocsStore";
 import {
   SendToVeosModal,
   type SendToVeosState,
 } from "@/components/quoting/SendToVeosModal";
-import { getSynthesisOverride, setSynthesisOverride } from "@/data/chatMock";
+import {
+  getSynthesisOverride,
+  setSynthesisOverride,
+  triggerAddRowConversation,
+  triggerCustomDocConversation,
+  type ProposedRowAddition,
+  type SectionPath,
+} from "@/data/chatMock";
+import { logMutation } from "@/data/mutationLog";
 import { isIntegrationConnected } from "@/data/integrations-mock";
 import { loadBranding } from "@/data/branding";
 import {
@@ -47,6 +60,9 @@ import {
   ExternalLink,
   Search,
   MoreVertical,
+  AlignLeft,
+  Table2,
+  Send,
 } from "lucide-react";
 
 function downloadMockFile(fileName: string, content: string) {
@@ -446,7 +462,51 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
   const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);
-  const [activeTab, setActiveTab] = useState<"comparison" | "analysis">("analysis");
+
+  // ─── Demo command center (internal tool, Cmd+Shift+D) ──────────
+  // Snapshot the initial state so the demo "Reset" can restore it cleanly.
+  const initialDemoSnapshot = useRef<{
+    insurers: InsurerData[];
+    comparisonData: ComparisonData | undefined;
+  } | null>(null);
+  if (initialDemoSnapshot.current === null) {
+    initialDemoSnapshot.current = {
+      insurers: followupData?.insurers ?? [],
+      comparisonData: alreadyDone ? getComparisonData(cotParamId) : undefined,
+    };
+  }
+  const [demoOpen, toggleDemo] = useDemoShortcut();
+
+  // ─── Iteration 01: add-row flow ────────────────────────────────
+  const [chatTriggerCounter, setChatTriggerCounter] = useState(0);
+  const [pendingRowProposal, setPendingRowProposal] = useState<ProposedRowAddition | null>(null);
+  const [undoToast, setUndoToast] = useState<{ kind: "add" | "delete"; rowLabel: string; revert: () => void } | null>(null);
+
+  // ─── Row removal (replaces the eye show/hide affordance) ────────
+  const [hiddenRowKeys, setHiddenRowKeys] = useState<Set<string>>(new Set());
+
+  // ─── Polymorphic selection → bottom floating bar ────────────────
+  // Click on value cell / column header (offer) / row header (guarantee)
+  // sets the selection. The bar renders at page root with state-aware
+  // actions. DetailPanel ONLY opens when broker picks "Voir le détail".
+  const [selectedObject, setSelectedObject] = useState<SelectedObject | null>(null);
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+
+  // ─── Chat context scope (Ask Panora flow) ───────────────────────
+  // When broker hits "Ask Panora" on a selection, the chat shows a context
+  // pill + suggestion chips above the composer so the question is visibly
+  // scoped. Clicking a suggestion fills the composer.
+  const [chatContextScope, setChatContextScope] = useState<SelectedObject | null>(null);
+
+  // ─── Generated docs (Présenter tab) ─────────────────────────────
+  const [generatedDocs, setGeneratedDocs] = useState<GeneratedDoc[]>(() =>
+    typeof window !== "undefined" ? listGeneratedDocs(cotParamId) : []
+  );
+  const [selectedGeneratedDocId, setSelectedGeneratedDocId] = useState<string | null>(null);
+  const refreshGeneratedDocs = useCallback(() => {
+    setGeneratedDocs(listGeneratedDocs(cotParamId));
+  }, [cotParamId]);
+  const [activeTab, setActiveTab] = useState<"comparison" | "analysis" | "presentation">("analysis");
   const [chatOpen, setChatOpen] = useState(true);
   const [fleetViewMode, setFleetViewMode] = useState<"garanties" | "tarifs">("garanties");
   const isMultiEntity = !!comparisonResult?.multiEntity;
@@ -644,12 +704,190 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
 
   const handlePanelClose = useCallback(() => {
     setSelectedCell(null);
+    setDetailPanelOpen(false);
+  }, []);
+
+  /** Cell / column / row click → set selection + scope the chat with suggestions.
+   *  Value cells also auto-open the detail panel; column/row headers do not. */
+  const handleSelectObject = useCallback((obj: SelectedObject | null) => {
+    setSelectedObject(obj);
+    setChatContextScope(obj);
+    if (obj?.kind === "value") {
+      setSelectedCell({
+        type: "guarantee",
+        sectionIndex: obj.sectionIndex,
+        rowIndex: obj.rowIndex,
+        insurerId: obj.insurerId,
+      });
+      setDetailPanelOpen(true);
+    } else {
+      setSelectedCell(null);
+      setDetailPanelOpen(false);
+    }
+    if (obj) setChatOpen(true);
   }, []);
 
   const handleToggleCellDisplayMode = useCallback((cellId: CellIdentifier) => {
     const key = cellIdKey(cellId);
     setCellDisplayModes((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
+
+  // ─── Iteration 01: add-row handlers ────────────────────────────
+
+  /** Broker clicks "+" in a guarantee subgroup → kick off chat conversation. */
+  const handleAddRowClick = useCallback((sectionPath: SectionPath) => {
+    if (!chatOpen) setChatOpen(true);
+    triggerAddRowConversation(cotParamId, sectionPath);
+    setChatTriggerCounter((n) => n + 1);
+  }, [cotParamId, chatOpen]);
+
+  /** Broker clicks "Generate custom doc" in the Présenter tab → kick off
+   *  the qualification flow in the chat (asks type, then template). */
+  const handleGenerateCustomDoc = useCallback((intent?: string) => {
+    if (!chatOpen) setChatOpen(true);
+    triggerCustomDocConversation(cotParamId, intent);
+    setChatTriggerCounter((n) => n + 1);
+  }, [cotParamId, chatOpen]);
+
+  /** Agent finishes generating a doc → refresh list, switch to Présenter,
+   *  auto-open the preview for the new doc. */
+  const handleDocDraftEmitted = useCallback((draft: { docId?: string }) => {
+    refreshGeneratedDocs();
+    if (draft.docId) {
+      setActiveTab("presentation");
+      setSelectedGeneratedDocId(draft.docId);
+    }
+  }, [refreshGeneratedDocs]);
+
+  /** From chat artifact card → switch to Présenter and preview the doc. */
+  const handleOpenDocPreview = useCallback((docId: string) => {
+    setActiveTab("presentation");
+    setSelectedGeneratedDocId(docId);
+  }, []);
+
+  /** Mock download — would call the real export pipeline in production. */
+  const handleDownloadDoc = useCallback((docId: string, fileName: string, body: string) => {
+    if (typeof window === "undefined") return;
+    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    // Acknowledge in the mutation log
+    logMutation(cotParamId, {
+      kind: "remove_row", // generic "mutation" — could add a "doc_downloaded" kind later
+      summary: `Document téléchargé : ${fileName}`,
+      details: { docId, fileName },
+    });
+  }, [cotParamId]);
+
+  /** Chat emits a proposal → grid shows overlay row in target subgroup. */
+  const handleRowProposalEmitted = useCallback((proposal: ProposedRowAddition) => {
+    setPendingRowProposal(proposal);
+  }, []);
+
+  /** Broker accepts the proposal → row inserted, extracting animation, log. */
+  const handleAcceptRowAddition = useCallback((proposal: ProposedRowAddition) => {
+    setPendingRowProposal(null);
+
+    // Run extracting animation: insert row with all cells in "extracting"
+    // state, then after 1.5s restore the final values.
+    const finalRow = proposal.row;
+    const extractingRow = {
+      ...finalRow,
+      details: Object.fromEntries(
+        Object.entries(finalRow.details ?? {}).map(([insId, detail]) => [
+          insId,
+          { ...detail, state: "extracting" as const },
+        ]),
+      ),
+    };
+
+    // Snapshot for undo
+    const snapshot = comparisonResult;
+
+    setComparisonResult((prev) => {
+      if (!prev?.products) return prev;
+      const next = structuredClone(prev) as ComparisonData;
+      const target = next.products[proposal.sectionPath.productIndex]?.subGroups[proposal.sectionPath.subGroupIndex];
+      if (!target) return prev;
+      target.rows = [...target.rows, extractingRow];
+      return next;
+    });
+
+    window.setTimeout(() => {
+      setComparisonResult((prev) => {
+        if (!prev?.products) return prev;
+        const next = structuredClone(prev) as ComparisonData;
+        const target = next.products[proposal.sectionPath.productIndex]?.subGroups[proposal.sectionPath.subGroupIndex];
+        if (!target) return prev;
+        target.rows = target.rows.map((r) => r.label === finalRow.label ? finalRow : r);
+        return next;
+      });
+    }, 1500);
+
+    // Audit log
+    logMutation(cotParamId, {
+      kind: proposal.isReferenceMatch ? "add_row_reference" : "add_row_free",
+      summary: `Ligne ajoutée : ${finalRow.label} (${proposal.sectionPath.sectionTitle})`,
+      details: {
+        sectionPath: proposal.sectionPath,
+        rowLabel: finalRow.label,
+        referenceId: proposal.referenceId,
+      },
+    });
+
+    // Undo toast (auto-dismiss after 5s)
+    setUndoToast({
+      kind: "add",
+      rowLabel: finalRow.label,
+      revert: () => {
+        setComparisonResult(snapshot);
+        setUndoToast(null);
+      },
+    });
+    window.setTimeout(() => {
+      setUndoToast((current) => (current?.rowLabel === finalRow.label ? null : current));
+    }, 5000);
+  }, [cotParamId, comparisonResult]);
+
+  /** Broker rejects the proposal → just clear the overlay. */
+  const handleRejectRowAddition = useCallback(() => {
+    setPendingRowProposal(null);
+  }, []);
+
+  /** Broker removes a row via the "..." menu → soft hide + undo toast + log. */
+  const handleRowDelete = useCallback((rowKey: string, rowLabel: string) => {
+    setHiddenRowKeys((prev) => {
+      const next = new Set(prev);
+      next.add(rowKey);
+      return next;
+    });
+    logMutation(cotParamId, {
+      kind: "remove_row",
+      summary: `Ligne retirée : ${rowLabel}`,
+      details: { rowKey, rowLabel },
+    });
+    setUndoToast({
+      kind: "delete",
+      rowLabel,
+      revert: () => {
+        setHiddenRowKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(rowKey);
+          return next;
+        });
+        setUndoToast(null);
+      },
+    });
+    window.setTimeout(() => {
+      setUndoToast((current) => (current?.rowLabel === rowLabel ? null : current));
+    }, 5000);
+  }, [cotParamId]);
 
   if (!followupData) {
     return (
@@ -737,42 +975,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
-        <FinaliserDropdown
-          clientName={mutableProfile.clientLabel || followupData?.cotation.client}
-          productLabel={productLabel}
-          presentationUrl={`/presentation/${cotParamId}`}
-          onPreviewSynthesePDF={() =>
-            previewSynthesePdf({
-              branding: loadBranding(),
-              clientName: mutableProfile.clientLabel || cotation.client || "Client",
-              productLabel,
-              syntheseMarkdown: syntheseContent,
-            })
-          }
-          onDownloadSynthesePDF={wrapExport("Synthèse.pdf", () =>
-            downloadSynthesePdf({
-              branding: loadBranding(),
-              clientName: mutableProfile.clientLabel || cotation.client || "Client",
-              productLabel,
-              syntheseMarkdown: syntheseContent,
-            })
-          )}
-          onDownloadSyntheseDocx={wrapExport("Synthèse.docx", () =>
-            downloadSyntheseDocx({
-              branding: loadBranding(),
-              clientName: mutableProfile.clientLabel || cotation.client || "Client",
-              productLabel,
-              syntheseMarkdown: syntheseContent,
-            })
-          )}
-          onDownloadTableauXLS={wrapExport("Tableau comparatif.xlsx", () =>
-            downloadMockFile(
-              `${cotation.client} - Tableau comparatif.xlsx`,
-              "Tableau comparatif — export XLS (démo)"
-            )
-          )}
-          onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
-        />
+        {/* FinaliserDropdown hidden — exports moved to the Présenter tab. */}
       </div>
 
       {agentPhase !== "ready" ? (
@@ -792,18 +995,30 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                       : "border-transparent text-panora-text-muted hover:text-panora-text"
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <AlignLeft className="w-3.5 h-3.5" />
                   Synthèse
                 </button>
                 <button
                   onClick={() => setActiveTab("comparison")}
-                  className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 ${
+                  className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
                     activeTab === "comparison"
                       ? "border-panora-green text-panora-green font-medium"
                       : "border-transparent text-panora-text-muted hover:text-panora-text"
                   }`}
                 >
-                  Tableau comparatif
+                  <Table2 className="w-3.5 h-3.5" />
+                  Comparatif
+                </button>
+                <button
+                  onClick={() => setActiveTab("presentation")}
+                  className={`px-3 pb-2.5 text-[13px] transition-colors border-b-2 flex items-center gap-1.5 ${
+                    activeTab === "presentation"
+                      ? "border-panora-green text-panora-green font-medium"
+                      : "border-transparent text-panora-text-muted hover:text-panora-text"
+                  }`}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Présenter
                 </button>
               </div>
               {!chatOpen && (
@@ -824,8 +1039,8 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
               {activeTab === "comparison" ? (
                 <div className="flex-1 flex min-h-0 min-w-0">
                   <div
-                    className="flex-1 overflow-auto min-w-0"
-                    onClick={() => setSelectedCell(null)}
+                    className="flex-1 overflow-auto min-w-0 bg-white"
+                    onClick={() => handleSelectObject(null)}
                   >
                     <ComparisonTable
                       insurers={mutableInsurers}
@@ -842,9 +1057,15 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                       onOpenProfile={openProfile}
                       dynamicFieldValues={dynamicFieldValues}
                       principalProduct={task?.principalProduct ?? null}
+                      onAddRowClick={handleAddRowClick}
+                      proposedRowAddition={pendingRowProposal}
+                      hiddenRowKeys={hiddenRowKeys}
+                      onRowDelete={handleRowDelete}
+                      onSelectObject={handleSelectObject}
+                      selectedObject={selectedObject}
                     />
                   </div>
-                  {isProfileOpen ? (
+                  {isProfileOpen && (
                     <ClientProfilePanel
                       profile={mutableProfile}
                       dynamicFields={comparisonResult?.dynamicFields}
@@ -854,21 +1075,55 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                       onSave={handleProfileSave}
                       onClose={() => setIsProfileOpen(false)}
                     />
-                  ) : selectedCell && currentDetail ? (
-                    <DetailPanel
-                      cellDetail={currentDetail}
-                      onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
-                      onClose={handlePanelClose}
-                      onDelete={
-                        selectedCell.type === "exclusion" && currentDetail.origin === "manual"
-                          ? () => handleDeleteExclusion(selectedCell.exclusionId)
-                          : undefined
-                      }
-                      showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
-                      onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
-                    />
-                  ) : null}
+                  )}
                 </div>
+              ) : activeTab === "presentation" ? (
+                <PresentationTab
+                  clientName={mutableProfile.clientLabel || cotation.client}
+                  productLabel={productLabel}
+                  presentationUrl={`/presentation/${cotParamId}`}
+                  onPreviewSynthesePDF={() =>
+                    previewSynthesePdf({
+                      branding: loadBranding(),
+                      clientName: mutableProfile.clientLabel || cotation.client || "Client",
+                      productLabel,
+                      syntheseMarkdown: syntheseContent,
+                    })
+                  }
+                  onDownloadSynthesePDF={wrapExport("Synthèse.pdf", () =>
+                    downloadSynthesePdf({
+                      branding: loadBranding(),
+                      clientName: mutableProfile.clientLabel || cotation.client || "Client",
+                      productLabel,
+                      syntheseMarkdown: syntheseContent,
+                    })
+                  )}
+                  onDownloadSyntheseDocx={wrapExport("Synthèse.docx", () =>
+                    downloadSyntheseDocx({
+                      branding: loadBranding(),
+                      clientName: mutableProfile.clientLabel || cotation.client || "Client",
+                      productLabel,
+                      syntheseMarkdown: syntheseContent,
+                    })
+                  )}
+                  onDownloadTableauXLS={wrapExport("Tableau comparatif.xlsx", () =>
+                    downloadMockFile(
+                      `${cotation.client} - Tableau comparatif.xlsx`,
+                      "Tableau comparatif — export XLS (démo)"
+                    )
+                  )}
+                  onGenerateDevoirConseil={() => setDevoirWizardOpen(true)}
+                  onGenerateCustomDoc={handleGenerateCustomDoc}
+                  generatedDocs={generatedDocs}
+                  selectedDocId={selectedGeneratedDocId}
+                  onSelectDoc={setSelectedGeneratedDocId}
+                  onDownloadGeneratedDoc={handleDownloadDoc}
+                  onDeleteGeneratedDoc={(docId) => {
+                    deleteGeneratedDoc(cotParamId, docId);
+                    if (selectedGeneratedDocId === docId) setSelectedGeneratedDocId(null);
+                    refreshGeneratedDocs();
+                  }}
+                />
               ) : (
                 <div className="flex-1 flex min-h-0 min-w-0">
                   <ComparisonSynthesis
@@ -906,6 +1161,26 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
       )}
       </div>
 
+      {/* Full-page-height cell detail panel — sibling of the header+content
+       *  column, spans top to bottom. Only renders on the comparison tab when
+       *  the broker has picked "Voir le détail" on a value cell. */}
+      {activeTab === "comparison" && detailPanelOpen && selectedCell && currentDetail && !isProfileOpen && (
+        <div className="h-full shadow-[-6px_0_18px_rgba(0,0,0,0.06)]">
+          <DetailPanel
+            cellDetail={currentDetail}
+            onUpdate={(detail) => handleCellUpdate(selectedCell, detail)}
+            onClose={handlePanelClose}
+            onDelete={
+              selectedCell.type === "exclusion" && currentDetail.origin === "manual"
+                ? () => handleDeleteExclusion(selectedCell.exclusionId)
+                : undefined
+            }
+            showKeyDetail={cellDisplayModes[cellIdKey(selectedCell)] ?? false}
+            onToggleDisplayMode={() => handleToggleCellDisplayMode(selectedCell)}
+          />
+        </div>
+      )}
+
       {/* Full-page-height chat — sibling of the header+content column, spans top to bottom */}
       {chatOpen && (
         <ComparisonChat
@@ -916,6 +1191,16 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           syntheseContent={syntheseContent}
           onAcceptContentEdit={updateSyntheseContent}
           onClose={() => setChatOpen(false)}
+          externalTriggerCounter={chatTriggerCounter}
+          onRowProposalEmitted={handleRowProposalEmitted}
+          onAcceptRowAddition={handleAcceptRowAddition}
+          onRejectRowAddition={handleRejectRowAddition}
+          onDocDraftEmitted={handleDocDraftEmitted}
+          onOpenDocPreview={handleOpenDocPreview}
+          onDownloadDoc={handleDownloadDoc}
+          clientName={mutableProfile.clientLabel || cotation.client}
+          contextScope={chatContextScope}
+          onClearContextScope={() => setChatContextScope(null)}
         />
       )}
 
@@ -944,6 +1229,42 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           onDismiss={() => setExportToast(null)}
           onSend={handleSendToVeos}
         />
+      )}
+
+      {/* Demo command center — internal tool, opens with Cmd+Shift+D. NOT shipped. */}
+      <DemoCommandCenter
+        open={demoOpen}
+        onClose={toggleDemo}
+        insurers={mutableInsurers}
+        setInsurers={setMutableInsurers}
+        comparisonData={comparisonResult}
+        setComparisonData={setComparisonResult}
+        initialInsurers={initialDemoSnapshot.current!.insurers}
+        initialComparisonData={initialDemoSnapshot.current!.comparisonData}
+        onTriggerAddRow={handleAddRowClick}
+      />
+
+      {/* Undo toast — row add (iter 01) or row delete (more menu) */}
+      {undoToast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-panora-text text-white rounded-lg shadow-lg px-4 py-2.5 flex items-center gap-3 text-[13px]">
+          <span>
+            Ligne <span className="font-semibold">{undoToast.rowLabel}</span>{" "}
+            {undoToast.kind === "add" ? "ajoutée" : "retirée"}
+          </span>
+          <button
+            onClick={undoToast.revert}
+            className="text-panora-green hover:opacity-80 font-medium underline underline-offset-2"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => setUndoToast(null)}
+            className="text-white/60 hover:text-white"
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </div>
       )}
     </div>
   );
