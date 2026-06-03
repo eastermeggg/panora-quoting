@@ -14,6 +14,7 @@ import {
   getActiveProducts,
   getRequestedProducts,
   mockConnectionSteps,
+  updateExtranetSession,
   type ExtranetConfig,
 } from "@/data/settings-mock";
 
@@ -43,6 +44,11 @@ export function ExtranetCard({ config, onEdit, onDelete }: ExtranetCardProps) {
     useSessionActivation({
       initialState: config.sessionState,
       otpFormat,
+      onActivated: () =>
+        updateExtranetSession(config.id, {
+          status: "active",
+          expiresAtLabel: "18h",
+        }),
     });
 
   const [livePanelOpen, setLivePanelOpen] = useState(false);

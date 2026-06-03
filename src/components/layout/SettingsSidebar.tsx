@@ -63,9 +63,10 @@ export function SettingsSidebar() {
 
       {/* Nav section */}
       <div className="flex-1 flex flex-col gap-1.5">
-        {/* Back link */}
+        {/* Back link — always lands on the cockpit. The cockpit itself
+            decides whether to show the "Voir mes cotations" shortcut. */}
         <Link
-          href="/quoting/dashboard"
+          href="/quoting"
           className="flex items-center gap-2 h-8 px-2 py-1.5 rounded-md hover:bg-panora-border/30 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 text-panora-text-secondary shrink-0" />
