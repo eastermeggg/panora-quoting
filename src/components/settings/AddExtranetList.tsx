@@ -7,7 +7,7 @@ import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ProductBadge } from "./ProductBadge";
 import {
   availableExtranets,
-  configuredExtranets,
+  useConfiguredExtranets,
   type InsuranceProduct,
   type AvailableExtranet,
 } from "@/data/settings-mock";
@@ -201,6 +201,7 @@ export function AddExtranetList({
   const [productFilter, setProductFilter] = useState<Set<InsuranceProduct>>(
     new Set()
   );
+  const configuredExtranets = useConfiguredExtranets();
 
   // Count how many credentials exist per catalog entry
   const configuredCountByEntry = new Map<string, number>();

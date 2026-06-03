@@ -28,7 +28,7 @@ const navItems = [
   },
   {
     label: "Assistant cotation",
-    href: "/quoting/dashboard",
+    href: "/quoting",
     icon: FileText,
     type: "item" as const,
   },
@@ -198,7 +198,7 @@ export function Sidebar() {
               if (item.href === "/quoting/comparison") {
                 return pathname.startsWith("/quoting/comparison");
               }
-              if (item.href === "/quoting/dashboard") {
+              if (item.href === "/quoting") {
                 return (
                   pathname.startsWith("/quoting") &&
                   !pathname.startsWith("/quoting/comparison")

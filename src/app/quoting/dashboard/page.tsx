@@ -1,14 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import Link from "next/link";
+import { Copy, Check, Clock } from "lucide-react";
 import { TopBar, ViewMode } from "@/components/layout/TopBar";
 import { KanbanBoard } from "@/components/quoting/KanbanBoard";
 import { cotationsList } from "@/data/mock";
+import { useConfiguredExtranets } from "@/data/settings-mock";
 
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [copied, setCopied] = useState(false);
+
+  const extranets = useConfiguredExtranets();
+  const expiredSessionsCount = extranets.filter(
+    (c) => c.sessionState.status !== "active"
+  ).length;
+  const hasExpiredSessions = extranets.length > 0 && expiredSessionsCount > 0;
 
   const handleCopy = () => {
     navigator.clipboard.writeText("cotation+a7f3b2@panora.co");
@@ -26,7 +34,7 @@ export default function DashboardPage() {
 
       {/* Sticky email forward banner */}
       <div className="sticky top-0 z-10 bg-[#ebf3ef] border-b border-[#e5e7eb] px-5 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[13px] font-medium text-[#173c2d]">
             Côtez directement en envoyant vos informations de cotation à
           </span>
@@ -36,6 +44,7 @@ export default function DashboardPage() {
           <button
             onClick={handleCopy}
             className="shrink-0"
+            aria-label="Copier l'adresse"
           >
             {copied ? (
               <Check className="w-4 h-4 text-panora-green" />
@@ -43,6 +52,18 @@ export default function DashboardPage() {
               <Copy className="w-4 h-4 text-[#173c2d]/50 hover:text-[#173c2d] transition-colors" />
             )}
           </button>
+          {hasExpiredSessions && (
+            <Link
+              href="/settings/extranets"
+              className="ml-1 inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-[#f6e1db] hover:bg-[#f1d4cb] transition-colors"
+            >
+              <Clock className="w-3 h-3 text-panora-error" />
+              <span className="text-[12px] font-medium text-panora-error leading-4">
+                {expiredSessionsCount} session
+                {expiredSessionsCount > 1 ? "s" : ""} à réactiver
+              </span>
+            </Link>
+          )}
         </div>
       </div>
 

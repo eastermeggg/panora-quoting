@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound } from "lucide-react";
+import { KeyRound, ExternalLink } from "lucide-react";
 import { SecurityTrustBar } from "@/components/settings/SecurityTrustBar";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { AddExtranetList } from "@/components/settings/AddExtranetList";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import {
-  configuredExtranets,
+  addConfiguredExtranet,
+  COVERAGE_MATRIX_URL,
+  removeConfiguredExtranet,
+  updateConfiguredExtranet,
+  useConfiguredExtranets,
   type AvailableExtranet,
   type ExtranetConfig,
 } from "@/data/settings-mock";
@@ -20,6 +24,7 @@ type ModalState =
 
 export default function ExtranetsPage() {
   const [modal, setModal] = useState<ModalState>(null);
+  const configuredExtranets = useConfiguredExtranets();
 
   return (
     <div className="flex-1 overflow-y-auto bg-white">
@@ -30,9 +35,20 @@ export default function ExtranetsPage() {
             <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wider leading-4">
               Paramètres
             </span>
-            <h1 className="text-[24px] font-serif leading-7 text-panora-text">
-              Accès extranets assureurs
-            </h1>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <h1 className="text-[24px] font-serif leading-7 text-panora-text">
+                Accès extranets assureurs
+              </h1>
+              <a
+                href={COVERAGE_MATRIX_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-panora-text-secondary border border-panora-border rounded-md bg-white hover:bg-panora-bg hover:text-panora-text transition-colors mt-1"
+              >
+                Matrice de couverture
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
             <p className="text-[13px] text-panora-text-secondary leading-5 max-w-[560px]">
               Centralisez vos identifiants assureurs en toute sécurité. Vos mots
               de passe sont chiffrés de bout en bout et ne sont jamais stockés en
@@ -116,13 +132,36 @@ export default function ExtranetsPage() {
           variant={modal.type}
           onClose={() => setModal(null)}
           onSave={(data) => {
-            console.log("Save:", data);
+            if (modal.type === "configure") {
+              const source = modal.extranet;
+              const today = new Date().toISOString().slice(0, 10);
+              addConfiguredExtranet({
+                id: `cfg-${source.insurerId}-${Date.now()}`,
+                insurerId: source.insurerId,
+                insurerName: source.insurerName,
+                portalLabel: source.portalLabel,
+                portalUrl: source.portalUrl,
+                username: data.username,
+                modelizedProducts: source.modelizedProducts,
+                selectedProducts: data.selectedProducts,
+                catalogEntryId: source.id,
+                configuredAt: today,
+                connectionStatus: "connected",
+                lastVerified: today,
+                sessionState: { status: "inactive" },
+              });
+            } else {
+              updateConfiguredExtranet(modal.extranet.id, {
+                username: data.username,
+                selectedProducts: data.selectedProducts,
+              });
+            }
             setModal(null);
           }}
           onDelete={
             modal.type === "edit"
               ? () => {
-                  console.log("Delete:", modal.extranet.id);
+                  removeConfiguredExtranet(modal.extranet.id);
                   setModal(null);
                 }
               : undefined
