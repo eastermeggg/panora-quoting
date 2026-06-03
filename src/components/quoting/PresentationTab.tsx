@@ -9,7 +9,7 @@
  *                    prev/next navigation between generated docs
  */
 
-import { ArrowLeft, ArrowRight, ArrowDownToLine, Copy, Check, Eye, FileSignature, Link as LinkIcon, Sparkles, Mail, Presentation, FileText, MessageSquarePlus, AlertCircle, ChevronLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowDownToLine, Copy, Check, Eye, FileSignature, Link as LinkIcon, AlignLeft, FileSpreadsheet, Plus, PencilLine, Mail, Presentation, AlertCircle, ChevronLeft, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { marked } from "marked";
 import {
@@ -100,159 +100,168 @@ function DocBrowseMode({
 
   return (
     <div className="flex-1 overflow-y-auto bg-panora-bg">
-      <div className="max-w-[1040px] mx-auto px-10 pt-10 pb-12 flex flex-col gap-10">
+      <div className="max-w-[1046px] mx-auto px-8 py-10 flex flex-col gap-[30px]">
         {/* Header */}
-        <header className="flex flex-col gap-1.5">
-          <h1 className="text-[24px] font-serif text-panora-text leading-[1.1] tracking-[-0.015em] max-w-[680px]">
-            Présenter votre étude au client
+        <header className="flex flex-col gap-2">
+          <h1 className="text-[24px] font-serif text-panora-text-primary leading-[28px] tracking-[-0.015em]">
+            Présentez votre étude à votre client
           </h1>
-          <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[560px]">
-            Choisissez parmi nos formats préfaits ou générez vos propres documents.
+          <p className="text-[13px] text-panora-text-secondary leading-[20px]">
+            Choisissez parmi nos formats préfaits ou générez vos propres documents
           </p>
         </header>
 
-        {/* Pre-made exports — compact 4-card row */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Synthèse — slightly emphasized with green accent */}
-          <article className="relative rounded-xl bg-white p-3.5 flex flex-col gap-2.5 border border-panora-border shadow-xs overflow-hidden">
-            <div className="absolute left-0 top-3.5 bottom-3.5 w-[2px] rounded-r-full bg-panora-green/70" aria-hidden />
-            <div className="flex items-center gap-2.5 pl-1">
-              <div className="w-9 h-9 rounded-[8px] border border-panora-border bg-panora-bg/60 flex items-center justify-center shrink-0">
-                <PdfIcon className="w-4 h-4" />
+        {/* Pre-made exports — 4-card row */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Synthèse */}
+          <article className="bg-white border border-[rgba(34,32,26,0.05)] rounded-[9px] p-3.5 flex flex-col justify-between gap-3.5 min-h-[168px] shadow-[0px_4px_5px_rgba(0,0,0,0.05)]">
+            <AlignLeft className="w-8 h-8 text-panora-text-primary stroke-[1.5]" />
+            <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-1">
+                <p className="text-[14px] font-semibold leading-5 text-panora-text">Synthèse</p>
+                <p className="text-[12px] leading-4 text-panora-text-muted line-clamp-2">
+                  Présentation lisible et brandée pour le client.
+                </p>
               </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="text-[13px] font-semibold text-panora-text leading-[18px] truncate">Synthèse client</p>
+              <div className="flex gap-1.5 items-center">
+                <button
+                  onClick={onPreviewSynthesePDF}
+                  className="w-6 h-6 inline-flex items-center justify-center rounded-md bg-panora-border text-panora-text-secondary hover:bg-panora-border/70 transition-colors"
+                  aria-label="Aperçu PDF"
+                  title="Aperçu PDF"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </button>
+                <CardFormatButton onClick={onDownloadSynthesePDF} label="PDF" icon={<PdfIcon className="w-3.5 h-3.5" />} />
+                <CardFormatButton onClick={onDownloadSyntheseDocx} label="Word" icon={<WordIcon className="w-3.5 h-3.5" />} />
               </div>
-            </div>
-            <p className="text-[12px] text-panora-text-muted leading-[16px] line-clamp-2 pl-1">
-              Dossier signable et brandé.
-            </p>
-            <div className="mt-auto flex items-center gap-1">
-              <button onClick={onPreviewSynthesePDF} className="inline-flex items-center justify-center w-7 h-7 rounded-[6px] border border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text transition-colors shrink-0" aria-label="Aperçu" title="Aperçu PDF">
-                <Eye className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={onDownloadSynthesePDF} className="flex-1 inline-flex items-center justify-center gap-1 h-7 px-2 rounded-[6px] text-[11px] font-semibold border border-panora-border bg-white text-panora-text hover:bg-panora-error-bg hover:border-panora-error-bg hover:text-panora-error transition-colors">
-                <PdfIcon className="w-3 h-3" />
-                PDF
-              </button>
-              <button onClick={onDownloadSyntheseDocx} className="inline-flex items-center justify-center w-7 h-7 rounded-[6px] border border-panora-border bg-white text-panora-text hover:bg-[#e9f0f9] hover:border-[#e9f0f9] hover:text-[#1a3a52] transition-colors shrink-0" aria-label="DOCX" title="Télécharger DOCX">
-                <WordIcon className="w-3 h-3" />
-              </button>
             </div>
           </article>
 
-          {/* Tableau */}
-          <article className="rounded-xl bg-white p-3.5 flex flex-col gap-2.5 border border-panora-border shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-[8px] border border-panora-border bg-panora-bg/60 flex items-center justify-center shrink-0">
-                <ExcelIcon className="w-4 h-4" />
+          {/* Tableau comparatif */}
+          <article className="bg-white border border-[rgba(34,32,26,0.05)] rounded-[9px] p-3.5 flex flex-col justify-between gap-3.5 min-h-[168px] shadow-[0px_4px_5px_rgba(0,0,0,0.05)]">
+            <FileSpreadsheet className="w-8 h-8 text-panora-text-primary stroke-[1.5]" />
+            <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-1">
+                <p className="text-[14px] font-semibold leading-5 text-panora-text">Tableau comparatif</p>
+                <p className="text-[12px] leading-4 text-panora-text-muted line-clamp-2">
+                  Tableau des garanties et exclusions.
+                </p>
               </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="text-[13px] font-semibold text-panora-text leading-[18px] truncate">Tableau comparatif</p>
+              <div className="flex gap-1.5 items-center">
+                <CardFormatButton onClick={onDownloadTableauXLS} label="XLS" icon={<ExcelIcon className="w-3.5 h-3.5" />} />
               </div>
             </div>
-            <p className="text-[12px] text-panora-text-muted leading-[16px] line-clamp-2">
-              Garanties et exclusions, à plat.
-            </p>
-            <button onClick={onDownloadTableauXLS} className="mt-auto w-full inline-flex items-center justify-center gap-1 h-7 px-2 rounded-[6px] text-[11px] font-medium border border-panora-border bg-white text-panora-text hover:bg-[#dff0e3] hover:border-[#dff0e3] hover:text-[#1a5236] transition-colors">
-              <ExcelIcon className="w-3 h-3" />
-              Télécharger
-            </button>
           </article>
 
-          {/* Lien partage */}
-          <article className="rounded-xl bg-white p-3.5 flex flex-col gap-2.5 border border-panora-border shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-[8px] border border-panora-border bg-panora-bg/60 flex items-center justify-center shrink-0">
-                <LinkIcon className="w-4 h-4 text-panora-text-secondary" />
+          {/* Lien dynamique */}
+          <article className="bg-white border border-[rgba(34,32,26,0.05)] rounded-[9px] p-3.5 flex flex-col justify-between gap-3.5 min-h-[168px] shadow-[0px_4px_5px_rgba(0,0,0,0.05)]">
+            <LinkIcon className="w-8 h-8 text-panora-text-primary stroke-[1.5]" />
+            <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-1">
+                <p className="text-[14px] font-semibold leading-5 text-panora-text">Lien dynamique</p>
+                <p className="text-[12px] leading-4 text-panora-text-muted line-clamp-2">
+                  Un lien à partager avec votre client.
+                </p>
               </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="text-[13px] font-semibold text-panora-text leading-[18px] truncate">Lien partage</p>
+              <div className="flex gap-1.5 items-center">
+                <a
+                  href={presentationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-6 h-6 inline-flex items-center justify-center rounded-md bg-panora-border text-panora-text-secondary hover:bg-panora-border/70 transition-colors"
+                  aria-label="Voir l'aperçu"
+                  title="Voir l'aperçu"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  onClick={copyLink}
+                  className={`h-6 px-2 inline-flex items-center justify-center gap-1.5 rounded-md text-[12px] font-medium leading-4 transition-colors ${
+                    linkCopied
+                      ? "bg-panora-green text-white"
+                      : "bg-panora-border text-panora-text-secondary hover:bg-panora-border/70"
+                  }`}
+                >
+                  {linkCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      Copié
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copier
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-            <p className="text-[12px] text-panora-text-muted leading-[16px] line-clamp-2">
-              URL à envoyer au client.
-            </p>
-            <div className="mt-auto flex items-center gap-1">
-              <a
-                href={presentationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center w-7 h-7 rounded-[6px] border border-panora-border bg-white text-panora-text-muted hover:bg-panora-bg hover:text-panora-text transition-colors shrink-0"
-                aria-label="Aperçu"
-                title="Voir l'aperçu"
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </a>
-              <button
-                onClick={copyLink}
-                className={`flex-1 inline-flex items-center justify-center gap-1 h-7 px-2 rounded-[6px] text-[11px] font-medium border transition-colors ${linkCopied ? "bg-panora-green border-panora-green text-white" : "border-panora-border bg-white text-panora-text hover:bg-panora-bg"}`}
-                aria-label="Copier le lien"
-              >
-                {linkCopied ? <><Check className="w-3 h-3" />Copié</> : <><Copy className="w-3 h-3" />Copier</>}
-              </button>
             </div>
           </article>
 
           {/* Devoir de conseil */}
           {onGenerateDevoirConseil && (
-            <article className="rounded-xl bg-white p-3.5 flex flex-col gap-2.5 border border-panora-border shadow-xs">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-[8px] border border-panora-border bg-panora-bg/60 flex items-center justify-center shrink-0">
-                  <FileSignature className="w-4 h-4 text-panora-text-secondary" />
+            <article className="bg-white border border-[rgba(34,32,26,0.05)] rounded-[9px] p-3.5 flex flex-col justify-between gap-3.5 min-h-[168px] shadow-[0px_4px_5px_rgba(0,0,0,0.05)]">
+              <FileSignature className="w-8 h-8 text-panora-text-primary stroke-[1.5]" />
+              <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col gap-1">
+                  <p className="text-[14px] font-semibold leading-5 text-panora-text">Devoir de conseil</p>
+                  <p className="text-[12px] leading-4 text-panora-text-muted line-clamp-2">
+                    Document préparatoire à la signature.
+                  </p>
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                  <p className="text-[13px] font-semibold text-panora-text leading-[18px] truncate">Devoir de conseil</p>
+                <div className="flex gap-1.5 items-center">
+                  <CardFormatButton onClick={onGenerateDevoirConseil} label="Word" icon={<WordIcon className="w-3.5 h-3.5" />} />
                 </div>
               </div>
-              <p className="text-[12px] text-panora-text-muted leading-[16px] line-clamp-2">
-                Document réglementaire signable.
-              </p>
-              <button
-                onClick={onGenerateDevoirConseil}
-                className="mt-auto w-full inline-flex items-center justify-center gap-1 h-7 px-2 rounded-[6px] text-[11px] font-medium border border-panora-border bg-white text-panora-text hover:bg-panora-bg transition-colors"
-              >
-                <FileSignature className="w-3 h-3" />
-                Générer
-              </button>
             </article>
           )}
         </section>
 
+        {/* OU divider */}
+        <div className="flex gap-[30px] items-center w-full">
+          <div className="flex-1 h-px bg-panora-border" />
+          <p className="text-[11px] font-semibold leading-4 text-panora-text-muted tracking-[0.1em]">OU</p>
+          <div className="flex-1 h-px bg-panora-border" />
+        </div>
+
         {/* Custom doc — empty state only (no generated docs yet) */}
         {generatedDocs.length === 0 ? (
           <section
-            className="relative overflow-hidden rounded-2xl p-7 flex flex-col gap-5 border border-panora-border shadow-xs"
+            className="rounded-[9px] border border-panora-border px-10 py-10 flex flex-col gap-8 shadow-[0px_4px_5px_rgba(0,0,0,0.05)]"
             style={{
-              background: `
-                radial-gradient(120% 100% at 100% 0%, rgba(0, 162, 114, 0.10), transparent 55%),
-                radial-gradient(100% 90% at 0% 100%, rgba(203, 128, 82, 0.07), transparent 60%),
-                linear-gradient(180deg, #ffffff 0%, #fbfaf6 100%)
-              `,
+              backgroundImage: "linear-gradient(180deg, #ebf3ef 0%, #ffffff 18.834%)",
             }}
           >
-            <div className="relative flex flex-col gap-3 max-w-[620px]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-panora-green/80">
-                Atelier
-              </p>
-              <h2 className="text-[22px] font-serif text-panora-text leading-tight tracking-[-0.01em]">
-                Créer un document personnalisé
-              </h2>
-              <p className="text-[13px] text-panora-text-secondary leading-[20px]">
-                E-mail, présentation, synthèse interne, support de réunion — Panora vous pose les bonnes questions et génère un brouillon à partir de votre modèle.
-              </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <h2 className="font-serif text-[20px] leading-6 text-panora-text-primary tracking-[-0.01em]">
+                  Créez un document <span className="text-panora-green">personnalisé avec notre agent.</span>
+                </h2>
+                <p className="text-[13px] text-panora-text-secondary leading-5">
+                  Décrivez votre intention, e-mail, présentation, synthèse interne.
+                  <br />
+                  Panora pose les bonnes questions et génère un brouillon à partir de votre modèle.
+                </p>
+              </div>
+              <button
+                onClick={() => onGenerateCustomDoc()}
+                className="btn-primary self-start inline-flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium leading-5"
+              >
+                <Plus className="w-4 h-4" />
+                Nouveau document
+              </button>
             </div>
 
-            <div className="relative flex flex-col gap-3">
-              <button onClick={() => onGenerateCustomDoc()} className="btn-primary self-start inline-flex items-center gap-2 px-5 h-10 text-[13px] font-semibold">
-                <MessageSquarePlus className="w-4 h-4" />
-                Générer un document avec l&apos;agent
-              </button>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Suggestion icon={Mail} label="E-mail au client" onClick={() => onGenerateCustomDoc("Rédige un e-mail au client présentant la cotation")} />
-                <Suggestion icon={Presentation} label="Présentation PowerPoint" onClick={() => onGenerateCustomDoc("Génère une présentation PowerPoint pour le client")} />
-                <Suggestion icon={FileText} label="Synthèse interne" onClick={() => onGenerateCustomDoc("Synthèse interne courte pour mon équipe")} />
-                <Suggestion icon={Sparkles} label="Autre document" onClick={() => onGenerateCustomDoc()} />
+            <div className="flex flex-col gap-2.5">
+              <p className="px-1.5 text-[11px] font-semibold leading-4 text-panora-text-muted tracking-[0.1em]">
+                SUGGESTIONS
+              </p>
+              <div className="flex flex-wrap gap-[13px]">
+                <Suggestion icon={Mail} label="E-mail client" onClick={() => onGenerateCustomDoc("Rédige un e-mail au client présentant la cotation")} />
+                <Suggestion icon={Presentation} label="Présentation PPT" onClick={() => onGenerateCustomDoc("Génère une présentation PowerPoint pour le client")} />
+                <Suggestion icon={PencilLine} label="Synthèse interne" onClick={() => onGenerateCustomDoc("Synthèse interne courte pour mon équipe")} />
+                <Suggestion icon={Plus} label="Exemple de document" onClick={() => onGenerateCustomDoc()} />
               </div>
             </div>
           </section>
@@ -260,14 +269,14 @@ function DocBrowseMode({
           /* Generated docs list — collapses Atelier to a header row with "Nouveau document" CTA */
           <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[22px] font-serif text-panora-text leading-tight tracking-[-0.01em]">
+              <h2 className="text-[20px] font-serif text-panora-text-primary leading-6 tracking-[-0.01em]">
                 Documents générés
               </h2>
               <button
                 onClick={() => onGenerateCustomDoc()}
-                className="btn-primary inline-flex items-center gap-1.5 h-9 px-3.5 text-[12.5px] font-semibold"
+                className="btn-primary inline-flex items-center gap-2 px-3 py-2 text-[13px] font-medium leading-5"
               >
-                <MessageSquarePlus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 Nouveau document
               </button>
             </div>
@@ -287,6 +296,28 @@ function DocBrowseMode({
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Card format button (compact 24h button with format icon + label) ─
+
+function CardFormatButton({
+  onClick,
+  label,
+  icon,
+}: {
+  onClick: () => void;
+  label: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="h-6 px-2 inline-flex items-center justify-center gap-1.5 rounded-md bg-panora-border text-panora-text-secondary hover:bg-panora-border/70 transition-colors text-[12px] font-medium leading-4"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -417,9 +448,9 @@ function Suggestion({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-panora-border bg-white text-[13px] text-panora-text hover:bg-panora-bg/40 hover:border-panora-text-secondary/30 transition-colors"
+      className="bg-white border border-panora-border rounded-full inline-flex items-center justify-center gap-2 px-3 py-1.5 text-[13px] font-medium leading-5 text-panora-text-secondary shadow-[0px_1px_1px_rgba(0,0,0,0.05)] hover:bg-panora-bg/40 hover:border-panora-text-secondary/30 transition-colors"
     >
-      <Icon className="w-3.5 h-3.5 text-panora-text-secondary" />
+      <Icon className="w-4 h-4" />
       {label}
     </button>
   );
