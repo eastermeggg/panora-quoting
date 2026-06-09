@@ -18,6 +18,7 @@ import { ComparisonWizard } from "@/components/quoting/ComparisonWizard";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { SessionExpiredBanner } from "@/components/layout/SessionExpiredBanner";
 import { ComparisonTable } from "@/components/quoting/ComparisonTable";
 import { ComparisonSynthesis, buildDefaultSynthese } from "@/components/quoting/ComparisonSynthesis";
 import { ComparisonChat } from "@/components/quoting/ComparisonChat";
@@ -159,6 +160,8 @@ function ComparisonListView() {
           Nouvelle comparaison
         </button>
       </div>
+
+      <SessionExpiredBanner />
 
       {/* Column headers */}
       <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
