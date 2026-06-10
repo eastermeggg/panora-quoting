@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-08T00:00:00.000Z",
+  "title": "Design System: Panora Quoting",
+  "extensions": {
+    "colorMeta": {
+      "signal-vert": {
+        "role": "primary",
+        "displayName": "Signal Vert",
+        "canonical": "#00a272",
+        "tonalRamp": ["#003a29", "#005d40", "#00784f", "#00a272", "#3fbf94", "#7fd6b6", "#c9e8d9", "#ebf3ef"]
+      },
+      "signal-vert-deep": {
+        "role": "primary",
+        "displayName": "Signal Vert Deep",
+        "canonical": "#00784f",
+        "tonalRamp": ["#002d1d", "#004732", "#005d40", "#00784f", "#3da583", "#79c6ad", "#bce2d2", "#e3f1ea"]
+      },
+      "signal-vert-soft": {
+        "role": "primary",
+        "displayName": "Signal Vert Soft",
+        "canonical": "#ebf3ef"
+      },
+      "bureau-vert": {
+        "role": "primary",
+        "displayName": "Bureau Vert",
+        "canonical": "#1A3C34",
+        "tonalRamp": ["#0a1d18", "#102a23", "#173c2d", "#1a3c34", "#2d5a4e", "#487a6c", "#7da99b", "#c2dad1"]
+      },
+      "bureau-vert-hover": {
+        "role": "primary",
+        "displayName": "Bureau Vert Hover",
+        "canonical": "#243D36"
+      },
+      "bureau-vert-glow": {
+        "role": "primary",
+        "displayName": "Bureau Vert Glow",
+        "canonical": "#2D5A4E"
+      },
+      "mistral": {
+        "role": "neutral",
+        "displayName": "Mistral",
+        "canonical": "#faf8f5",
+        "tonalRamp": ["#2b2823", "#4c4940", "#706c63", "#9a958a", "#c3bfb6", "#e0dcd3", "#eae7e0", "#faf8f5"]
+      },
+      "document-white": {
+        "role": "neutral",
+        "displayName": "Document White",
+        "canonical": "#FFFFFF"
+      },
+      "drop-neutral": {
+        "role": "neutral",
+        "displayName": "Drop Neutral",
+        "canonical": "#F8F6F2"
+      },
+      "linen-edge": {
+        "role": "neutral",
+        "displayName": "Linen Edge",
+        "canonical": "#eae7e0"
+      },
+      "oat-tag": {
+        "role": "neutral",
+        "displayName": "Oat Tag",
+        "canonical": "#F0ECE5"
+      },
+      "oat-tag-hover": {
+        "role": "neutral",
+        "displayName": "Oat Tag Hover",
+        "canonical": "#E8E3DA"
+      },
+      "encre": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "#22201a",
+        "tonalRamp": ["#0d0c09", "#161410", "#22201a", "#3a3730", "#5c5953", "#85827b", "#b8b5ae", "#e0ddd5"]
+      },
+      "encre-deep": {
+        "role": "neutral",
+        "displayName": "Encre Deep",
+        "canonical": "#162416"
+      },
+      "pierre": {
+        "role": "neutral",
+        "displayName": "Pierre",
+        "canonical": "#5c5953"
+      },
+      "cendre": {
+        "role": "neutral",
+        "displayName": "Cendre",
+        "canonical": "#85827b"
+      },
+      "bordeaux": {
+        "role": "secondary",
+        "displayName": "Bordeaux",
+        "canonical": "#952617",
+        "tonalRamp": ["#3a0e07", "#62170d", "#7e1f12", "#952617", "#b85540", "#d68a78", "#f0c1b5", "#FFECEC"]
+      },
+      "bordeaux-bg": {
+        "role": "secondary",
+        "displayName": "Bordeaux Background",
+        "canonical": "#FFECEC"
+      },
+      "cuivre": {
+        "role": "secondary",
+        "displayName": "Cuivre",
+        "canonical": "#cb8052",
+        "tonalRamp": ["#4d2e1a", "#6e4225", "#80452b", "#a0623d", "#cb8052", "#d99e7a", "#ebc4a8", "#FFF3E8"]
+      },
+      "cuivre-ink": {
+        "role": "secondary",
+        "displayName": "Cuivre Ink",
+        "canonical": "#80452b"
+      },
+      "cuivre-bg": {
+        "role": "secondary",
+        "displayName": "Cuivre Background",
+        "canonical": "#FFF3E8"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display (Georgia)",
+        "purpose": "Page titles only. One Georgia serif heading per surface; its scarcity is the point."
+      },
+      "headline": {
+        "displayName": "Headline (Inter Display 600)",
+        "purpose": "Section heads inside a page. 15px semibold sans, tighter cut than body Inter."
+      },
+      "body": {
+        "displayName": "Body (Inter 400)",
+        "purpose": "Default text. 13px / 20px line-height. The working tier brokers scan all day."
+      },
+      "caption": {
+        "displayName": "Caption (Inter 400, 12px)",
+        "purpose": "Helper text, secondary metadata, microcopy."
+      },
+      "label": {
+        "displayName": "Label (Inter 500, 11px tracked uppercase)",
+        "purpose": "Eyebrow labels in modals and section markers. Use sparingly; not default scaffolding."
+      }
+    },
+    "shadows": [
+      {
+        "name": "whisper",
+        "value": "0px 1px 2px 0px rgba(0,0,0,0.05)",
+        "purpose": "Default. Buttons, inputs, cards at rest. Hairline below the element to separate it from Mistral."
+      },
+      {
+        "name": "lift",
+        "value": "0px 5px 9px 0px rgba(0,0,0,0.06)",
+        "purpose": "Hover state on actionable cards. Subtle; the motion does more work than the shadow."
+      },
+      {
+        "name": "float",
+        "value": "0px 8px 24px 0px rgba(0,0,0,0.12)",
+        "purpose": "Dropdowns and floating menus."
+      },
+      {
+        "name": "overlay",
+        "value": "0px 8px 32px 0px rgba(0,0,0,0.12)",
+        "purpose": "Modals over the backdrop."
+      },
+      {
+        "name": "inner-glow",
+        "value": "inset 0px -5px 15px 0px rgba(255,255,255,0.3)",
+        "purpose": "Bottom inner highlight on .btn-primary only. Gives the CTA its single-hue gradient depth."
+      },
+      {
+        "name": "primary-cta",
+        "value": "0px 2px 2px 0px rgba(0,0,0,0.1)",
+        "purpose": "External shadow on .btn-primary. A touch deeper than Whisper to give the CTA weight."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-default",
+        "value": "200ms ease-out",
+        "purpose": "Default for state transitions: button hover, card lift, focus ring."
+      },
+      {
+        "name": "ease-out-snappy",
+        "value": "150ms ease-out",
+        "purpose": "Nav items, sidebar toggle, status pill swaps."
+      },
+      {
+        "name": "ease-out-modal",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1) 300ms",
+        "purpose": "Modal enter/exit. Quart easing, no bounce."
+      },
+      {
+        "name": "shake-error",
+        "value": "shake 360ms (0%→100%, 5 swings ±6px)",
+        "purpose": "Input shake on submit failure (wrong password, wrong OTP). Reduced-motion: instant border flash."
+      }
+    ],
+    "breakpoints": [
+      { "name": "min-supported", "value": "1100px" },
+      { "name": "desktop", "value": "1280px" },
+      { "name": "wide", "value": "1440px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Single primary CTA per surface. Bureau Vert with a single-hue gradient and inset bottom highlight.",
+      "html": "<button class=\"ds-btn-primary\">Activer la session</button>",
+      "css": ".ds-btn-primary { position: relative; background-image: linear-gradient(90deg, rgba(34,32,26,0.15) 0%, rgba(34,32,26,0.15) 100%), linear-gradient(90deg, #173c2d 0%, #173c2d 100%); color: #fff; border: 1px solid rgba(34,32,26,0.15); border-radius: 8px; box-shadow: 0px 2px 2px 0px rgba(0,0,0,0.1); padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 20px; cursor: pointer; overflow: hidden; transition: background-image 200ms ease-out; } .ds-btn-primary::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0px -5px 15px 0px rgba(255,255,255,0.3); pointer-events: none; } .ds-btn-primary:hover { background-image: linear-gradient(90deg, rgba(34,32,26,0.08) 0%, rgba(34,32,26,0.08) 100%), linear-gradient(90deg, #1e4d3a 0%, #1e4d3a 100%); } .ds-btn-primary:focus-visible { outline: 2px solid #00a272; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Cancel and secondary actions. Oat Tag background, Encre text.",
+      "html": "<button class=\"ds-btn-secondary\">Annuler</button>",
+      "css": ".ds-btn-secondary { background: #F0ECE5; color: #22201a; border: 1px solid #eae7e0; border-radius: 8px; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 20px; cursor: pointer; transition: background 200ms ease-out; } .ds-btn-secondary:hover { background: #E8E3DA; } .ds-btn-secondary:focus-visible { outline: 2px solid #00a272; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Inline actions in cards and rows. Transparent until hovered.",
+      "html": "<button class=\"ds-btn-ghost\">Voir plus</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #5c5953; border: none; border-radius: 8px; padding: 6px 12px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 20px; cursor: pointer; transition: background 200ms ease-out, color 200ms ease-out; } .ds-btn-ghost:hover { background: #F8F6F2; color: #22201a; } .ds-btn-ghost:focus-visible { outline: 2px solid #00a272; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard text field. 38px tall, 8px radius, Whisper inner shadow.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"votre.identifiant@courtier.fr\" />",
+      "css": ".ds-input { width: 100%; height: 38px; padding: 0 12px; background: #FFFFFF; color: #22201a; border: 1px solid #e2dfd8; border-radius: 8px; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.05); font-family: Inter, system-ui, sans-serif; font-size: 13px; line-height: 20px; outline: none; transition: border-color 200ms ease-out, box-shadow 200ms ease-out; } .ds-input::placeholder { color: #85827b; } .ds-input:focus { border-color: rgba(0,162,114,0.4); box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.05), 0 0 0 2px rgba(0,162,114,0.2); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default container. Document White on Mistral, 12px radius, 1px Linen Edge, Whisper shadow.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Extranet AXA</div><div class=\"ds-card-body\">7 produits modélisés sur ce portail.</div></div>",
+      "css": ".ds-card { background: #FFFFFF; color: #22201a; border: 1px solid #eae7e0; border-radius: 12px; padding: 16px; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.05); transition: background 200ms ease-out, box-shadow 200ms ease-out; } .ds-card:hover { background: #faf8f5; box-shadow: 0px 5px 9px 0px rgba(0,0,0,0.06); } .ds-card-title { font-family: 'Inter Display', Inter, system-ui, sans-serif; font-size: 15px; font-weight: 600; line-height: 20px; color: #22201a; margin-bottom: 6px; } .ds-card-body { font-family: Inter, system-ui, sans-serif; font-size: 13px; line-height: 20px; color: #5c5953; }"
+    },
+    {
+      "name": "Status Pill — Success",
+      "kind": "chip",
+      "refersTo": "status-pill-success",
+      "description": "Signal Vert Soft background with Signal Vert Deep text. Used for active sessions, completed states.",
+      "html": "<span class=\"ds-pill-success\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>Session active jusqu'à 18h</span>",
+      "css": ".ds-pill-success { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; background: #ebf3ef; color: #00784f; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 16px; }"
+    },
+    {
+      "name": "Status Pill — Warning",
+      "kind": "chip",
+      "refersTo": "status-pill-warning",
+      "description": "Cuivre Background with Cuivre Ink text. Used for 2FA requested, in-flight warnings.",
+      "html": "<span class=\"ds-pill-warning\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"></path></svg>Code requis</span>",
+      "css": ".ds-pill-warning { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; background: #FFF3E8; color: #80452b; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 16px; }"
+    },
+    {
+      "name": "Status Pill — Error",
+      "kind": "chip",
+      "refersTo": "status-pill-error",
+      "description": "Bordeaux Background with Bordeaux text. Used for expired sessions, errors.",
+      "html": "<span class=\"ds-pill-error\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><polyline points=\"12 6 12 12 16 14\"></polyline></svg>Session expirée</span>",
+      "css": ".ds-pill-error { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px; background: #f6e1db; color: #952617; border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 16px; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Sidebar item with 16px Lucide icon, 13px Inter label, Signal Vert dot when active.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"></path><polyline points=\"14 2 14 8 20 8\"></polyline></svg><span>Assistant cotation</span><span class=\"ds-nav-dot\"></span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; color: #5c5953; background: transparent; text-decoration: none; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 20px; transition: background 150ms ease-out, color 150ms ease-out; } .ds-nav-item:hover { background: #F8F6F2; color: #22201a; } .ds-nav-item--active { background: #FFFFFF; color: #22201a; box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.05); } .ds-nav-dot { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: #00a272; }"
+    },
+    {
+      "name": "Page Title",
+      "kind": "custom",
+      "refersTo": "typography.display",
+      "description": "Serif page title. The system's signature voice. Appears once per surface.",
+      "html": "<h1 class=\"ds-page-title\">Accès extranets assureurs</h1>",
+      "css": ".ds-page-title { font-family: Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 500; line-height: 28px; letter-spacing: -0.02em; color: #22201a; margin: 0; text-wrap: balance; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Bureau",
+    "overview": "A French insurance broker's office in good order. Wood, warm paper, dark green binding, one signal lamp on the desk. The system carries authority through restraint: a single warm-neutral surface, two greens that never compete, a serif voice for page titles, and tight 13px sans-serif rows of broker-grade data. Density is the affordance; brokers scan hundreds of fields a day, and the design earns its keep by being legible at a glance without ornament. The system explicitly rejects the SaaS dashboard reflex: no neon dark mode, no playful animations, no gradient text, no glassmorphism, no identical card grids, no 01/02/03 scaffolding above every section. Warmth is carried by the off-white Mistral surface and the serif page titles, not by tinted near-white cream backgrounds. The product looks like a tool a senior partner would keep open all day, not a deck.",
+    "keyCharacteristics": [
+      "Warm-neutral surface (Mistral, #faf8f5) carries 80%+ of every screen.",
+      "Two greens that never share a surface: bright Signal Vert (#00a272) for status and links, deep Bureau Vert (#1A3C34) for the single primary CTA.",
+      "Serif page titles in Georgia (24px), sans section heads in Inter Display (15px / 600), body in Inter (13px / 20px line-height).",
+      "Borders are 1px, warm gray Linen Edge (#eae7e0). Shadows are whisper-soft.",
+      "French copy. Sober, specific. No marketing buzzwords, no aphoristic cadence."
+    ],
+    "rules": [
+      { "name": "The Two Greens Rule", "body": "Signal Vert and Bureau Vert never share a surface. Signal Vert is for state (success, active, link); Bureau Vert is the primary CTA color and nothing else.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Per screen, only one of Signal Vert, Cuivre, Bordeaux is the dominant accent. Status pills can coexist as data, but decorative use of two accents on the same canvas is forbidden.", "section": "colors" },
+      { "name": "The Warm-Neutral Doctrine", "body": "Mistral is the room. Document White is the page on the desk. Together they carry 80%+ of every screen.", "section": "colors" },
+      { "name": "The Serif-Once Rule", "body": "Georgia appears for the page title. It does not appear in modals, cards, buttons, or repeated headings. Its scarcity is the point.", "section": "typography" },
+      { "name": "The 13px Body Rule", "body": "Body is 13px / 1.4. Smaller sizes (11–12px) are for labels and metadata and need a reason. Larger sizes (15px+) are heads or eyebrow titles, not body.", "section": "typography" },
+      { "name": "The All-Caps Cap", "body": "Uppercase is permitted only at the label tier (11px tracked). No body sentences in caps, no card titles in caps, no buttons in caps.", "section": "typography" },
+      { "name": "The Whisper Rule", "body": "Default shadows are 1px / 2px blur / 5% black. If a shadow needs to pop, the design is louder than the brand.", "section": "elevation" },
+      { "name": "The Border-First Rule", "body": "Hierarchy is borders before shadows. A 1px Linen Edge is the first tool; a Whisper shadow is the second. Heavier shadows only earn their place on floating surfaces.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Mistral (#faf8f5) as the body surface on every page.",
+      "Do reserve Bureau Vert (#1A3C34) for the single primary CTA per surface. One per screen, period.",
+      "Do use Signal Vert (#00a272) for status, links, and active nav, sparingly.",
+      "Do keep borders at 1px Linen Edge (#eae7e0). Hierarchy is borders before shadows.",
+      "Do keep body at 13px / 1.4 Inter. Smaller sizes need a reason.",
+      "Do use Georgia serif for page titles (24px) and only page titles.",
+      "Do write French copy that names what's happening. Sober, specific, never hyped.",
+      "Do make every AI action visible: timeline, status pill, named step.",
+      "Do respect prefers-reduced-motion for the live-agent feeds and the streaming background blobs.",
+      "Do verify 4.5:1 contrast for body text and placeholders against Mistral and Document White."
+    ],
+    "donts": [
+      "Don't add a second primary CTA on a surface. The Bureau Vert button is singular.",
+      "Don't mix Signal Vert and Bureau Vert on the same element. They are not interchangeable greens.",
+      "Don't use border-left or border-right greater than 1px as a colored stripe accent.",
+      "Don't use gradient text. Solid color, weight + size for emphasis.",
+      "Don't use glassmorphism decoratively. The modal backdrop is the only blur surface.",
+      "Don't import a component library (shadcn, MUI, Chakra). Every primitive is custom.",
+      "Don't name a future neutral token --paper, --cream, --sand, --bone, --linen, or --parchment. Mistral is the system's name.",
+      "Don't put a tiny uppercase tracked eyebrow above every section.",
+      "Don't number sections with 01 / 02 / 03 as default scaffolding.",
+      "Don't use bouncy/spring/elastic motion. Ease-out curves only.",
+      "Don't clone Linear, Notion, or a SaaS hero-metric dashboard.",
+      "Don't use neon dark mode, multi-stop gradient buttons, or emoji-driven empty states."
+    ]
+  }
+}

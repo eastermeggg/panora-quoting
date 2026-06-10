@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { OtpFormat, SessionState } from "@/data/settings-mock";
 
 const CONNECTING_DELAY_MS = 2000;
 const SUBMIT_DELAY_MS = 1500;
+const RESEND_COOLDOWN_SECONDS = 30;
 const DEFAULT_EXPIRES_LABEL = "18h";
 
 interface UseSessionActivationOptions {
@@ -26,9 +27,32 @@ export function useSessionActivation({
   const [state, setState] = useState<SessionState>(initialState);
   const [submitting, setSubmitting] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Demo: fail the first OTP attempt, succeed on the second.
   const otpAttemptsRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    },
+    []
+  );
+
+  const startCooldown = useCallback(() => {
+    setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((sec) => {
+        if (sec <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return sec - 1;
+      });
+    }, 1000);
+  }, []);
 
   const clearTimer = useCallback(() => {
     if (timeoutRef.current !== null) {
@@ -44,8 +68,15 @@ export function useSessionActivation({
     setState({ status: "connecting" });
     timeoutRef.current = setTimeout(() => {
       setState({ status: "otp_required", otpFormat });
+      startCooldown();
     }, CONNECTING_DELAY_MS);
-  }, [clearTimer, otpFormat]);
+  }, [clearTimer, otpFormat, startCooldown]);
+
+  const resendOtp = useCallback(() => {
+    if (resendCooldown > 0) return;
+    setOtpError(null);
+    startCooldown();
+  }, [resendCooldown, startCooldown]);
 
   const submitOtp = useCallback(() => {
     clearTimer();
@@ -69,5 +100,14 @@ export function useSessionActivation({
     startConnecting();
   }, [startConnecting]);
 
-  return { state, submitting, otpError, startConnecting, submitOtp, retry };
+  return {
+    state,
+    submitting,
+    otpError,
+    resendCooldown,
+    startConnecting,
+    submitOtp,
+    resendOtp,
+    retry,
+  };
 }

@@ -3,6 +3,7 @@
 import { ArrowLeft, FileText, X, ChevronUp, ChevronDown, LayoutGrid, List } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { SessionExpiredBanner } from "./SessionExpiredBanner";
 
 export type ViewMode = "kanban" | "table";
 
@@ -18,8 +19,10 @@ interface TopBarProps {
 export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewModeChange }: TopBarProps) {
   if (variant === "empty" || variant === "dashboard") {
     return (
-      <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-6">
-        <h1 className="text-sm font-semibold text-panora-text">
+      <>
+        <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-6 gap-2.5">
+        <div className="w-[17px] h-5 rounded-sm bg-panora-green-light" />
+        <h1 className="text-[15px] font-medium text-panora-text font-serif">
           Assistant cotation
         </h1>
         {variant === "dashboard" && onViewModeChange && (
@@ -53,12 +56,15 @@ export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewMo
             </div>
           </>
         )}
-      </div>
+        </div>
+        <SessionExpiredBanner />
+      </>
     );
   }
 
   return (
-    <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-4 gap-3">
+    <>
+      <div className="h-14 border-b border-panora-border bg-panora-bg flex items-center px-4 gap-3">
       <Link
         href="/quoting/dashboard"
         className="flex items-center gap-1 text-sm text-panora-text-secondary hover:text-panora-text transition-colors"
@@ -105,6 +111,8 @@ export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewMo
       >
         <X className="w-4 h-4" />
       </Link>
-    </div>
+      </div>
+      <SessionExpiredBanner />
+    </>
   );
 }

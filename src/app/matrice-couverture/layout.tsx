@@ -1,9 +1,8 @@
-import { AppLayout } from "@/components/layout/AppLayout";
-
 export default function MatriceLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppLayout>{children}</AppLayout>;
+  // Standalone product page — no sidebar / app chrome.
+  return <>{children}</>;
 }

@@ -46,6 +46,18 @@ export type SessionState =
   | { status: "active"; expiresAtLabel: string }
   | { status: "error"; message: string };
 
+/** Where the 2FA code is delivered by the insurer portal. */
+export type OtpDelivery =
+  | {
+      channel: "email";
+      hint: string; // masked address shown to the broker, e.g. "co****@axa.fr"
+      /** Real "From" address the insurer sends 2FA emails from. Used by the
+       *  forward-setup step to give the broker an exact filter rule. */
+      sourceAddress?: string;
+    }
+  | { channel: "sms"; hint: string } // hint = masked number, e.g. "•• •• •• 42"
+  | { channel: "app"; hint: string }; // hint = app name, e.g. "AXA Authenticator"
+
 export type ExtranetConfig = {
   id: string;
   insurerId: string;
@@ -60,6 +72,12 @@ export type ExtranetConfig = {
   connectionStatus: ConnectionStatus;
   lastVerified: string;
   sessionState: SessionState;
+  /** OTP delivery (when portal requires 2FA). Drives the activation panel copy. */
+  otpDelivery?: OtpDelivery;
+  /** Whether the broker set up an auto-forward of the OTP email to their cotation address. */
+  emailForwardConfigured?: boolean;
+  /** How long the session stays active once activated. Varies a lot per insurer. */
+  sessionDurationLabel?: string;
 };
 
 
@@ -70,6 +88,12 @@ export type AvailableExtranet = {
   portalLabel?: string;
   portalUrl: string;
   modelizedProducts: InsurerProduct[]; // what Panora can quote for this insurer
+  /** Whether this portal requires daily 2FA. Drives the activation flow on the card. */
+  requires2FA?: boolean;
+  /** Default OTP delivery the portal uses. Copied onto the config when saved. */
+  otpDelivery?: OtpDelivery;
+  /** Approximate session lifetime after activation. Varies a lot: AXA ≈ 4h, Generali ≈ 10 jours. */
+  sessionDurationLabel?: string;
 };
 
 // ── Master product list ──
@@ -317,6 +341,29 @@ export const mockConnectionSteps: InsurerAction[] = [
 ];
 
 export const availableExtranets: AvailableExtranet[] = [
+  // AXA — featured at the top, requires daily 2FA via email
+  {
+    id: "avail-axa",
+    insurerId: "axa",
+    insurerName: "Axa",
+    portalUrl: "portail.axa.fr",
+    modelizedProducts: [
+      { product: "Auto", isNew: false },
+      { product: "MRI", isNew: false },
+      { product: "MRP", isNew: false },
+      { product: "Santé", isNew: false },
+      { product: "RC Pro", isNew: false },
+      { product: "Cyber", isNew: true },
+      { product: "Flotte", isNew: false },
+    ],
+    requires2FA: true,
+    otpDelivery: {
+      channel: "email",
+      hint: "co****@axa.fr",
+      sourceAddress: "noreply.2fa@axa.fr",
+    },
+    sessionDurationLabel: "≈ 4 heures",
+  },
   // Generali — two portal entries (both configured)
   {
     id: "avail-generali-auto",
@@ -329,6 +376,13 @@ export const availableExtranets: AvailableExtranet[] = [
       { product: "MRI", isNew: false },
       { product: "MRP", isNew: false },
     ],
+    requires2FA: true,
+    otpDelivery: {
+      channel: "email",
+      hint: "co****@generali.fr",
+      sourceAddress: "securite@generali.fr",
+    },
+    sessionDurationLabel: "≈ 10 jours",
   },
   {
     id: "avail-generali-sante",
@@ -340,6 +394,13 @@ export const availableExtranets: AvailableExtranet[] = [
       { product: "Santé", isNew: false },
       { product: "RC Pro", isNew: false },
     ],
+    requires2FA: true,
+    otpDelivery: {
+      channel: "email",
+      hint: "co****@generali.fr",
+      sourceAddress: "securite@generali.fr",
+    },
+    sessionDurationLabel: "≈ 10 jours",
   },
   // MAIF — two separate portals for different product lines
   {
@@ -374,6 +435,7 @@ export const availableExtranets: AvailableExtranet[] = [
       { product: "Auto", isNew: false },
       { product: "MRI", isNew: false },
     ],
+    requires2FA: false,
   },
   {
     id: "avail-chubb",
@@ -385,6 +447,9 @@ export const availableExtranets: AvailableExtranet[] = [
       { product: "Cyber", isNew: true },
       { product: "D&O", isNew: true },
     ],
+    requires2FA: true,
+    otpDelivery: { channel: "sms", hint: "•• •• •• 42" },
+    sessionDurationLabel: "≈ 1 jour",
   },
   {
     id: "avail-hiscox",
@@ -395,6 +460,9 @@ export const availableExtranets: AvailableExtranet[] = [
       { product: "RC Pro", isNew: false },
       { product: "Cyber", isNew: true },
     ],
+    requires2FA: true,
+    otpDelivery: { channel: "app", hint: "Hiscox Authenticator" },
+    sessionDurationLabel: "≈ 8 heures",
   },
   {
     id: "avail-mma",

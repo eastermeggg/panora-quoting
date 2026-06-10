@@ -1,20 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, User, Pencil, Trash2 } from "lucide-react";
-import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import { AgentLivePanel } from "@/components/ui/AgentLivePanel";
-import { ProductBadge } from "./ProductBadge";
 import {
-  SessionActionBlock,
-  SessionStatusPill,
-} from "./ExtranetSessionPanel";
-import { useSessionActivation } from "@/hooks/useSessionActivation";
+  Globe,
+  User,
+  Pencil,
+  Trash2,
+  KeyRound,
+  ArrowRight,
+  Check,
+} from "lucide-react";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { ProductBadge } from "./ProductBadge";
+import { SessionStatusPill } from "./ExtranetSessionPanel";
+import { ActivateSessionModal } from "./ActivateSessionModal";
 import {
   getActiveProducts,
   getRequestedProducts,
-  mockConnectionSteps,
-  updateExtranetSession,
   type ExtranetConfig,
 } from "@/data/settings-mock";
 
@@ -22,9 +24,17 @@ interface ExtranetCardProps {
   config: ExtranetConfig;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Hide the session activation CTA and status pill. Used in onboarding Step 2
+   *  where the broker only stores credentials; activation happens later. */
+  hideSessionActivation?: boolean;
 }
 
-export function ExtranetCard({ config, onEdit, onDelete }: ExtranetCardProps) {
+export function ExtranetCard({
+  config,
+  onEdit,
+  onDelete,
+  hideSessionActivation,
+}: ExtranetCardProps) {
   const activeProducts = getActiveProducts(config);
   const requestedProducts = getRequestedProducts(config);
   const selectedSet = new Set(config.selectedProducts);
@@ -35,66 +45,45 @@ export function ExtranetCard({ config, onEdit, onDelete }: ExtranetCardProps) {
     .filter((p) => !selectedSet.has(p.product))
     .map((p) => p.product);
 
-  const otpFormat =
-    config.sessionState.status === "otp_required"
-      ? config.sessionState.otpFormat
-      : "digits-6";
-
-  const { state, submitting, otpError, startConnecting, submitOtp, retry } =
-    useSessionActivation({
-      initialState: config.sessionState,
-      otpFormat,
-      onActivated: () =>
-        updateExtranetSession(config.id, {
-          status: "active",
-          expiresAtLabel: "18h",
-        }),
-    });
-
-  const [livePanelOpen, setLivePanelOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const isSessionActive = config.sessionState.status === "active";
 
   return (
     <>
-      <div
-        className="group flex flex-col h-[340px] bg-white border border-panora-border rounded-xl shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05)] hover:bg-panora-bg hover:shadow-[0px_5px_9px_0px_rgba(0,0,0,0.06)] transition-all duration-200"
-      >
-        {/* Top section */}
-        <div className="flex-1 min-h-0 p-4 border-b border-panora-border flex flex-col gap-4 overflow-hidden">
-          <div className="flex flex-col gap-2.5">
-            {/* Header */}
-            <div className="flex items-start justify-between min-w-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <InsurerLogo
-                  insurerId={config.insurerId}
-                  name={config.insurerName}
-                  size="md"
-                />
-                <span className="text-[15px] font-medium text-panora-text-primary leading-5 truncate">
-                  {config.insurerName}
-                </span>
-              </div>
-            </div>
-
-            {/* Link section: URL + username, horizontal */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 items-center min-w-0">
-              <a
-                href={`https://${config.portalUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[13px] font-medium text-panora-green hover:underline min-w-0"
-              >
-                <Globe className="w-4 h-4 shrink-0" />
-                <span className="truncate">{config.portalUrl}</span>
-              </a>
-              <div className="flex items-center gap-2 text-[13px] text-panora-text-primary min-w-0">
-                <User className="w-4 h-4 shrink-0 text-panora-text-muted" />
-                <span className="truncate">{config.username}</span>
-              </div>
+      <div className="group flex flex-col bg-white border border-panora-border rounded-xl shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05)] hover:shadow-[0px_5px_9px_0px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+        {/* Top: identity */}
+        <div className="p-4 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <InsurerLogo
+                insurerId={config.insurerId}
+                name={config.insurerName}
+                size="md"
+              />
+              <span className="text-[15px] font-medium text-panora-text-primary leading-5 truncate">
+                {config.insurerName}
+              </span>
             </div>
           </div>
 
-          {/* Product badges */}
-          <div className="flex flex-wrap gap-1.5 content-start">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 items-center min-w-0">
+            <a
+              href={`https://${config.portalUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[12px] font-medium text-panora-green hover:underline min-w-0"
+            >
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{config.portalUrl}</span>
+            </a>
+            <div className="flex items-center gap-1.5 text-[12px] text-panora-text-secondary min-w-0">
+              <User className="w-3.5 h-3.5 shrink-0 text-panora-text-muted" />
+              <span className="truncate">{config.username}</span>
+            </div>
+          </div>
+
+          {/* Products */}
+          <div className="flex flex-wrap gap-1.5">
             {activeProducts.map((p) => (
               <ProductBadge
                 key={p}
@@ -109,22 +98,27 @@ export function ExtranetCard({ config, onEdit, onDelete }: ExtranetCardProps) {
               <ProductBadge key={p} product={p} variant="inactive" />
             ))}
           </div>
-
-          {/* Session action — only renders for non-active states */}
-          <SessionActionBlock
-            state={state}
-            submitting={submitting}
-            otpError={otpError}
-            onActivate={startConnecting}
-            onSubmitOtp={() => submitOtp()}
-            onRetry={retry}
-            onOpenLivePanel={() => setLivePanelOpen(true)}
-          />
         </div>
 
-        {/* Bottom strip: status pill + hover-revealed actions */}
-        <div className="flex items-center justify-between gap-2 pl-4 pr-[13px] py-2.5">
-          <SessionStatusPill state={state} />
+        {/* Bottom strip */}
+        <div className="border-t border-panora-border flex items-center justify-between gap-2 pl-4 pr-[13px] py-2.5">
+          {hideSessionActivation ? (
+            <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
+              <Check className="w-3 h-3" strokeWidth={3} />
+              Identifiants enregistrés
+            </span>
+          ) : isSessionActive ? (
+            <SessionStatusPill state={config.sessionState} />
+          ) : (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-warning-bg text-panora-warning-text text-[12px] font-medium hover:brightness-95 transition"
+            >
+              <KeyRound className="w-3 h-3" />
+              Activer la session
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
           <div className="flex items-start opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 shrink-0">
             <button
               onClick={onEdit}
@@ -144,14 +138,12 @@ export function ExtranetCard({ config, onEdit, onDelete }: ExtranetCardProps) {
         </div>
       </div>
 
-      <AgentLivePanel
-        open={livePanelOpen}
-        title={`Activation de la session — ${config.insurerName}`}
-        steps={mockConnectionSteps}
-        onClose={() => setLivePanelOpen(false)}
-        isLive
-        isCompleted={false}
-      />
+      {modalOpen && (
+        <ActivateSessionModal
+          config={config}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </>
   );
 }

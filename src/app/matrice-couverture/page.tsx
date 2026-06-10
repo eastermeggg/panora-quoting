@@ -88,18 +88,75 @@ export default function MatricePage() {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
-      <div className="max-w-[1280px] mx-auto px-10 py-8 flex flex-col gap-8">
-        <Header />
-        <div className="flex flex-col gap-4">
-          <SearchBar value={search} onChange={setSearch} />
-          <Legend />
+    <div className="min-h-screen bg-white flex flex-col">
+      <MarketingTopBar />
+      <main className="flex-1">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-10 lg:py-14 flex flex-col gap-10">
+          <Header />
+          <div className="flex flex-col gap-4">
+            <SearchBar value={search} onChange={setSearch} />
+            <Legend />
+          </div>
+          <StatsBar {...stats} myVoteCount={votes.mine.size} />
+          <MatrixGrid filtered={filtered} votes={votes} />
+          <AskForm />
         </div>
-        <StatsBar {...stats} myVoteCount={votes.mine.size} />
-        <MatrixGrid filtered={filtered} votes={votes} />
-        <AskForm />
-      </div>
+      </main>
+      <MarketingFooter />
     </div>
+  );
+}
+
+function MarketingTopBar() {
+  return (
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-6 lg:px-10 h-14 border-b border-panora-border bg-white/90 backdrop-blur-sm">
+      <a
+        href="https://panora.co"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center"
+        aria-label="Panora"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/panora-wordmark.png"
+          alt="Panora"
+          className="h-[22px] w-auto"
+        />
+      </a>
+      <a
+        href="/quoting"
+        className="btn-primary inline-flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold leading-4"
+      >
+        Accéder à l&apos;app
+      </a>
+    </header>
+  );
+}
+
+function MarketingFooter() {
+  return (
+    <footer className="border-t border-panora-border bg-panora-bg/60">
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-8 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2 text-[12px] text-panora-text-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/panora-wordmark.png"
+            alt="Panora"
+            className="h-[18px] w-auto opacity-70"
+          />
+          <span>· Mise à jour chaque lundi par l&apos;équipe modélisation</span>
+        </div>
+        <a
+          href="https://panora.co"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
+        >
+          panora.co
+        </a>
+      </div>
+    </footer>
   );
 }
 

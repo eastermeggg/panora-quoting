@@ -149,6 +149,9 @@ export default function ExtranetsPage() {
                 connectionStatus: "connected",
                 lastVerified: today,
                 sessionState: { status: "inactive" },
+                otpDelivery: source.otpDelivery,
+                emailForwardConfigured: false,
+                sessionDurationLabel: source.sessionDurationLabel,
               });
             } else {
               updateConfiguredExtranet(modal.extranet.id, {
