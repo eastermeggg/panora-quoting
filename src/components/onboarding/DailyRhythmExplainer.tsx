@@ -25,7 +25,7 @@ export function DailyRhythmExplainer() {
           visual={<MorningPreview />}
           when="Quand la session expire"
           title="Vous validez le code 2FA"
-          body="Code par email (transfert automatique si configuré), SMS ou application : la session redevient active. Cela arrive plus ou moins souvent selon l'assureur."
+          body="Code par email (transfert automatique si configuré), SMS ou application : la session redevient active. Cela arrive plus ou moins souvent selon la compagnie d'assurance."
         />
         <RhythmCard
           visual={<DayPreview />}
@@ -37,7 +37,7 @@ export function DailyRhythmExplainer() {
           visual={<EveningPreview />}
           when="À l'expiration"
           title="La session expire selon le portail"
-          body="La durée varie de quelques heures à plusieurs jours selon l'assureur et la configuration de votre compte. Panora la détecte et s'y adapte."
+          body="La durée varie de quelques heures à plusieurs jours selon la compagnie d'assurance et la configuration de votre compte. Panora la détecte et s'y adapte."
         />
       </div>
 
@@ -47,7 +47,7 @@ export function DailyRhythmExplainer() {
           <span className="font-medium text-panora-text">
             Pourquoi cette routine ?
           </span>{" "}
-          Les portails assureurs imposent un 2FA récurrent pour protéger vos
+          Les portails des compagnies d&apos;assurance imposent un 2FA récurrent pour protéger vos
           accès. Vos identifiants restent chiffrés en AES-256 sur des serveurs
           français ; l&apos;agent n&apos;utilise que la session en cours, jamais
           le mot de passe en clair.

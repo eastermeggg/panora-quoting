@@ -28,6 +28,14 @@ interface WizardChromeProps {
   onQuit?: () => void;
   /** Navigate directly to a step from the progress bar. Only completed / current steps are clickable. */
   onStepClick?: (index: number) => void;
+  /** Show a circular progress ring around the current step pip (for steps with internal sub-steps). */
+  subProgress?: { current: number; total: number };
+  /** Inline acknowledgement checkbox in the footer, left of Continuer (used to gate it). */
+  acknowledgement?: {
+    checked: boolean;
+    onChange: (next: boolean) => void;
+    label: React.ReactNode;
+  };
   children: React.ReactNode;
 }
 
@@ -44,6 +52,8 @@ export function WizardChrome({
   onContinue,
   onQuit,
   onStepClick,
+  subProgress,
+  acknowledgement,
   children,
 }: WizardChromeProps) {
   const [quitOpen, setQuitOpen] = useState(false);
@@ -68,6 +78,7 @@ export function WizardChrome({
             steps={steps}
             currentIndex={currentStepIndex}
             onStepClick={onStepClick}
+            subProgress={subProgress}
           />
         </div>
         <div aria-hidden />
@@ -94,7 +105,41 @@ export function WizardChrome({
               Précédent
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {acknowledgement && (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={acknowledgement.checked}
+                  onClick={() =>
+                    acknowledgement.onChange(!acknowledgement.checked)
+                  }
+                  className={cn(
+                    "group flex items-center gap-2 px-3 h-9 rounded-lg border text-left transition-colors min-w-0 max-w-[280px] lg:max-w-none",
+                    "focus-visible:outline-2 focus-visible:outline-panora-green focus-visible:outline-offset-2",
+                    acknowledgement.checked
+                      ? "border-panora-green-border bg-panora-green-light/40"
+                      : "border-panora-border bg-white hover:bg-panora-drop"
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "shrink-0 grid place-items-center w-4 h-4 rounded border transition-colors",
+                      acknowledgement.checked
+                        ? "border-panora-green-dark bg-panora-green-dark text-white"
+                        : "border-panora-text-muted/50 bg-white group-hover:border-panora-text-muted"
+                    )}
+                  >
+                    {acknowledgement.checked && (
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    )}
+                  </span>
+                  <span className="text-[12px] font-medium text-panora-text leading-4 truncate">
+                    {acknowledgement.label}
+                  </span>
+                </button>
+              )}
               {onSkip && (
                 <button
                   onClick={onSkip}
@@ -138,14 +183,18 @@ export function WizardChrome({
   );
 }
 
+const PIP_BOX = 28; // fixed slot for every pip so the row stays aligned
+
 function ProgressBar({
   steps,
   currentIndex,
   onStepClick,
+  subProgress,
 }: {
   steps: WizardStepMeta[];
   currentIndex: number;
   onStepClick?: (index: number) => void;
+  subProgress?: { current: number; total: number };
 }) {
   return (
     <ol className="flex-1 flex items-center gap-2 min-w-0" aria-label="Étapes">
@@ -156,8 +205,6 @@ function ProgressBar({
             : idx === currentIndex
               ? "current"
               : "todo";
-        // Done and current steps are navigable; future steps stay locked until
-        // the user clears the gate on the current step.
         const navigable = state !== "todo" && !!onStepClick;
         return (
           <li
@@ -171,25 +218,36 @@ function ProgressBar({
               disabled={!navigable}
               aria-label={`Étape ${idx + 1} : ${step.label}`}
               className={cn(
-                "group inline-flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-panora-green focus-visible:outline-offset-2 transition-opacity",
+                "group inline-flex items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-panora-green focus-visible:outline-offset-2 transition-opacity",
                 !navigable && "cursor-default",
                 navigable && "hover:opacity-80"
               )}
             >
               <span
-                className={cn(
-                  "shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold transition-colors",
-                  state === "done" && "bg-panora-green text-white",
-                  state === "current" && "bg-panora-text text-white",
-                  state === "todo" &&
-                    "bg-panora-secondary text-panora-text-muted"
-                )}
+                className="relative shrink-0 grid place-items-center"
+                style={{ width: PIP_BOX, height: PIP_BOX }}
               >
-                {state === "done" ? (
-                  <Check className="w-3 h-3" strokeWidth={3} />
-                ) : (
-                  idx + 1
+                {state === "current" && subProgress && (
+                  <SubProgressRing
+                    current={subProgress.current}
+                    total={subProgress.total}
+                  />
                 )}
+                <span
+                  className={cn(
+                    "relative z-10 grid place-items-center w-5 h-5 rounded-full text-[10px] font-semibold transition-colors",
+                    state === "done" && "bg-panora-green text-white",
+                    state === "current" && "bg-panora-text text-white",
+                    state === "todo" &&
+                      "bg-panora-secondary text-panora-text-muted"
+                  )}
+                >
+                  {state === "done" ? (
+                    <Check className="w-3 h-3" strokeWidth={3} />
+                  ) : (
+                    idx + 1
+                  )}
+                </span>
               </span>
               <span
                 className={cn(
@@ -205,12 +263,61 @@ function ProgressBar({
               </span>
             </button>
             {idx < steps.length - 1 && (
-              <span className="h-px flex-1 min-w-[24px] bg-panora-text-muted/30" />
+              <span
+                aria-hidden
+                className={cn(
+                  "h-px flex-1 min-w-[24px] transition-colors",
+                  idx < currentIndex
+                    ? "bg-panora-green/40"
+                    : "bg-panora-text-muted/25"
+                )}
+              />
             )}
           </li>
         );
       })}
     </ol>
+  );
+}
+
+function SubProgressRing({
+  current,
+  total,
+}: {
+  current: number;
+  total: number;
+}) {
+  const SIZE = PIP_BOX;
+  const RADIUS = 12;
+  const CIRC = 2 * Math.PI * RADIUS;
+  const pct = Math.max(0, Math.min(1, current / total));
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      aria-hidden
+    >
+      <circle
+        cx={SIZE / 2}
+        cy={SIZE / 2}
+        r={RADIUS}
+        fill="none"
+        stroke="rgba(34,32,26,0.14)"
+        strokeWidth={2}
+      />
+      <circle
+        cx={SIZE / 2}
+        cy={SIZE / 2}
+        r={RADIUS}
+        fill="none"
+        stroke="#00a272"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeDasharray={`${CIRC * pct} ${CIRC}`}
+        transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+        style={{ transition: "stroke-dasharray 320ms ease" }}
+      />
+    </svg>
   );
 }
 
@@ -235,7 +342,8 @@ function QuitConfirmModal({
             Quitter la configuration ?
           </h2>
           <p className="text-[13px] text-panora-text-secondary leading-5">
-            Les assureurs déjà connectés restent enregistrés. Vous pourrez
+            Les compagnies d&apos;assurance déjà connectées restent
+            enregistrées. Vous pourrez
             reprendre la configuration depuis l&apos;assistant cotation.
           </p>
         </div>

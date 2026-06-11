@@ -7,15 +7,12 @@ import {
   useMemo,
 } from "react";
 import {
-  AlertCircle,
   Check,
   Eye,
   EyeOff,
   Info,
   KeyRound,
-  Loader2,
   Mail,
-  RefreshCw,
   Search,
   Shield,
   Smartphone,
@@ -271,13 +268,6 @@ function isExtranetConfig(
   return "username" in e;
 }
 
-export type SavePhase =
-  | { phase: "form" }
-  | { phase: "testing" }
-  | { phase: "error"; message: string; canRetry: boolean };
-
-const CONNECTION_TEST_MS = 1800;
-
 export interface ExtranetCredentialsPanelProps {
   extranet: AvailableExtranet | ExtranetConfig;
   variant: "configure" | "edit";
@@ -287,16 +277,16 @@ export interface ExtranetCredentialsPanelProps {
     selectedProducts: InsuranceProduct[];
   }) => void;
   onCancel?: () => void;
-  /** Label on the primary save button. Defaults to "Tester et enregistrer". */
+  /** Label on the primary save button. Defaults to "Enregistrer". */
   submitLabel?: string;
   /** Optional delete handler (edit variant only). */
   onDelete?: () => void;
 }
 
 /**
- * Renders the credentials form for one insurer extranet (username + password + products),
- * with the test-connection lifecycle inline. Used by both the settings modal and the
- * onboarding wizard.
+ * Renders the credentials form for one insurer extranet (username + password +
+ * products). Credentials are stored as-is; the live connection (and its 2FA)
+ * happens at first session activation, not here.
  */
 export function ExtranetCredentialsPanel({
   extranet,
@@ -322,16 +312,6 @@ export function ExtranetCredentialsPanel({
   const [selectedProducts, setSelectedProducts] = useState<
     Set<InsuranceProduct>
   >(new Set(existing?.selectedProducts ?? []));
-  const [save, setSave] = useState<SavePhase>({ phase: "form" });
-  const attemptsRef = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    },
-    []
-  );
 
   function toggleProduct(product: InsuranceProduct) {
     setSelectedProducts((prev) => {
@@ -342,35 +322,16 @@ export function ExtranetCredentialsPanel({
     });
   }
 
-  function runConnectionTest() {
-    setSave({ phase: "testing" });
-    timeoutRef.current = setTimeout(() => {
-      attemptsRef.current += 1;
-      const isAxaFirstAttempt =
-        extranet.insurerId === "axa" && attemptsRef.current === 1 && !isEdit;
-      if (isAxaFirstAttempt) {
-        setSave({
-          phase: "error",
-          message:
-            "Le portail AXA n'a pas répondu (timeout). Cela arrive parfois en heure de pointe — réessayez dans un instant.",
-          canRetry: true,
-        });
-        return;
-      }
-      onSave({
-        username,
-        password,
-        selectedProducts: Array.from(selectedProducts),
-      });
-    }, CONNECTION_TEST_MS);
+  function handleSave() {
+    onSave({
+      username,
+      password,
+      selectedProducts: Array.from(selectedProducts),
+    });
   }
 
   const canSave =
-    username.trim().length > 0 &&
-    password.trim().length > 0 &&
-    save.phase !== "testing";
-
-  const defaultSubmitLabel = isEdit ? "Enregistrer" : "Tester et enregistrer";
+    username.trim().length > 0 && password.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -436,25 +397,7 @@ export function ExtranetCredentialsPanel({
         onToggle={toggleProduct}
       />
 
-      {requires2FA && otpDelivery && save.phase === "form" && (
-        <OtpDeliveryHint delivery={otpDelivery} />
-      )}
-
-      {save.phase === "error" && (
-        <div className="flex flex-col gap-2.5 p-3.5 rounded-lg bg-panora-error-bg border border-panora-error/20">
-          <div className="flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 text-panora-error shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-1 min-w-0">
-              <p className="text-[13px] font-medium text-panora-error leading-5">
-                Connexion impossible
-              </p>
-              <p className="text-[12px] leading-[18px] text-panora-error/85">
-                {save.message}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {requires2FA && otpDelivery && <OtpDeliveryHint delivery={otpDelivery} />}
 
       <div className="flex items-center justify-between gap-3 pt-1">
         <div>
@@ -471,39 +414,21 @@ export function ExtranetCredentialsPanel({
           {onCancel && (
             <button
               onClick={onCancel}
-              disabled={save.phase === "testing"}
-              className={cn(
-                "px-4 h-[36px] text-[13px] font-medium text-panora-text-secondary rounded-lg border border-panora-border hover:bg-panora-drop transition-colors",
-                save.phase === "testing" && "opacity-50 cursor-not-allowed"
-              )}
+              className="px-4 h-[36px] text-[13px] font-medium text-panora-text-secondary rounded-lg border border-panora-border hover:bg-panora-drop transition-colors"
             >
               Annuler
             </button>
           )}
           <button
-            onClick={runConnectionTest}
+            onClick={handleSave}
             disabled={!canSave}
             className={cn(
               "btn-primary inline-flex items-center gap-2 px-4 h-[36px] text-[13px] font-semibold leading-5",
               !canSave && "opacity-50 cursor-not-allowed"
             )}
           >
-            {save.phase === "testing" ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Test de connexion…
-              </>
-            ) : save.phase === "error" && save.canRetry ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5" />
-                Réessayer
-              </>
-            ) : (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                {submitLabel ?? defaultSubmitLabel}
-              </>
-            )}
+            <Check className="w-3.5 h-3.5" />
+            {submitLabel ?? "Enregistrer"}
           </button>
         </div>
       </div>

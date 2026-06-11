@@ -7,6 +7,7 @@ import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
+import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
   removeConfiguredExtranet,
@@ -82,16 +83,17 @@ export function StepConnect({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] flex flex-col gap-8 py-4 lg:py-8">
-      <header className="flex flex-col gap-2 max-w-[680px]">
-        <h1 className="text-[24px] lg:text-[28px] font-serif text-panora-text leading-[1.2] text-balance">
-          Connectez vos portails assureurs
-        </h1>
-        <p className="text-[13px] text-panora-text-secondary leading-5">
-          Cherchez un assureur, renseignez vos identifiants. Vous gérerez les
-          sessions 2FA à l&apos;étape suivante.
-        </p>
-      </header>
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
+      <OnboardingHero
+        eyebrow="Vos portails"
+        title={
+          <>
+            Connectez vos{" "}
+            <HeroAccent>portails de compagnies d&apos;assurance</HeroAccent>{" "}
+            une fois pour toutes.
+          </>
+        }
+      />
 
       {/* Command bar */}
       <div className="flex flex-col gap-2">
@@ -172,8 +174,8 @@ function EmptyState() {
           Aucun extranet pour l&apos;instant
         </p>
         <p className="text-[12px] text-panora-text-secondary leading-[18px]">
-          Cherchez un assureur dans la barre ci-dessus pour ajouter votre
-          premier accès. Vos cartes apparaîtront ici.
+          Cherchez une compagnie d&apos;assurance dans la barre ci-dessus pour
+          ajouter votre premier accès. Vos cartes apparaîtront ici.
         </p>
       </div>
     </div>

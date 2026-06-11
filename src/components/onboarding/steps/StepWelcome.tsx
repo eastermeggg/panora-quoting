@@ -3,32 +3,32 @@
 import { Check, Mail, Shield, Forward, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
+import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 
 export function StepWelcome() {
   return (
-    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-8 py-4 lg:py-8">
-      <header className="flex flex-col gap-2.5 max-w-[640px]">
-        <h1 className="text-[28px] lg:text-[32px] font-serif text-panora-text leading-[1.15] text-balance">
-          Configurons votre assistant cotation
-        </h1>
-        <p className="text-[14px] text-panora-text-secondary leading-6 max-w-[560px]">
-          Trois étapes pour préparer Panora à coter pour vous. Comptez environ
-          cinq minutes. Vous pouvez quitter à tout moment, les assureurs
-          connectés restent enregistrés.
-        </p>
-      </header>
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
+      <OnboardingHero
+        eyebrow="Bienvenue"
+        title={
+          <>
+            Configurons votre <HeroAccent>assistant cotation</HeroAccent> en
+            quelques minutes.
+          </>
+        }
+      />
 
       {/* The three pillars */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Pillar
           visual={<CredentialsPreview />}
           title="Connectez vos accès"
-          body="Renseignez vos identifiants assureurs une fois. Panora les chiffre localement et s'authentifie à votre place sur chaque portail."
+          body="Renseignez vos identifiants une fois. Panora les chiffre localement et s'authentifie à votre place sur chaque portail."
         />
         <Pillar
-          visual={<ActivationPreview />}
-          title="Activez vos sessions"
-          body="La plupart des assureurs exigent une vérification quotidienne. Vous saisissez le code une fois le matin, l'agent peut coter toute la journée."
+          visual={<TwoFaAutomationPreview />}
+          title="Automatisez la 2FA"
+          body="Connectez votre messagerie ou créez une règle de transfert. Panora lit les codes 2FA et garde vos sessions ouvertes."
         />
         <Pillar
           visual={<TransfertCotationsPreview />}
@@ -149,54 +149,40 @@ function Field({
   );
 }
 
-function ActivationPreview() {
-  // Mid-state: 4 of 6 digits typed.
-  const digits = ["3", "4", "2", "5", "", ""];
-
+function TwoFaAutomationPreview() {
   return (
     <>
       <StackedBackdrop />
-      <div className="relative z-10 w-full max-w-[260px] rounded-lg bg-white border border-panora-border shadow-[0px_10px_24px_-6px_rgba(0,0,0,0.14)] p-3 flex flex-col gap-2.5">
-        <div className="flex items-center gap-2">
+      <div className="relative z-10 w-full max-w-[260px] rounded-lg bg-white border border-panora-border shadow-[0px_10px_24px_-6px_rgba(0,0,0,0.14)] overflow-hidden flex flex-col">
+        {/* Email header */}
+        <div className="px-3 py-2.5 flex items-center gap-2 border-b border-panora-border bg-panora-bg/50">
           <InsurerLogo insurerId="axa" name="Axa" size="md" />
-          <div className="flex flex-col min-w-0">
-            <span className="text-[11px] font-semibold text-panora-text leading-3">
-              Axa
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-[10px] font-mono text-panora-text-muted leading-3 truncate">
+              noreply.2fa@axa.fr
             </span>
-            <span className="text-[10px] text-panora-text-muted leading-3 truncate">
-              Code de vérification
+            <span className="text-[11px] font-semibold text-panora-text leading-3 truncate">
+              Code de connexion Axa
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-panora-text-secondary">
-          <Mail className="w-3 h-3 text-panora-text-muted" />
-          <span className="truncate">
-            Email envoyé à <span className="font-mono">co****@axa.fr</span>
-          </span>
+        {/* Email body */}
+        <div className="px-3 py-3 flex flex-col gap-2">
+          <p className="text-[10px] text-panora-text-secondary leading-[14px]">
+            Bonjour, votre code de vérification :
+          </p>
+          <div className="inline-flex items-center self-start gap-1 px-2 h-7 rounded-md border border-panora-green/40 bg-panora-green-light/40 font-mono text-[15px] font-semibold tracking-[0.18em] text-panora-green-dark">
+            342518
+          </div>
         </div>
-        <div className="flex items-center gap-1 justify-center pt-1">
-          {digits.map((d, i) => (
-            <span
-              key={i}
-              className={cn(
-                "inline-flex items-center justify-center w-7 h-9 rounded-md border text-[14px] font-mono font-semibold leading-none",
-                d
-                  ? "border-panora-green/40 bg-white text-panora-text"
-                  : i === digits.findIndex((x) => !x)
-                    ? "border-panora-green/40 bg-white text-panora-text-muted animate-pulse"
-                    : "border-panora-border bg-panora-drop/50 text-panora-text-muted"
-              )}
-            >
-              {d || (i === digits.findIndex((x) => !x) ? "|" : "")}
-            </span>
-          ))}
-        </div>
-        <div className="pt-1 flex items-center justify-between">
-          <span className="text-[10px] text-panora-text-muted">
-            Code valide 10 min
+        {/* Status footer */}
+        <div className="px-3 py-2 flex items-center justify-between border-t border-panora-border bg-panora-bg/50">
+          <span className="inline-flex items-center gap-1 text-[10px] text-panora-text-muted">
+            <Mail className="w-2.5 h-2.5" />
+            E-mail entrant
           </span>
-          <span className="inline-flex items-center gap-1 px-1.5 h-4 rounded-full bg-panora-warning-bg text-[9px] font-semibold text-panora-warning-text">
-            En attente
+          <span className="inline-flex items-center px-1.5 h-4 rounded-full bg-panora-green-light text-[9px] font-semibold text-panora-green-dark">
+            Lu par Panora
           </span>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExtranetConfig } from "@/data/settings-mock";
+import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 
 const COTATION_EMAIL = "cotation+a7f3b2@panora.co";
 const REVEAL_PREFIX = "cotation+";
@@ -36,17 +37,17 @@ export function StepReady(_props: StepReadyProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1080px] flex flex-col gap-10 py-6 lg:py-10 items-center text-center">
-      {/* Hero */}
-      <header className="flex flex-col items-center gap-3 max-w-[640px]">
-        <span className="inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
-          <Check className="w-3 h-3" strokeWidth={3} />
-          Configuration terminée
-        </span>
-        <h1 className="text-[28px] lg:text-[32px] font-serif text-panora-text leading-[1.15] tracking-[-0.02em] text-balance">
-          Votre assistant cotation est prêt.
-        </h1>
-      </header>
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10 items-center text-center">
+      <OnboardingHero
+        align="center"
+        eyebrow="Configuration terminée"
+        title={
+          <>
+            Votre assistant cotation{" "}
+            <HeroAccent>est prêt à coter</HeroAccent>.
+          </>
+        }
+      />
 
       {/* Email reveal — the centerpiece moment */}
       <section className="relative w-full max-w-[820px]">
@@ -94,7 +95,7 @@ export function StepReady(_props: StepReadyProps) {
           <FlowStep
             number={4}
             icon={<Globe className="w-4 h-4 text-panora-green-dark" />}
-            title="L'agent ouvre les portails assureurs"
+            title="L'agent ouvre les portails des compagnies d'assurance"
             body="Quand tout est en place, Panora se connecte aux extranets configurés, remplit les formulaires et lance les cotations dossier par dossier."
           />
           <FlowStep

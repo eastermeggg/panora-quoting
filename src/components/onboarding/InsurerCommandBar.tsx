@@ -51,7 +51,7 @@ export function InsurerCommandBar({ onSelect }: InsurerCommandBarProps) {
       >
         <Search className="w-4 h-4 text-panora-text-muted shrink-0" />
         <span className="flex-1 text-[14px] text-panora-text-muted">
-          Recherchez un extranet assureur à ajouter.
+          Recherchez un extranet de compagnie d&apos;assurance à ajouter.
         </span>
         <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-panora-text-muted">
           <kbd className="inline-flex items-center justify-center min-w-[18px] h-5 px-1 rounded border border-panora-border bg-panora-drop text-[10px] font-semibold text-panora-text-secondary">
@@ -170,7 +170,7 @@ function CommandPalette({
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
-      aria-label="Rechercher un assureur"
+      aria-label="Rechercher une compagnie d'assurance"
     >
       <div
         className="w-full max-w-[640px] max-h-[80vh] bg-white rounded-2xl shadow-[0px_24px_64px_0px_rgba(0,0,0,0.18)] border border-panora-border flex flex-col overflow-hidden"
@@ -182,7 +182,7 @@ function CommandPalette({
           <input
             ref={inputRef}
             type="text"
-            placeholder="Recherchez un extranet assureur à ajouter."
+            placeholder="Recherchez un extranet de compagnie d'assurance à ajouter."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 text-[17px] leading-6 text-panora-text placeholder:text-panora-text-muted bg-transparent outline-none"
@@ -353,7 +353,7 @@ function NotFoundRequestForm({
           </p>
           <p className="text-[12px] text-panora-text-secondary leading-[18px]">
             Nous priorisons les ajouts les plus demandés. Vous serez notifié
-            par email dès que {name.trim() || "cet assureur"} sera disponible
+            par email dès que {name.trim() || "cette compagnie d'assurance"} sera disponible
             sur Panora.
           </p>
         </div>
@@ -377,14 +377,14 @@ function NotFoundRequestForm({
           Pas trouvé ? Demandez son ajout
         </p>
         <p className="text-[12px] text-panora-text-secondary leading-[18px]">
-          Précisez l&apos;assureur et les produits que vous souhaitez coter,
+          Précisez la compagnie d&apos;assurance et les produits que vous souhaitez coter,
           nous priorisons les ajouts les plus demandés.
         </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-[12px] font-medium text-panora-text leading-4">
-          Nom de l&apos;assureur
+          Nom de la compagnie d&apos;assurance
         </label>
         <input
           type="text"

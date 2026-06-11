@@ -38,9 +38,9 @@ export function EmptyStateShowcase() {
         }}
       />
 
-      {/* Floating cards positioned over the dark portfolio "sky" */}
-      <div className="absolute inset-0">
-        <div className="relative w-full h-full max-w-[540px] mx-auto px-6">
+      {/* Floating cards — bounding box vertically centered in the panel */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative w-full max-w-[540px] h-[480px] mx-auto px-6">
           <ProjectChecklistCard />
           <AxaCotationCard />
           <AxaReceivedCard />
@@ -80,7 +80,7 @@ function ProjectChecklistCard() {
   return (
     <FloatingCard
       style={{
-        top: "72px",
+        top: "16px",
         left: "0",
         width: "278px",
         transform: "rotate(-3deg)",
@@ -124,7 +124,7 @@ function AxaCotationCard() {
     <FloatingCard
       className="z-10"
       style={{
-        top: "232px",
+        top: "176px",
         left: "92px",
         width: "316px",
         transform: "rotate(1deg)",
@@ -166,7 +166,7 @@ function AxaReceivedCard() {
   return (
     <FloatingCard
       style={{
-        top: "56px",
+        top: "0",
         right: "0",
         width: "238px",
         transform: "rotate(2deg)",
@@ -202,7 +202,7 @@ function GeneraliRelanceCard() {
   return (
     <FloatingCard
       style={{
-        top: "200px",
+        top: "144px",
         right: "8px",
         width: "238px",
         transform: "rotate(-2deg)",
