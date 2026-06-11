@@ -21,17 +21,23 @@ const STEPS: (WizardStepMeta & { id: StepId })[] = [
   { id: "ready", label: "Prêt" },
 ];
 
+const FORWARD_SUB_TOTAL = 3;
+
 export function OnboardingWizard() {
   const router = useRouter();
   const extranets = useConfiguredExtranets();
   const [stepIndex, setStepIndex] = useState(0);
+  const [forwardSubStep, setForwardSubStep] = useState<0 | 1 | 2>(0);
   const [forwardMethod, setForwardMethod] = useState<"mailbox" | "forward">(
     "mailbox"
   );
+  // Soft acknowledgements that gate the wizard footer Continue on the
+  // PortalList sub-step (1) and the forward-rule sub-step (2 with forward method).
+  const [portalListAcknowledged, setPortalListAcknowledged] = useState(false);
+  const [forwardRuleAcknowledged, setForwardRuleAcknowledged] = useState(false);
 
-  // On first mount, derive the resume step from the store. Credentials are
-  // configured in Step 2 (no session activation there anymore), so the next
-  // step is Gestion 2FA as soon as at least one extranet exists.
+  // On first mount, derive the resume step from the store. No extranets → start
+  // on Portails; otherwise jump to Gestion 2FA (or Prêt if 2FA is already set up).
   useEffect(() => {
     if (extranets.length === 0) return;
     const hasAnyEmailExtranet = extranets.some(
@@ -59,11 +65,44 @@ export function OnboardingWizard() {
   );
 
   function goBack() {
-    setStepIndex((i) => Math.max(0, i - 1));
+    // Inside Gestion 2FA, walk through sub-steps before crossing back into Portails.
+    if (currentStep.id === "forward" && forwardSubStep > 0) {
+      setForwardSubStep((s) => (s - 1) as 0 | 1 | 2);
+      return;
+    }
+    if (stepIndex > 0) {
+      const target = stepIndex - 1;
+      // Returning to Gestion 2FA from Ready should land on its last sub-step.
+      if (STEPS[target].id === "forward") setForwardSubStep(2);
+      setStepIndex(target);
+    }
   }
 
   function goNext() {
-    setStepIndex((i) => Math.min(STEPS.length - 1, i + 1));
+    // Inside Gestion 2FA, walk through sub-steps before crossing into Ready.
+    if (currentStep.id === "forward" && forwardSubStep < 2) {
+      setForwardSubStep((s) => (s + 1) as 0 | 1 | 2);
+      return;
+    }
+    // Leaving Gestion 2FA with the manual-forward method auto-marks email
+    // portals as configured — there's no explicit "I did it" button anymore.
+    if (
+      currentStep.id === "forward" &&
+      forwardSubStep === 2 &&
+      forwardMethod === "forward"
+    ) {
+      extranets
+        .filter((c) => c.otpDelivery?.channel === "email")
+        .forEach((c) =>
+          updateConfiguredExtranet(c.id, { emailForwardConfigured: true })
+        );
+    }
+    if (stepIndex < STEPS.length - 1) {
+      const target = stepIndex + 1;
+      // Entering Gestion 2FA from Portails should start on its first sub-step.
+      if (STEPS[target].id === "forward") setForwardSubStep(0);
+      setStepIndex(target);
+    }
   }
 
   function quit() {
@@ -74,6 +113,12 @@ export function OnboardingWizard() {
     router.push("/quoting/dashboard");
   }
 
+  type Acknowledgement = {
+    checked: boolean;
+    onChange: (next: boolean) => void;
+    label: React.ReactNode;
+  };
+
   const stepConfig = (() => {
     switch (currentStep.id) {
       case "welcome":
@@ -82,15 +127,41 @@ export function OnboardingWizard() {
         return {
           canContinue: hasConnectedExtranet,
         };
-      case "forward":
+      case "forward": {
+        // Sub 0 (Comprendre): always continuable.
+        // Sub 1 (Vos compagnies + PortalList): require the "I activated email
+        //   2FA where possible" acknowledgement (in the footer).
+        // Sub 2 (Set up automation):
+        //   – mailbox: hideContinue (OAuth auto-advances)
+        //   – forward: require the "I set up the forward rule" acknowledgement
+        let canContinue = true;
+        let acknowledgement: Acknowledgement | undefined;
+        if (forwardSubStep === 1) {
+          canContinue = portalListAcknowledged;
+          acknowledgement = {
+            checked: portalListAcknowledged,
+            onChange: setPortalListAcknowledged,
+            label: "J'ai activé l'e-mail 2FA là où c'était possible",
+          };
+        } else if (forwardSubStep === 2 && forwardMethod === "forward") {
+          canContinue = forwardRuleAcknowledged;
+          acknowledgement = {
+            checked: forwardRuleAcknowledged,
+            onChange: setForwardRuleAcknowledged,
+            label: "J'ai mis en place la règle de transfert",
+          };
+        }
         return {
-          canContinue: true,
-          continueLabel: "Étape suivante",
-          // Mailbox completes via OAuth (auto-advance); forward completes via
-          // footer Continuer. Step is mandatory — no skip. If no portal even
-          // proposes email, fall through and show Continuer (nothing to set up).
-          hideContinue: hasEmailPortal && forwardMethod === "mailbox",
+          canContinue,
+          continueLabel:
+            forwardSubStep < 2 ? "Continuer" : "Étape suivante",
+          hideContinue:
+            forwardSubStep === 2 &&
+            hasEmailPortal &&
+            forwardMethod === "mailbox",
+          acknowledgement,
         };
+      }
       case "ready":
         return { canContinue: true, continueLabel: "Voir mon tableau de bord" };
     }
@@ -112,9 +183,23 @@ export function OnboardingWizard() {
       }}
       onStepClick={(idx) => {
         // Only allow navigating to done/current steps; future steps stay gated.
-        if (idx <= stepIndex) setStepIndex(idx);
+        if (idx <= stepIndex) {
+          // Re-entering Gestion 2FA from the stepper resets to its first sub-step.
+          if (STEPS[idx].id === "forward") setForwardSubStep(0);
+          setStepIndex(idx);
+        }
       }}
       onQuit={quit}
+      subProgress={
+        currentStep.id === "forward"
+          ? { current: forwardSubStep + 1, total: FORWARD_SUB_TOTAL }
+          : undefined
+      }
+      acknowledgement={
+        "acknowledgement" in stepConfig
+          ? stepConfig.acknowledgement
+          : undefined
+      }
     >
       {currentStep.id === "welcome" && <StepWelcome />}
       {currentStep.id === "connect" && (
@@ -136,6 +221,7 @@ export function OnboardingWizard() {
               emailForwardConfigured: configured,
             })
           }
+          subStep={forwardSubStep}
         />
       )}
       {currentStep.id === "ready" && (

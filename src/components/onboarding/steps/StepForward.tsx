@@ -4,12 +4,8 @@ import { useMemo, useState } from "react";
 import {
   Check,
   Copy,
-  ChevronDown,
   Mail,
-  ArrowDown,
   ArrowRight,
-  Plus,
-  Sparkles,
   ShieldCheck,
   AlertCircle,
   X,
@@ -22,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { type ExtranetConfig } from "@/data/settings-mock";
+import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 
 const COTATION_EMAIL = "cotation+a7f3b2@panora.co";
 const SWITCH_TO_EMAIL_GUIDE_URL =
@@ -42,6 +39,13 @@ interface StepForwardProps {
   onMethodChange: (method: "mailbox" | "forward") => void;
   onComplete: () => void;
   onToggleForward: (configId: string, configured: boolean) => void;
+  /**
+   * Which sub-step inside Gestion 2FA is active:
+   *  0 — Comprendre la 2FA
+   *  1 — Vos compagnies d'assurance et leur 2FA
+   *  2 — Mettre en place l'automatisation
+   */
+  subStep: 0 | 1 | 2;
 }
 
 export function StepForward({
@@ -50,6 +54,7 @@ export function StepForward({
   onMethodChange,
   onComplete,
   onToggleForward,
+  subStep,
 }: StepForwardProps) {
   // Catalog-level knowledge: do any configured portals authorize email 2FA?
   const state: DetectionState = useMemo(() => {
@@ -60,102 +65,121 @@ export function StepForward({
   }, [configuredExtranets]);
 
   return (
-    <div className="mx-auto w-full max-w-[920px] flex flex-col gap-12 lg:gap-14 py-6 lg:py-10">
-      <Hero state={state} />
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 lg:gap-12 py-6 lg:py-10">
+      {subStep === 0 && (
+        <>
+          <OnboardingHero
+            eyebrow="Comprendre la 2FA"
+            title={
+              <>
+                Panora <HeroAccent>automatise ce qui peut l&apos;être</HeroAccent>,
+                et regroupe le reste en 1 à 3 saisies par jour.
+              </>
+            }
+          />
+          <ModesBreakdown />
+        </>
+      )}
 
-      {/* Educational framework: 3 modes, only one is automatable. */}
-      <ModesBreakdown />
+      {subStep === 1 && (
+        <>
+          <OnboardingHero
+            eyebrow="Vos compagnies d'assurance et leur 2FA"
+            title={
+              <>
+                Voyons ce que Panora{" "}
+                <HeroAccent>peut et ne peut pas</HeroAccent> automatiser pour
+                vous.
+              </>
+            }
+          />
+          <PortalList configuredExtranets={configuredExtranets} />
+        </>
+      )}
 
-      {/* Portal list: who proposes email — the actionable part of the picture. */}
-      <PortalList configuredExtranets={configuredExtranets} />
-
-      <PrimaryAction
-        state={state}
-        method={method}
-        onMethodChange={onMethodChange}
-        onComplete={onComplete}
-        configuredExtranets={configuredExtranets}
-        onToggleForward={onToggleForward}
-      />
+      {subStep === 2 && (
+        <>
+          <OnboardingHero
+            eyebrow="Mettre en place l'automatisation"
+            title={
+              <>
+                Choisissez comment Panora reçoit vos{" "}
+                <HeroAccent>codes par e-mail</HeroAccent> à votre place.
+              </>
+            }
+          />
+          <PrimaryAction
+            state={state}
+            method={method}
+            onMethodChange={onMethodChange}
+            onComplete={onComplete}
+            configuredExtranets={configuredExtranets}
+            onToggleForward={onToggleForward}
+          />
+        </>
+      )}
     </div>
   );
 }
 
-// ── Hero ──
-
-function Hero({ state: _state }: { state: DetectionState }) {
-  return (
-    <header className="flex flex-col gap-3 max-w-[760px]">
-      <h1 className="text-[32px] lg:text-[42px] font-serif text-panora-text leading-[1.05] tracking-[-0.025em] text-balance">
-        Recevez vos codes 2FA{" "}
-        <span className="italic text-panora-green-dark">
-          sans interrompre
-        </span>{" "}
-        vos cotations.
-      </h1>
-    </header>
-  );
-}
-
-// ── Modes breakdown: 3 modes, one automatable ──
+// ── Modes breakdown: 4 modes, one automatable ──
 
 function ModesBreakdown() {
   return (
     <section className="flex flex-col gap-5">
       <h2 className="text-[17px] font-semibold text-panora-text font-display leading-6 tracking-[-0.01em]">
-        Trois modes possibles, un seul automatisable
+        Quatre modes possibles, un seul automatisable
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <ModeCard
           icon={<Mail className="w-5 h-5 text-panora-green-dark" />}
           tone="green"
-          title="Code par email"
-          recommended
+          title="Code par e-mail"
+          badge="auto"
           flow={[
             { label: "Code reçu", tone: "neutral" },
             { label: "Lu par Panora", tone: "accent" },
             { label: "Session ouverte", tone: "accent" },
           ]}
-          body="L'agent lit le code à votre place et garde vos sessions ouvertes. Aucune intervention au moment de la cotation."
+          body="L'agent lit le code et garde vos sessions ouvertes. Activez ce mode chez votre compagnie d'assurance dès qu'il est proposé — seule option automatisable de bout en bout."
         />
         <ModeCard
           icon={<Smartphone className="w-5 h-5 text-panora-warning-text" />}
           tone="copper"
           title="Code par SMS"
+          badge="manuel"
           flow={[
             { label: "Code reçu", tone: "neutral" },
             { label: "Sur votre téléphone", tone: "neutral" },
             { label: "Vous saisissez", tone: "muted" },
           ]}
-          body="Le code arrive sur votre téléphone. Vous le saisissez dans Panora au moment de la cotation."
+          body="Le code arrive sur votre téléphone. Vous le saisissez dans Panora au démarrage de votre journée."
         />
         <ModeCard
           icon={<KeyRound className="w-5 h-5 text-panora-error" />}
           tone="bordeaux"
           title="Code via application"
+          badge="manuel"
           flow={[
             { label: "Code généré", tone: "neutral" },
-            { label: "Dans l'app assureur", tone: "neutral" },
+            { label: "Dans l'app de la compagnie", tone: "neutral" },
             { label: "Vous saisissez", tone: "muted" },
           ]}
-          body="L'application de l'assureur génère un code valable quelques instants. Vous l'ouvrez, vous le saisissez."
+          body="L'application de la compagnie d'assurance génère un code valable quelques instants. Vous l'ouvrez, vous le saisissez."
+        />
+        <ModeCard
+          icon={<Bell className="w-5 h-5 text-panora-text-secondary" />}
+          tone="slate"
+          title="Validation par notification"
+          badge="manuel"
+          flow={[
+            { label: "Notification reçue", tone: "neutral" },
+            { label: "Sur votre téléphone", tone: "neutral" },
+            { label: "Vous approuvez", tone: "muted" },
+          ]}
+          body="L'app de la compagnie vous demande d'approuver la connexion. Validation en temps réel uniquement — vous devez être disponible."
         />
       </div>
-      <aside className="flex items-start gap-3.5 p-5 rounded-xl border border-panora-green-border bg-panora-green-light/30">
-        <div className="shrink-0 w-8 h-8 rounded-full bg-white border border-panora-green-border flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-panora-green-dark" />
-        </div>
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <p className="text-[12px] font-semibold text-panora-green-dark leading-4">
-            Notre recommandation
-          </p>
-          <p className="text-[13px] text-panora-text-secondary leading-[20px]">
-            Dans les portails qui proposent l&apos;email, activez ce mode
-            depuis vos paramètres chez l&apos;assureur. C&apos;est la seule
-            option que Panora peut automatiser de bout en bout.
-          </p>
-        </div>
-      </aside>
     </section>
   );
 }
@@ -166,14 +190,14 @@ function ModeCard({
   icon,
   tone,
   title,
-  recommended,
+  badge,
   flow,
   body,
 }: {
   icon: React.ReactNode;
-  tone: "green" | "copper" | "bordeaux";
+  tone: "green" | "copper" | "bordeaux" | "slate";
   title: string;
-  recommended?: boolean;
+  badge: "auto" | "manuel";
   flow: { label: string; tone: FlowChipTone }[];
   body: string;
 }) {
@@ -183,7 +207,8 @@ function ModeCard({
         "relative flex flex-col gap-4 p-5 rounded-xl border",
         tone === "green" && "border-panora-green-border bg-panora-green-light/25",
         tone === "copper" && "border-panora-border bg-white",
-        tone === "bordeaux" && "border-panora-border bg-white"
+        tone === "bordeaux" && "border-panora-border bg-white",
+        tone === "slate" && "border-panora-border bg-white"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -192,15 +217,19 @@ function ModeCard({
             "w-11 h-11 rounded-xl flex items-center justify-center border bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
             tone === "green" && "border-panora-green-border",
             tone === "copper" && "border-panora-border",
-            tone === "bordeaux" && "border-panora-border"
+            tone === "bordeaux" && "border-panora-border",
+            tone === "slate" && "border-panora-border"
           )}
         >
           {icon}
         </div>
-        {recommended && (
-          <span className="inline-flex items-center gap-1 px-2 h-[22px] rounded-full bg-panora-green text-[10px] font-semibold text-white tracking-[0.01em]">
-            <Sparkles className="w-2.5 h-2.5" />
-            Recommandé
+        {badge === "auto" ? (
+          <span className="inline-flex items-center px-2 h-[22px] rounded-full bg-panora-green text-[10px] font-semibold text-white tracking-[0.01em]">
+            Auto
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 h-[22px] rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tracking-[0.01em]">
+            Manuel
           </span>
         )}
       </div>
@@ -380,23 +409,20 @@ function MethodPicker({
 }) {
   return (
     <fieldset className="flex flex-col gap-5">
-      <legend className="text-[17px] font-semibold text-panora-text font-display leading-6 tracking-[-0.01em] mb-1">
-        Comment Panora reçoit vos codes
-      </legend>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <MethodCard
           selected={value === "mailbox"}
           onClick={() => onChange("mailbox")}
-          title="Connexion à votre messagerie"
+          title="Connectez votre messagerie"
           recommended
-          tag="2 clics"
-          body="Panora lit uniquement les emails 2FA reçus de vos assureurs. Rien à configurer dans votre boîte."
+          mode="auto"
+          body="Panora lit uniquement les emails 2FA reçus de vos compagnies d'assurance. Rien à configurer dans votre boîte."
         />
         <MethodCard
           selected={value === "forward"}
           onClick={() => onChange("forward")}
-          title="Règle de transfert manuelle"
-          tag="5 à 10 min"
+          title="Transfert automatique"
+          mode="manuel"
           body="Une règle créée dans votre messagerie transfère les codes 2FA vers une adresse Panora dédiée."
         />
       </div>
@@ -409,14 +435,14 @@ function MethodCard({
   onClick,
   title,
   body,
-  tag,
+  mode,
   recommended,
 }: {
   selected: boolean;
   onClick: () => void;
   title: string;
   body: string;
-  tag: string;
+  mode: "auto" | "manuel";
   recommended?: boolean;
 }) {
   return (
@@ -444,14 +470,19 @@ function MethodCard({
         </span>
         <div className="flex items-center gap-1.5">
           {recommended && (
-            <span className="inline-flex items-center gap-1 px-2 h-[22px] rounded-full bg-panora-green text-[10px] font-semibold text-white tracking-[0.01em]">
-              <Sparkles className="w-2.5 h-2.5" />
+            <span className="inline-flex items-center px-2 h-[22px] rounded-full bg-panora-green text-[10px] font-semibold text-white tracking-[0.01em]">
               Recommandé
             </span>
           )}
-          <span className="text-[11px] text-panora-text-muted font-medium leading-4">
-            {tag}
-          </span>
+          {mode === "auto" ? (
+            <span className="inline-flex items-center px-2 h-[22px] rounded-full bg-panora-green-light text-[10px] font-semibold text-panora-green-dark border border-panora-green-border tracking-[0.01em]">
+              Automatique
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 h-[22px] rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tracking-[0.01em]">
+              Manuel
+            </span>
+          )}
         </div>
       </div>
       <h3 className="text-[15px] font-semibold text-panora-text font-display leading-5 tracking-[-0.005em]">
@@ -500,7 +531,8 @@ function MailboxConnectPanel({
           </div>
         </div>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[640px]">
-          Panora lit uniquement les emails 2FA de vos assureurs. Vous pouvez
+          Panora lit uniquement les emails 2FA de vos compagnies
+          d&apos;assurance. Vous pouvez
           révoquer cet accès à tout moment depuis les paramètres.
         </p>
         <div className="flex items-center justify-end pt-1">
@@ -559,7 +591,8 @@ function MailboxConnectPanel({
           Choisissez votre messagerie
         </h2>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[600px]">
-          Panora ne lira que les emails 2FA envoyés par vos assureurs. Aucun
+          Panora ne lira que les emails 2FA envoyés par vos compagnies
+          d&apos;assurance. Aucun
           autre courrier n&apos;est consulté.
         </p>
       </div>
@@ -598,7 +631,7 @@ function ReassuranceBlock() {
     <ul className="flex flex-col gap-1.5 text-[12px] text-panora-text-secondary leading-[18px]">
       <ReassuranceRow>
         <span className="font-medium text-panora-text">Lecture seule</span>{" "}
-        sur les emails 2FA de vos assureurs.
+        sur les emails 2FA de vos compagnies d&apos;assurance.
       </ReassuranceRow>
       <ReassuranceRow>
         <span className="font-medium text-panora-text">
@@ -660,38 +693,126 @@ function ProviderButton({
 }
 
 function ProviderGlyph({ provider }: { provider: "gmail" | "outlook" }) {
-  const accent = provider === "gmail" ? "#cb8052" : "#3D5479";
   return (
     <div className="shrink-0 w-9 h-9 rounded-lg bg-white border border-panora-border flex items-center justify-center">
-      <svg width="20" height="14" viewBox="0 0 20 14" fill="none" aria-hidden>
-        <path
-          d="M2 2h16v10H2z"
-          fill="#fff"
-          stroke="#e2e2e2"
-          strokeWidth="0.5"
-        />
-        <path d="M2 2l8 6 8-6" stroke={accent} strokeWidth="1.4" fill="none" />
-      </svg>
+      {provider === "gmail" ? <GmailLogo /> : <OutlookLogo />}
     </div>
+  );
+}
+
+function GmailLogo() {
+  return (
+    <svg
+      width="20"
+      height="16"
+      viewBox="0 0 256 193"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        fill="#4285F4"
+        d="M58.182 192.05V93.14L27.507 65.077 0 49.504v125.091c0 9.658 7.825 17.455 17.455 17.455z"
+      />
+      <path
+        fill="#34A853"
+        d="M197.818 192.05h40.727c9.659 0 17.455-7.826 17.455-17.455V49.505l-31.157 17.837-27.025 25.798z"
+      />
+      <path
+        fill="#EA4335"
+        d="M58.182 93.14l-4.174-38.647 4.174-36.989L128 69.868l69.818-52.364 4.669 33.413-4.669 42.223L128 145.504z"
+      />
+      <path
+        fill="#FBBC04"
+        d="M197.818 17.504V93.14L256 49.504V26.231c0-21.585-24.64-33.89-41.89-20.945z"
+      />
+      <path
+        fill="#C5221F"
+        d="M0 49.504l26.759 20.07L58.182 93.14V17.504L41.89 5.286C24.61-7.66 0 4.646 0 26.23z"
+      />
+    </svg>
+  );
+}
+
+function OutlookLogo() {
+  return (
+    <svg
+      width="20"
+      height="18"
+      viewBox="0 0 48 48"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        fill="#0364B8"
+        d="M44 13.5v21A3.5 3.5 0 0 1 40.5 38H21V10h19.5A3.5 3.5 0 0 1 44 13.5z"
+      />
+      <path
+        fill="#0078D4"
+        d="M21 10v28H7.5A3.5 3.5 0 0 1 4 34.5v-21A3.5 3.5 0 0 1 7.5 10H21z"
+      />
+      <path
+        fill="#fff"
+        d="M24 18h17v2H24zm0 4h17v2H24zm0 4h17v2H24zm0 4h12v2H24z"
+      />
+      <ellipse fill="#fff" cx="14" cy="24" rx="6.5" ry="7.5" />
+      <ellipse fill="#0078D4" cx="14" cy="24" rx="3" ry="4" />
+    </svg>
   );
 }
 
 // ── Portal list (justification) ──
 
-type ModeChannel = "email" | "sms" | "app";
+type ModeChannel = "email" | "sms" | "app" | "push";
 
-// Catalog-level knowledge: which 2FA modes each portal authorizes.
-// In production this comes from per-portal research, not from detection.
-const PORTAL_MODES: Record<string, ModeChannel[]> = {
-  axa: ["email", "sms"],
-  generali: ["email", "sms", "app"],
-  allianz: ["email", "sms"],
-  chubb: ["sms", "app"],
-  hiscox: ["app"],
+/**
+ * Catalog-level knowledge per portal.
+ * - `modes`: every 2FA channel the portal proposes.
+ * - `lockedMode`: if set, the broker can't switch — this is the imposed channel.
+ * - `sessionDurationLabel`: how long a session stays alive once activated.
+ * - `unsupportedExpiry`: session too short for Panora to automate cleanly.
+ */
+type PortalPolicy = {
+  modes: ModeChannel[];
+  lockedMode?: ModeChannel;
+  sessionDurationLabel?: string;
+  unsupportedExpiry?: boolean;
 };
 
-function modesFor(insurerId: string): ModeChannel[] {
-  return PORTAL_MODES[insurerId] ?? [];
+const PORTAL_POLICIES: Record<string, PortalPolicy> = {
+  axa: { modes: ["email", "sms"], sessionDurationLabel: "4 h" },
+  generali: { modes: ["email", "sms", "app"], sessionDurationLabel: "10 j" },
+  allianz: { modes: ["email", "sms"], sessionDurationLabel: "24 h" },
+  chubb: { modes: ["sms", "app"], sessionDurationLabel: "8 h" },
+  hiscox: {
+    modes: ["app", "push"],
+    lockedMode: "app",
+    sessionDurationLabel: "12 h",
+  },
+  swisslife: {
+    modes: ["push"],
+    lockedMode: "push",
+    sessionDurationLabel: "2 h",
+    unsupportedExpiry: true,
+  },
+};
+
+function policyFor(insurerId: string): PortalPolicy {
+  return PORTAL_POLICIES[insurerId] ?? { modes: [] };
+}
+
+type PortalRowData = {
+  id: string;
+  insurerId: string;
+  insurerName: string;
+  portalLabel?: string;
+};
+
+type Bucket = "auto" | "manuel" | "locked";
+
+function bucketFor(policy: PortalPolicy): Bucket {
+  if (policy.lockedMode || policy.unsupportedExpiry) return "locked";
+  if (policy.modes.includes("email")) return "auto";
+  return "manuel";
 }
 
 function PortalList({
@@ -699,45 +820,36 @@ function PortalList({
 }: {
   configuredExtranets: ExtranetConfig[];
 }) {
-  // Demo: 2 portals offering email + 1 without, regardless of what's actually
-  // stored. Switch back to deriving from `configuredExtranets` once detection
-  // is wired.
-  const DEMO_ROWS: {
-    id: string;
-    insurerId: string;
-    insurerName: string;
-    portalLabel?: string;
-    modes: ModeChannel[];
-  }[] = [
-    {
-      id: "demo-axa",
-      insurerId: "axa",
-      insurerName: "Axa",
-      modes: ["email", "sms"],
-    },
+  // Demo: 4 portals covering the three buckets. Switch back to deriving from
+  // `configuredExtranets` once detection is wired.
+  const DEMO_ROWS: PortalRowData[] = [
+    { id: "demo-axa", insurerId: "axa", insurerName: "Axa" },
     {
       id: "demo-generali",
       insurerId: "generali",
       insurerName: "Generali",
       portalLabel: "Auto / MRI",
-      modes: ["email", "sms", "app"],
     },
+    { id: "demo-chubb", insurerId: "chubb", insurerName: "Chubb" },
+    { id: "demo-hiscox", insurerId: "hiscox", insurerName: "Hiscox" },
     {
-      id: "demo-hiscox",
-      insurerId: "hiscox",
-      insurerName: "Hiscox",
-      modes: ["app"],
+      id: "demo-swisslife",
+      insurerId: "swisslife",
+      insurerName: "Swiss Life",
     },
   ];
 
-  const { withEmail, withoutEmail } = useMemo(() => {
-    const w = [];
-    const wo = [];
+  const { autoRows, manuelRows, lockedRows } = useMemo(() => {
+    const a: PortalRowData[] = [];
+    const m: PortalRowData[] = [];
+    const l: PortalRowData[] = [];
     for (const row of DEMO_ROWS) {
-      if (row.modes.includes("email")) w.push(row);
-      else wo.push(row);
+      const bucket = bucketFor(policyFor(row.insurerId));
+      if (bucket === "auto") a.push(row);
+      else if (bucket === "manuel") m.push(row);
+      else l.push(row);
     }
-    return { withEmail: w, withoutEmail: wo };
+    return { autoRows: a, manuelRows: m, lockedRows: l };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -745,48 +857,95 @@ function PortalList({
     <section className="flex flex-col gap-7">
       <div className="flex flex-col gap-3 max-w-[680px]">
         <h2 className="text-[17px] font-semibold text-panora-text font-display leading-6 tracking-[-0.01em]">
-          Les modes 2FA proposés par vos assureurs
+          Les modes 2FA proposés par vos compagnies d&apos;assurance
         </h2>
         <ModeLegend />
       </div>
 
-      {withEmail.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between gap-2 flex-wrap">
-            <h3 className="text-[13px] font-medium text-panora-text leading-4">
-              Vous pouvez basculer en email
-            </h3>
+      {autoRows.length > 0 && (
+        <div className="flex flex-col gap-4 p-5 lg:p-6 rounded-2xl border border-panora-green-border bg-panora-green-light/30 shadow-[0px_4px_18px_-8px_rgba(0,162,114,0.25)]">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-white border border-panora-green-border flex items-center justify-center shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+                <Mail className="w-5 h-5 text-panora-green-dark" />
+              </div>
+              <h3 className="text-[16px] font-semibold text-panora-text leading-5 font-display tracking-[-0.01em]">
+                Automatisable — basculez en e-mail
+              </h3>
+            </div>
             <a
               href={SWITCH_TO_EMAIL_GUIDE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-panora-green-dark hover:text-panora-text leading-4"
+              className="btn-primary inline-flex items-center gap-2 px-4 h-10 text-[13px] font-semibold leading-5 shrink-0"
             >
-              Voir comment
-              <ExternalLink className="w-3 h-3" />
+              Voir comment basculer
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
           <ul className="flex flex-col gap-2">
-            {withEmail.map((row) => (
-              <PortalRow key={row.id} {...row} variant="action" />
+            {autoRows.map((row) => (
+              <PortalRow key={row.id} {...row} bucket="auto" />
             ))}
           </ul>
         </div>
       )}
 
-      {withoutEmail.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h3 className="text-[13px] font-medium text-panora-text-secondary leading-4">
-            Pas de mode email proposé
-          </h3>
-          <ul className="flex flex-col gap-2">
-            {withoutEmail.map((row) => (
-              <PortalRow key={row.id} {...row} variant="muted" />
-            ))}
-          </ul>
-        </div>
+      {manuelRows.length > 0 && (
+        <BucketPanel
+          icon={<Smartphone className="w-5 h-5 text-panora-text-secondary" />}
+          title="À saisir une fois par jour"
+          sub="Pas de mode e-mail proposé. Vous regroupez ces codes au démarrage de votre journée."
+        >
+          {manuelRows.map((row) => (
+            <PortalRow key={row.id} {...row} bucket="manuel" />
+          ))}
+        </BucketPanel>
+      )}
+
+      {lockedRows.length > 0 && (
+        <BucketPanel
+          icon={<Bell className="w-5 h-5 text-panora-text-secondary" />}
+          title="Mode imposé — saisie en temps réel"
+          sub="Ces compagnies n'autorisent pas le changement de mode. Vous saisirez le code au moment de la cotation."
+        >
+          {lockedRows.map((row) => (
+            <PortalRow key={row.id} {...row} bucket="locked" />
+          ))}
+        </BucketPanel>
       )}
     </section>
+  );
+}
+
+function BucketPanel({
+  icon,
+  title,
+  sub,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  sub: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 p-5 lg:p-6 rounded-2xl border border-panora-border bg-white">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="shrink-0 w-10 h-10 rounded-xl bg-panora-bg border border-panora-border flex items-center justify-center">
+          {icon}
+        </div>
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <h3 className="text-[15px] font-semibold text-panora-text leading-5 font-display tracking-[-0.005em]">
+            {title}
+          </h3>
+          <p className="text-[12px] text-panora-text-muted leading-4 max-w-[520px]">
+            {sub}
+          </p>
+        </div>
+      </div>
+      <ul className="flex flex-col gap-2">{children}</ul>
+    </div>
   );
 }
 
@@ -795,7 +954,7 @@ function ModeLegend() {
     <div className="flex items-center gap-4 flex-wrap">
       <LegendItem
         icon={<Mail className="w-3 h-3 text-panora-green-dark" />}
-        label="Email"
+        label="E-mail"
         tone="green"
       />
       <LegendItem
@@ -808,6 +967,11 @@ function ModeLegend() {
         label="Application"
         tone="bordeaux"
       />
+      <LegendItem
+        icon={<Bell className="w-3 h-3 text-panora-text-secondary" />}
+        label="Notification"
+        tone="slate"
+      />
     </div>
   );
 }
@@ -819,7 +983,7 @@ function LegendItem({
 }: {
   icon: React.ReactNode;
   label: string;
-  tone: "green" | "copper" | "bordeaux";
+  tone: "green" | "copper" | "bordeaux" | "slate";
 }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-panora-text-secondary">
@@ -830,7 +994,9 @@ function LegendItem({
             "bg-panora-green-light border-panora-green-border",
           tone === "copper" &&
             "bg-panora-warning-bg border-panora-warning/30",
-          tone === "bordeaux" && "bg-panora-error-bg/60 border-panora-error/20"
+          tone === "bordeaux" &&
+            "bg-panora-error-bg/60 border-panora-error/20",
+          tone === "slate" && "bg-panora-secondary border-panora-border"
         )}
       >
         {icon}
@@ -844,22 +1010,18 @@ function PortalRow({
   insurerId,
   insurerName,
   portalLabel,
-  modes,
-  variant,
-}: {
-  insurerId: string;
-  insurerName: string;
-  portalLabel?: string;
-  modes: ModeChannel[];
-  variant: "action" | "muted";
-}) {
+  bucket,
+}: PortalRowData & { bucket: Bucket }) {
+  const policy = policyFor(insurerId);
+  const lockedOrAction = bucket !== "manuel";
+
   return (
     <li
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-lg border",
-        variant === "action"
-          ? "border-panora-border bg-white"
-          : "border-panora-border/70 bg-panora-bg/30"
+        bucket === "auto" && "border-panora-border bg-white",
+        bucket === "manuel" && "border-panora-border/70 bg-panora-bg/30",
+        bucket === "locked" && "border-panora-error/20 bg-panora-error-bg/30"
       )}
     >
       <InsurerLogo insurerId={insurerId} name={insurerName} size="md" />
@@ -867,7 +1029,7 @@ function PortalRow({
         <span
           className={cn(
             "text-[13px] leading-4 truncate",
-            variant === "action"
+            lockedOrAction
               ? "font-medium text-panora-text"
               : "text-panora-text-secondary"
           )}
@@ -879,21 +1041,58 @@ function PortalRow({
             </span>
           )}
         </span>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          <BucketPill bucket={bucket} />
+          {policy.sessionDurationLabel && (
+            <span className="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-medium text-panora-text-muted bg-panora-secondary/70 border border-panora-border tabular-nums">
+              Session {policy.sessionDurationLabel}
+            </span>
+          )}
+        </div>
       </div>
-      <ModeIcons modes={modes} />
+      <ModeIcons modes={policy.modes} lockedMode={policy.lockedMode} />
     </li>
   );
 }
 
-function ModeIcons({ modes }: { modes: ModeChannel[] }) {
+function BucketPill({ bucket }: { bucket: Bucket }) {
+  if (bucket === "auto") {
+    return (
+      <span className="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-semibold text-panora-green-dark bg-panora-green-light border border-panora-green-border tracking-[0.01em]">
+        Auto
+      </span>
+    );
+  }
+  if (bucket === "manuel") {
+    return (
+      <span className="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-semibold text-panora-warning-text bg-panora-warning-bg border border-panora-warning/30 tracking-[0.01em]">
+        Manuel
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-1.5 h-4 rounded text-[10px] font-semibold text-panora-error bg-panora-error-bg border border-panora-error/30 tracking-[0.01em]">
+      Imposé
+    </span>
+  );
+}
+
+function ModeIcons({
+  modes,
+  lockedMode,
+}: {
+  modes: ModeChannel[];
+  lockedMode?: ModeChannel;
+}) {
   if (modes.length === 0) {
     return (
       <span className="text-[11px] text-panora-text-muted">Pas de 2FA</span>
     );
   }
+  const displayed = lockedMode ? [lockedMode] : modes;
   return (
-    <div className="flex items-center gap-1">
-      {modes.map((m) => (
+    <div className="flex items-center gap-1 shrink-0">
+      {displayed.map((m) => (
         <ModeIcon key={m} mode={m} />
       ))}
     </div>
@@ -902,9 +1101,21 @@ function ModeIcons({ modes }: { modes: ModeChannel[] }) {
 
 function ModeIcon({ mode }: { mode: ModeChannel }) {
   const Icon =
-    mode === "email" ? Mail : mode === "sms" ? Smartphone : KeyRound;
+    mode === "email"
+      ? Mail
+      : mode === "sms"
+        ? Smartphone
+        : mode === "app"
+          ? KeyRound
+          : Bell;
   const label =
-    mode === "email" ? "Email" : mode === "sms" ? "SMS" : "Application";
+    mode === "email"
+      ? "Email"
+      : mode === "sms"
+        ? "SMS"
+        : mode === "app"
+          ? "Application"
+          : "Notification push";
   return (
     <span
       className={cn(
@@ -914,7 +1125,9 @@ function ModeIcon({ mode }: { mode: ModeChannel }) {
         mode === "sms" &&
           "bg-panora-warning-bg border-panora-warning/30 text-panora-warning-text",
         mode === "app" &&
-          "bg-panora-error-bg/60 border-panora-error/20 text-panora-error"
+          "bg-panora-error-bg/60 border-panora-error/20 text-panora-error",
+        mode === "push" &&
+          "bg-panora-secondary border-panora-border text-panora-text-secondary"
       )}
       title={label}
       aria-label={label}
@@ -938,7 +1151,7 @@ function ItAuthModal({
   const [copied, setCopied] = useState(false);
   const template = `Bonjour,
 
-Je souhaite utiliser Panora (panora.co), un assistant de cotation pour courtiers, qui nécessite un accès en lecture seule à ma boîte ${provider === "gmail" ? "Gmail" : "Outlook"} pour récupérer les codes 2FA envoyés par les portails assureurs.
+Je souhaite utiliser Panora (panora.co), un assistant de cotation pour courtiers, qui nécessite un accès en lecture seule à ma boîte ${provider === "gmail" ? "Gmail" : "Outlook"} pour récupérer les codes 2FA envoyés par les portails des compagnies d'assurance.
 
 Merci d'autoriser l'application "Panora" dans la console ${provider === "gmail" ? "Google Workspace" : "Microsoft 365"}.
 
@@ -1123,7 +1336,8 @@ function OAuthConsentModal({
               <li className="flex items-start gap-2.5">
                 <Mail className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#5f6368]" />
                 <span>
-                  Lire les codes 2FA envoyés par vos portails assureurs.
+                  Lire les codes 2FA envoyés par vos portails des compagnies
+                  d&apos;assurance.
                 </span>
               </li>
             </ul>
@@ -1224,99 +1438,41 @@ interface SourceRow {
 function ForwardRulePanel({
   sources,
   isConfigured,
-  onToggle,
+  onToggle: _onToggle,
 }: {
   sources: SourceRow[];
   isConfigured: boolean;
   onToggle: (configured: boolean) => void;
 }) {
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const isTutorial = sources.length === 0;
   const displayed = isTutorial ? TUTORIAL_SOURCES : sources;
 
   return (
     <article className="rounded-2xl border border-panora-border bg-white overflow-hidden">
-        <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-panora-border">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="shrink-0 w-9 h-9 rounded-lg bg-panora-green-light flex items-center justify-center">
-              <Mail className="w-4 h-4 text-panora-green-dark" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[14px] font-semibold text-panora-text leading-5 font-display">
-                Règle de transfert 2FA
-              </span>
-              <span className="text-[11px] text-panora-text-muted leading-4">
-                {isTutorial
-                  ? "Exemple de règle"
-                  : `${displayed.length} expéditeur${displayed.length > 1 ? "s" : ""} couvert${displayed.length > 1 ? "s" : ""}`}
-              </span>
-            </div>
-          </div>
-          {isTutorial ? (
-            <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-6 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary">
-              <Sparkles className="w-3 h-3" />
-              Exemple
-            </span>
-          ) : isConfigured ? (
-            <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-6 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
-              <Check className="w-3 h-3" strokeWidth={3} />
-              Configurée
-            </span>
-          ) : (
-            <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-6 rounded-full bg-panora-warning-bg text-[11px] font-semibold text-panora-warning-text">
-              À configurer
-            </span>
-          )}
-        </div>
+      <div className="px-5 py-4 flex items-center justify-between gap-3 border-b border-panora-border">
+        <span className="text-[14px] font-semibold text-panora-text leading-5 font-display">
+          Règle de transfert
+        </span>
+        {!isTutorial && isConfigured && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-6 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
+            <Check className="w-3 h-3" strokeWidth={3} />
+            Configurée
+          </span>
+        )}
+      </div>
 
-        <div className="px-5 py-5 flex flex-col gap-5">
-          <SourceList sources={displayed} isTutorial={isTutorial} />
-          <div className="flex items-center justify-center text-panora-text-muted">
-            <ArrowDown className="w-4 h-4" />
-          </div>
-          <DestinationField value={COTATION_EMAIL} />
+      <div className="px-5 py-5 flex flex-col gap-6">
+        <p className="text-[13px] text-panora-text-secondary leading-5">
+          Dans votre messagerie, créez une règle qui transfère automatiquement
+          les emails 2FA reçus de vos compagnies d&apos;assurance vers Panora.
+        </p>
 
-          <div className="pt-1 border-t border-panora-border">
-            <button
-              type="button"
-              onClick={() => setInstructionsOpen((o) => !o)}
-              className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              Comment créer la règle dans votre messagerie
-              <ChevronDown
-                className={cn(
-                  "w-3 h-3 transition-transform duration-200",
-                  instructionsOpen && "rotate-180"
-                )}
-              />
-            </button>
-            {instructionsOpen && <InstructionsPanel sources={displayed} />}
-          </div>
+        <SourceList sources={displayed} isTutorial={isTutorial} />
 
-          {!isTutorial && (
-            <div className="flex items-center justify-end pt-1">
-              {isConfigured ? (
-                <button
-                  type="button"
-                  onClick={() => onToggle(false)}
-                  className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md border border-panora-border bg-white text-[12px] font-medium text-panora-text-secondary hover:bg-panora-drop transition-colors"
-                >
-                  Marquer comme non configurée
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onToggle(true)}
-                  className="btn-primary inline-flex items-center gap-1.5 px-4 h-9 text-[13px] font-semibold leading-5"
-                >
-                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                  J&apos;ai configuré la règle
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        <DestinationField value={COTATION_EMAIL} />
+
+        <InstructionsPanel sources={displayed} />
+      </div>
     </article>
   );
 }
@@ -1353,8 +1509,8 @@ function SourceList({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[12px] font-medium text-panora-text leading-4">
-          Quand l&apos;expéditeur est l&apos;une de ces adresses
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-panora-text-muted leading-4">
+          Expéditeurs à transférer
         </span>
         {sources.length > 1 && (
           <button
@@ -1437,10 +1593,10 @@ function DestinationField({ value }: { value: string }) {
   }
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[12px] font-medium text-panora-text leading-4">
-        Transférer vers votre adresse Panora
+      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-panora-text-muted leading-4">
+        Vers votre adresse Panora
       </span>
-      <div className="flex items-center gap-2 h-11 px-3 rounded-lg border border-panora-green-border bg-panora-green-light shadow-[0px_2px_8px_-4px_rgba(0,162,114,0.18)]">
+      <div className="flex items-center gap-2 h-11 pl-3 pr-1.5 rounded-lg border border-panora-green-border bg-panora-green-light shadow-[0px_2px_8px_-4px_rgba(0,162,114,0.18)]">
         <Mail className="w-4 h-4 text-panora-green-dark shrink-0" />
         <span className="flex-1 truncate text-[14px] font-mono font-medium text-panora-green-dark">
           {value}
@@ -1469,72 +1625,61 @@ function DestinationField({ value }: { value: string }) {
 }
 
 function InstructionsPanel({ sources }: { sources: SourceRow[] }) {
-  const [provider, setProvider] = useState<"gmail" | "outlook" | "other">(
-    "gmail"
-  );
+  const [provider, setProvider] = useState<"gmail" | "outlook">("gmail");
   const sourcePattern = sources.map((s) => s.address).join(" OR ");
   return (
-    <div className="mt-3 flex flex-col gap-3">
-      <div className="inline-flex items-center gap-1 bg-panora-drop p-0.5 rounded-md self-start">
-        {(["gmail", "outlook", "other"] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setProvider(p)}
-            className={cn(
-              "inline-flex items-center px-2.5 h-6 rounded text-[11px] font-medium leading-4 transition-colors",
-              provider === p
-                ? "bg-white text-panora-text shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
-                : "text-panora-text-secondary hover:text-panora-text"
-            )}
-          >
-            {p === "gmail" ? "Gmail" : p === "outlook" ? "Outlook" : "Autre"}
-          </button>
-        ))}
+    <div className="flex flex-col gap-3 p-4 rounded-xl bg-panora-bg/60 border border-panora-border">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-panora-text-muted leading-4">
+          Tutoriel
+        </span>
+        <div className="inline-flex items-center gap-1 bg-white p-0.5 rounded-md border border-panora-border">
+          {(["gmail", "outlook"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setProvider(p)}
+              className={cn(
+                "inline-flex items-center px-2.5 h-6 rounded text-[11px] font-medium leading-4 transition-colors",
+                provider === p
+                  ? "bg-panora-text text-white"
+                  : "text-panora-text-secondary hover:text-panora-text"
+              )}
+            >
+              {p === "gmail" ? "Gmail" : "Outlook"}
+            </button>
+          ))}
+        </div>
       </div>
       <ol className="flex flex-col gap-1.5 text-[12px] text-panora-text-secondary leading-[18px]">
         {INSTRUCTIONS[provider](sourcePattern).map((step, idx) => (
           <li key={idx} className="flex items-start gap-2.5">
-            <span className="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full bg-panora-secondary text-[10px] font-semibold text-panora-text-secondary tabular-nums">
+            <span className="shrink-0 mt-px inline-flex items-center justify-center w-4 h-4 rounded-full bg-white border border-panora-border text-[10px] font-semibold text-panora-text-secondary tabular-nums">
               {idx + 1}
             </span>
             <span>{step}</span>
           </li>
         ))}
       </ol>
-      {sources.length > 1 && (
-        <p className="flex items-start gap-2 text-[11px] text-panora-text-muted leading-4 pt-1 border-t border-panora-border/70">
-          <Plus className="w-3 h-3 mt-0.5 shrink-0" />
-          La plupart des messageries acceptent plusieurs expéditeurs dans le
-          même filtre, séparés par <code className="font-mono">OR</code> ou des
-          virgules.
-        </p>
-      )}
     </div>
   );
 }
 
 const INSTRUCTIONS: Record<
-  "gmail" | "outlook" | "other",
+  "gmail" | "outlook",
   (sourcePattern: string) => string[]
 > = {
   gmail: (sourcePattern) => [
-    "Dans Gmail, ouvrez Paramètres › Voir tous les paramètres › Filtres et adresses bloquées.",
-    `Cliquez sur « Créer un filtre » et collez dans le champ « De » : ${sourcePattern}`,
-    "À l'étape suivante, cochez « Transférer à » puis ajoutez votre adresse Panora ci-dessus.",
+    "Ouvrez Gmail › Paramètres › Filtres et adresses bloquées.",
+    `Créez un filtre, collez dans « De » : ${sourcePattern}`,
+    "Cochez « Transférer à » et collez votre adresse Panora.",
     "Validez l'email de confirmation reçu sur votre adresse Panora.",
   ],
   outlook: (sourcePattern) => [
-    "Dans Outlook, ouvrez Paramètres › Courrier › Règles.",
-    `Créez une règle « Si l'expéditeur contient l'une de ces adresses » et collez : ${sourcePattern.replace(/ OR /g, ", ")}.`,
+    "Ouvrez Outlook › Paramètres › Courrier › Règles.",
+    `Créez une règle sur l'expéditeur : ${sourcePattern.replace(/ OR /g, ", ")}.`,
     "Choisissez l'action « Transférer à » et collez votre adresse Panora.",
     "Activez la règle et vérifiez la réception du premier transfert.",
-  ],
-  other: (sourcePattern) => [
-    "Localisez l'option « Transfert automatique » ou « Forwarding » dans les paramètres.",
-    `Créez un filtre sur les expéditeurs : ${sourcePattern}.`,
-    "Ajoutez votre adresse Panora comme destinataire de transfert.",
-    "Activez et validez le premier email transféré.",
   ],
 };
 
