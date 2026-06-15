@@ -137,11 +137,11 @@ function getAttention(
   return null;
 }
 
-/** The amber "Action requise" pill, shared by the card footer. */
+/** The "Action requise" badge — the card's primary signal when it needs the broker. */
 function AttentionFlag({ reason }: { reason: AttentionReason }) {
   const { label, Icon } = ATTENTION[reason];
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-warning-bg text-[12px] font-medium text-panora-warning-text">
+    <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-[22px] rounded-full bg-panora-warning-bg border border-panora-warning/40 text-[12px] font-semibold text-panora-warning-text">
       <Icon className="w-3 h-3" />
       {label}
     </span>
@@ -152,11 +152,9 @@ function AttentionFlag({ reason }: { reason: AttentionReason }) {
 function CardFooter({
   cotation,
   status,
-  attention,
 }: {
   cotation: Cotation;
   status: CotationStatus;
-  attention: AttentionReason | null;
 }) {
   const completed = cotation.insurers.filter(
     (i) => i.status === "completed"
@@ -177,18 +175,6 @@ function CardFooter({
   }
 
   if (status === "en_cours") {
-    // Needs the broker (HITL or a closed session): flag it. The progress bar
-    // can't tell the broker to act, and a session-stuck bar can't even move.
-    if (attention) {
-      return (
-        <div className="flex items-center justify-between">
-          <span className="text-[12px] text-[#85827b]">
-            {cotation.createdAt}
-          </span>
-          <AttentionFlag reason={attention} />
-        </div>
-      );
-    }
     const pct = total > 0 ? (completed / total) * 100 : 0;
     return (
       <div className="flex items-center justify-between">
@@ -351,20 +337,31 @@ function CotationCard({
 
   return (
     <Link href={href}>
-      <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
-        {/* Title + client */}
-        <div className="flex flex-col gap-0.5">
-          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
-            {cotation.product} {cotation.client.split(" ")[0]} 2026
-          </h3>
-          <div className="flex items-center gap-[9px]">
-            <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
-              <Building2 className="w-2 h-2 text-[#85827b]" />
+      <div
+        className={cn(
+          "bg-[#fdfdfc] border rounded-[12px] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer",
+          attention
+            ? // Orange top inner border flags a card that needs the broker.
+              "border-panora-border shadow-[inset_0_2px_0_0_#cb8052,0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+            : "border-panora-border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+        )}
+      >
+        {/* Title + client, with the attention badge as the card's primary signal */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+              {cotation.product} {cotation.client.split(" ")[0]} 2026
+            </h3>
+            <div className="flex items-center gap-[9px]">
+              <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
+                <Building2 className="w-2 h-2 text-[#85827b]" />
+              </div>
+              <span className="text-[13px] text-panora-text-muted leading-5 truncate">
+                {cotation.client}
+              </span>
             </div>
-            <span className="text-[13px] text-panora-text-muted leading-5">
-              {cotation.client}
-            </span>
           </div>
+          {attention && <AttentionFlag reason={attention} />}
         </div>
 
         {/* Product badge */}
@@ -381,7 +378,7 @@ function CotationCard({
         <div className="h-px bg-[#d9d9d9]" />
 
         {/* Footer */}
-        <CardFooter cotation={cotation} status={status} attention={attention} />
+        <CardFooter cotation={cotation} status={status} />
       </div>
     </Link>
   );

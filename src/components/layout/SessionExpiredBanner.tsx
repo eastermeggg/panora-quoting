@@ -37,14 +37,14 @@ export function SessionExpiredBanner() {
   return (
     <div
       role="alert"
-      className="shrink-0 flex items-center gap-3 px-5 py-2.5 bg-panora-error-bg border-b border-panora-error/20"
+      className="shrink-0 flex items-center gap-3 px-5 py-2.5 bg-panora-warning-bg border-b border-panora-warning/25"
     >
-      <AlertCircle className="w-4 h-4 text-panora-error shrink-0" />
-      <p className="text-[13px] text-panora-error leading-5 flex-1 min-w-0">
+      <AlertCircle className="w-4 h-4 text-panora-warning-text shrink-0" />
+      <p className="text-[13px] text-panora-warning-text leading-5 flex-1 min-w-0">
         <span className="font-medium">
           {count} session{plural ? "s" : ""} expirée{plural ? "s" : ""}
         </span>
-        <span className="text-panora-error/85">
+        <span className="text-panora-warning-text/85">
           {waiting > 0
             ? `. ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} pour ${waitingPlural ? "les" : "la"} lancer.`
             : `. Réactivez${plural ? "-les" : "-la"} pour reprendre les cotations.`}
@@ -52,7 +52,7 @@ export function SessionExpiredBanner() {
       </p>
       <Link
         href="/settings/extranets"
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white border border-panora-error/30 text-[12px] font-medium text-panora-error hover:bg-panora-error-bg/70 transition-colors"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white border border-panora-warning/40 text-[12px] font-medium text-panora-warning-text hover:bg-panora-warning-bg/70 transition-colors"
       >
         {waiting > 0
           ? `Lancer ${waiting} demande${waitingPlural ? "s" : ""}`
