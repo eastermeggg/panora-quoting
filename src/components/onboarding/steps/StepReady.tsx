@@ -148,12 +148,12 @@ const FLOW_STEPS = [
   {
     icon: Sparkles,
     label: "Complétez le dossier",
-    sub: "Ajoutez ce que l'agent signale comme manquant.",
+    sub: "Notre agent repère les pièces présentes et manquantes, et vous prévient.",
   },
   {
     icon: Globe,
-    label: "Lancez les cotations",
-    sub: "L'agent ouvre les portails et remplit les formulaires.",
+    label: "Validez et lancez la cotation",
+    sub: "Notre agent va chercher les devis pour vous auprès des compagnies.",
   },
   {
     icon: GitCompare,
