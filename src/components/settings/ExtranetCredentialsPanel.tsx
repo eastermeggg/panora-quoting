@@ -9,6 +9,7 @@ import {
   type InsuranceProduct,
 } from "@/data/settings-mock";
 import { useEdiConnection } from "@/data/edi-store";
+import { EdiConnectionModal } from "./EdiCard";
 
 // ── Panel ──
 
@@ -53,7 +54,9 @@ export function ExtranetCredentialsPanel({
   const ediState = useEdiConnection();
   const ediConnected = ediState.status === "connected";
   const ediCompatible = extranet.ediCompatible ?? false;
-  const showEdiToggle = ediCompatible && ediConnected;
+  // Show the toggle for every EDI-compatible insurer, even when EDI isn't set
+  // up yet — flipping it on then walks the broker through the EDI connection.
+  const showEdiToggle = ediCompatible;
 
   const [username, setUsername] = useState(existing?.username ?? "");
   const [password, setPassword] = useState("");
@@ -61,6 +64,20 @@ export function ExtranetCredentialsPanel({
   const [useEdi, setUseEdi] = useState(
     isExtranetConfig(extranet) ? (extranet.useEdi ?? false) : false
   );
+  const [ediModalOpen, setEdiModalOpen] = useState(false);
+
+  function handleToggleEdi() {
+    if (useEdi) {
+      setUseEdi(false);
+      return;
+    }
+    // Turning EDI on: connect first if the channel isn't active yet.
+    if (ediConnected) {
+      setUseEdi(true);
+    } else {
+      setEdiModalOpen(true);
+    }
+  }
 
   function handleSave() {
     // Products are declared globally in the Produits block, not per insurer.
@@ -95,12 +112,14 @@ export function ExtranetCredentialsPanel({
               Utiliser EDI pour cet assureur
             </span>
             <span className="text-[11px] text-panora-text-muted leading-4">
-              Les sessions seront ouvertes via votre connexion EDIconnexion
+              {ediConnected
+                ? "Les sessions seront ouvertes via votre connexion EDIconnexion"
+                : "Activez votre connexion EDIconnexion pour cet assureur"}
             </span>
           </div>
           <button
             type="button"
-            onClick={() => setUseEdi(!useEdi)}
+            onClick={handleToggleEdi}
             className={cn(
               "relative shrink-0 w-9 h-5 rounded-full transition-colors",
               useEdi ? "bg-panora-green" : "bg-[#d8d3cc]"
@@ -116,6 +135,16 @@ export function ExtranetCredentialsPanel({
             />
           </button>
         </div>
+      )}
+
+      {ediModalOpen && (
+        <EdiConnectionModal
+          onClose={() => setEdiModalOpen(false)}
+          onConnected={() => {
+            setUseEdi(true);
+            setEdiModalOpen(false);
+          }}
+        />
       )}
 
       <div className={cn("flex flex-col gap-5 transition-opacity", useEdi && showEdiToggle && "opacity-40 pointer-events-none")}>

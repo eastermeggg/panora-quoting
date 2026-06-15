@@ -147,12 +147,15 @@ export function EdiCard() {
 
 // ── Connection modal (connect + credential rotation) ──
 
-function EdiConnectionModal({
+export function EdiConnectionModal({
   initial,
   onClose,
+  onConnected,
 }: {
   initial?: { login: string };
   onClose: () => void;
+  /** Called once the connection succeeds (not on cancel or error). */
+  onConnected?: (login: string) => void;
 }) {
   const [login, setLogin] = useState(initial?.login ?? "");
   const [password, setPassword] = useState("");
@@ -175,6 +178,7 @@ function EdiConnectionModal({
         });
       } else {
         setEdiState({ status: "connected", login });
+        onConnected?.(login);
       }
       setSubmitting(false);
       onClose();
