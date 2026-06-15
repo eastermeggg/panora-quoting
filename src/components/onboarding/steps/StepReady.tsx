@@ -60,12 +60,12 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
         }
       />
 
-      {/* How it works — compact digest strip, above the main cards */}
-      <FlowStrip />
-
-      {/* Address + email example side by side */}
+      {/* Left: address + how-it-works timeline · Right: email example */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
-        <AddressPanel />
+        <div className="flex flex-col gap-5">
+          <AddressPanel />
+          <FlowTimeline />
+        </div>
         <ForwardExample assureurs={assureurs} produit={produit} />
       </div>
 
@@ -161,34 +161,37 @@ const FLOW_STEPS = [
   },
 ] as const;
 
-function FlowStrip() {
+function FlowTimeline() {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
       <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-panora-text-muted leading-4">
         Comment ça marche
       </span>
-      <ol className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => (
-          <li
-            key={i}
-            className="flex flex-col gap-2 px-3 py-3 rounded-lg border border-panora-border bg-white"
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tabular-nums">
-                {i + 1}
-              </span>
-              <Icon className="w-3.5 h-3.5 text-panora-green-dark shrink-0" />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[12px] font-semibold text-panora-text leading-4">
-                {label}
-              </span>
-              <span className="text-[11px] text-panora-text-muted leading-[15px]">
-                {sub}
-              </span>
-            </div>
-          </li>
-        ))}
+      <ol className="flex flex-col">
+        {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => {
+          const isLast = i === FLOW_STEPS.length - 1;
+          return (
+            <li key={i} className="flex gap-3 relative">
+              {/* Connecting line */}
+              {!isLast && (
+                <div className="absolute left-[13px] top-7 bottom-0 w-px bg-panora-border" />
+              )}
+              {/* Icon marker */}
+              <div className="relative z-10 shrink-0 inline-flex items-center justify-center w-[27px] h-[27px] rounded-full bg-panora-green-light border border-panora-green-border">
+                <Icon className="w-3.5 h-3.5 text-panora-green-dark" />
+              </div>
+              {/* Content */}
+              <div className={cn("min-w-0 pt-[3px]", !isLast && "pb-4")}>
+                <p className="text-[13px] font-semibold text-panora-text leading-4">
+                  {label}
+                </p>
+                <p className="text-[12px] text-panora-text-secondary leading-[17px] mt-1">
+                  {sub}
+                </p>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
