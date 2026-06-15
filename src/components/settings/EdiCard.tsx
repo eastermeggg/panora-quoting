@@ -50,11 +50,7 @@ export function EdiCard() {
         <AlertCircle className="w-3 h-3" />
         Connexion interrompue
       </span>
-    ) : (
-      <span className="inline-flex items-center h-5 px-2 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary">
-        Toutes compagnies compatibles
-      </span>
-    );
+    ) : null;
 
   return (
     <>
@@ -84,8 +80,15 @@ export function EdiCard() {
                 </span>
               </div>
             </div>
+            {/* Right-side action — one per state, no bottom footer */}
             <div className="flex items-center gap-2 shrink-0">
               {headerBadge}
+              {state.status === "connecting" && (
+                <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Vérification…
+                </span>
+              )}
               {state.status === "connected" && (
                 <button
                   onClick={() => setModalOpen(true)}
@@ -93,6 +96,25 @@ export function EdiCard() {
                 >
                   <RefreshCw className="w-3 h-3" />
                   Modifier
+                </button>
+              )}
+              {state.status === "error" && (
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-error text-white text-[12px] font-semibold hover:brightness-110 transition"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  Corriger
+                </button>
+              )}
+              {state.status === "idle" && (
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-3 h-8 rounded-md text-white text-[12px] font-semibold hover:brightness-110 transition"
+                  style={{ backgroundColor: EDI_BLUE }}
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  Activer la connexion
                 </button>
               )}
             </div>
@@ -109,36 +131,6 @@ export function EdiCard() {
             </div>
           )}
         </div>
-
-        {/* Action strip — only when there's a primary action to take. Once
-            connected, modify/deactivate live next to the badge and in the modal. */}
-        {state.status !== "connected" && (
-          <div className="border-t border-panora-border flex items-center justify-between gap-2 px-4 py-2.5">
-            {state.status === "connecting" ? (
-              <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Vérification des identifiants…
-              </span>
-            ) : state.status === "error" ? (
-              <button
-                onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-error text-white text-[12px] font-semibold hover:brightness-110 transition"
-              >
-                <KeyRound className="w-3 h-3" />
-                Corriger les identifiants
-              </button>
-            ) : (
-              <button
-                onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-white text-[12px] font-semibold hover:brightness-110 transition"
-                style={{ backgroundColor: EDI_BLUE }}
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                Activer la connexion {EDI_BRAND}
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {modalOpen && (
