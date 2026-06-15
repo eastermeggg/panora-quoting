@@ -9,6 +9,7 @@ import {
   KeyRound,
   ArrowRight,
   Check,
+  Inbox,
 } from "lucide-react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ProductBadge } from "./ProductBadge";
@@ -19,6 +20,10 @@ import {
   getRequestedProducts,
   type ExtranetConfig,
 } from "@/data/settings-mock";
+import {
+  useCotations,
+  getPendingDemandesForInsurer,
+} from "@/data/cotations-store";
 
 interface ExtranetCardProps {
   config: ExtranetConfig;
@@ -47,6 +52,12 @@ export function ExtranetCard({
 
   const [modalOpen, setModalOpen] = useState(false);
   const isSessionActive = config.sessionState.status === "active";
+
+  // Stock of cotation requests waiting on this insurer's session to reopen.
+  const cotations = useCotations();
+  const waitingCount = isSessionActive
+    ? 0
+    : getPendingDemandesForInsurer(cotations, config.insurerId).length;
 
   return (
     <>
@@ -110,14 +121,25 @@ export function ExtranetCard({
           ) : isSessionActive ? (
             <SessionStatusPill state={config.sessionState} />
           ) : (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-warning-bg text-panora-warning-text text-[12px] font-medium hover:brightness-95 transition"
-            >
-              <KeyRound className="w-3 h-3" />
-              Activer la session
-              <ArrowRight className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-warning-bg text-panora-warning-text text-[12px] font-medium hover:brightness-95 transition shrink-0"
+              >
+                <KeyRound className="w-3 h-3" />
+                Activer la session
+                <ArrowRight className="w-3 h-3" />
+              </button>
+              {waitingCount > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-panora-warning-bg/60 text-[11px] font-medium text-panora-warning-text leading-4 truncate"
+                  title={`${waitingCount} demande${waitingCount > 1 ? "s" : ""} en attente de cette session`}
+                >
+                  <Inbox className="w-3 h-3 shrink-0" />
+                  {waitingCount} en attente
+                </span>
+              )}
+            </div>
           )}
           <div className="flex items-start opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 shrink-0">
             <button

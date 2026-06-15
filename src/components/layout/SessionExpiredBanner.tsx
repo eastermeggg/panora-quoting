@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowRight } from "lucide-react";
 import { useConfiguredExtranets } from "@/data/settings-mock";
+import { useCotations, getWaitingDemandeCount } from "@/data/cotations-store";
 
 /**
  * App-wide banner shown when at least one configured extranet has a non-active
@@ -13,6 +14,7 @@ import { useConfiguredExtranets } from "@/data/settings-mock";
 export function SessionExpiredBanner() {
   const pathname = usePathname();
   const extranets = useConfiguredExtranets();
+  const cotations = useCotations();
 
   // The wizard manages its own activation guidance. No need to double-up.
   if (pathname?.startsWith("/onboarding")) return null;
@@ -28,6 +30,10 @@ export function SessionExpiredBanner() {
   const count = expired.length;
   const plural = count > 1;
 
+  // The backlog stuck behind those closed sessions — the reason to reactivate.
+  const waiting = getWaitingDemandeCount(cotations, extranets);
+  const waitingPlural = waiting > 1;
+
   return (
     <div
       role="alert"
@@ -39,15 +45,20 @@ export function SessionExpiredBanner() {
           {count} session{plural ? "s" : ""} expirée{plural ? "s" : ""}
         </span>
         <span className="text-panora-error/85">
-          {" "}
-          — réactivez{plural ? "-les" : "-la"} pour reprendre les cotations.
+          {waiting > 0
+            ? ` — ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} pour ${waitingPlural ? "les" : "la"} lancer.`
+            : ` — réactivez${plural ? "-les" : "-la"} pour reprendre les cotations.`}
         </span>
       </p>
       <Link
         href="/settings/extranets"
         className="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white border border-panora-error/30 text-[12px] font-medium text-panora-error hover:bg-panora-error-bg/70 transition-colors"
       >
-        {plural ? "Réactiver les sessions" : "Réactiver la session"}
+        {waiting > 0
+          ? `Lancer ${waiting} demande${waitingPlural ? "s" : ""}`
+          : plural
+            ? "Réactiver les sessions"
+            : "Réactiver la session"}
         <ArrowRight className="w-3 h-3" />
       </Link>
     </div>
