@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Building2,
-  Check,
-  Loader2,
-  LayoutGrid,
-  Clock,
-  AlertTriangle,
-} from "lucide-react";
+import { Building2, Check, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
@@ -148,6 +141,16 @@ function AttentionFlag({ reason }: { reason: AttentionReason }) {
   );
 }
 
+/** The "Terminé" status badge — same slot, same dimensions as AttentionFlag. */
+function DoneBadge() {
+  return (
+    <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-[22px] rounded-full bg-[#daf1db] text-[12px] font-medium text-[#203c25]">
+      <Check className="w-3 h-3" strokeWidth={3} />
+      Terminé
+    </span>
+  );
+}
+
 /* ── Card footer per status ── */
 function CardFooter({
   cotation,
@@ -174,34 +177,23 @@ function CardFooter({
     );
   }
 
-  if (status === "en_cours") {
-    const pct = total > 0 ? (completed / total) * 100 : 0;
-    return (
-      <div className="flex items-center justify-between">
-        <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
-        <div className="flex items-center gap-[9px]">
-          <div className="w-[93px] h-2 bg-[rgba(34,32,26,0.15)] rounded-[50px] overflow-hidden">
-            <div
-              className="h-full bg-[#162416] rounded-[50px] transition-all"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <span className="text-[12px] text-[#85827b]">
-            {completed} / {total} devis
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // terminee
+  // en_cours + terminee: both are launched, so both show devis progress in the
+  // footer (terminee simply reads 100%). The status badge lives in the header.
+  const pct = total > 0 ? (completed / total) * 100 : 0;
   return (
     <div className="flex items-center justify-between">
       <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
-      <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-[#daf1db] text-[12px] font-medium text-[#203c25]">
-        <LayoutGrid className="w-3.5 h-3.5" />
-        Terminé
-      </span>
+      <div className="flex items-center gap-[9px]">
+        <div className="w-[93px] h-2 bg-[rgba(34,32,26,0.15)] rounded-[50px] overflow-hidden">
+          <div
+            className="h-full bg-[#162416] rounded-[50px] transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="text-[12px] text-[#85827b]">
+          {completed} / {total} devis
+        </span>
+      </div>
     </div>
   );
 }
@@ -361,7 +353,12 @@ function CotationCard({
               </span>
             </div>
           </div>
-          {attention && <AttentionFlag reason={attention} />}
+          {/* One status-badge slot, top-right of every card. */}
+          {attention ? (
+            <AttentionFlag reason={attention} />
+          ) : status === "terminee" ? (
+            <DoneBadge />
+          ) : null}
         </div>
 
         {/* Product badge */}
