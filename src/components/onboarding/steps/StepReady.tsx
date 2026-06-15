@@ -11,6 +11,7 @@ import {
   Sparkles,
   Globe,
   GitCompare,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExtranetConfig } from "@/data/settings-mock";
@@ -27,7 +28,7 @@ interface StepReadyProps {
   configuredExtranets: ExtranetConfig[];
 }
 
-export function StepReady(_props: StepReadyProps) {
+export function StepReady({ configuredExtranets }: StepReadyProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -35,6 +36,21 @@ export function StepReady(_props: StepReadyProps) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Pre-fill the example with what the broker actually set up, so the model
+  // reads like one of their own cotations rather than generic boilerplate.
+  const insurerNames = Array.from(
+    new Set(configuredExtranets.map((c) => c.insurerName))
+  );
+  const assureurs =
+    insurerNames.length > 0
+      ? insurerNames.slice(0, 3).join(", ")
+      : "AXA, Generali, Allianz";
+  const products = Array.from(
+    new Set(configuredExtranets.flatMap((c) => c.selectedProducts))
+  );
+  const produit =
+    products.length > 0 ? products.slice(0, 2).join(", ") : "Multirisque professionnelle";
 
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10 items-center text-center">
@@ -67,6 +83,9 @@ export function StepReady(_props: StepReadyProps) {
           </p>
         </div>
       </section>
+
+      {/* The ideal email — what a good forward looks like */}
+      <ForwardExample assureurs={assureurs} produit={produit} />
 
       {/* How it works — a single vertical flow */}
       <section className="w-full max-w-[760px] flex flex-col gap-5 items-center">
@@ -119,6 +138,197 @@ export function StepReady(_props: StepReadyProps) {
         <ExternalLink className="w-3 h-3" />
       </a>
     </div>
+  );
+}
+
+// ── The ideal email to forward ──
+
+const PLACEHOLDER_CLIENT = "[Nom du client / raison sociale]";
+const PLACEHOLDER_DOCS = "[Kbis, bilan N-1, questionnaire rempli]";
+const PLACEHOLDER_PRECISIONS = "[échéance souhaitée, particularités du risque…]";
+
+function buildTemplate(assureurs: string, produit: string): string {
+  return [
+    `Objet : Demande de devis — ${PLACEHOLDER_CLIENT} — ${produit}`,
+    "",
+    "Bonjour,",
+    "",
+    "Merci de bien vouloir établir un devis pour le client ci-dessous :",
+    "",
+    `- Client : ${PLACEHOLDER_CLIENT}`,
+    `- Produit : ${produit}`,
+    `- Assureurs à consulter : ${assureurs}`,
+    `- Documents joints : ${PLACEHOLDER_DOCS}`,
+    `- Précisions : ${PLACEHOLDER_PRECISIONS}`,
+    "",
+    "Bien cordialement,",
+  ].join("\n");
+}
+
+function ForwardExample({
+  assureurs,
+  produit,
+}: {
+  assureurs: string;
+  produit: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(buildTemplate(assureurs, produit));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <section className="w-full max-w-[760px] flex flex-col gap-5 items-center">
+      <div className="flex flex-col gap-1.5 items-center text-center">
+        <h2 className="text-[18px] font-semibold text-panora-text font-display leading-6">
+          À quoi ressemble un bon email de cotation
+        </h2>
+        <p className="text-[13px] text-panora-text-secondary leading-5 max-w-[520px]">
+          Pour une cotation complète du premier coup, incluez ces éléments.
+          L&apos;agent saura les retrouver dans votre message ou vos pièces
+          jointes.
+        </p>
+      </div>
+
+      {/* Email-styled card */}
+      <div className="w-full text-left rounded-2xl border border-panora-border bg-white overflow-hidden shadow-[0px_4px_20px_-12px_rgba(0,0,0,0.12)]">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-panora-border bg-panora-bg">
+          <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
+            <Mail className="w-3.5 h-3.5 text-panora-green-dark" />
+            Nouveau message
+          </span>
+          <button
+            onClick={handleCopy}
+            className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-green-light text-[12px] font-semibold text-panora-green-dark hover:bg-panora-green/15 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                Copié
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copier le modèle
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Headers */}
+        <div className="px-5 py-3 border-b border-panora-border flex flex-col gap-1.5">
+          <MetaRow label="À">
+            <span className="font-mono text-panora-text">{COTATION_EMAIL}</span>
+          </MetaRow>
+          <MetaRow label="Objet">
+            <span className="text-panora-text">
+              Demande de devis — <Slot>{PLACEHOLDER_CLIENT}</Slot> —{" "}
+              <Mark>{produit}</Mark>
+            </span>
+          </MetaRow>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 flex flex-col gap-3 text-[13px] text-panora-text leading-5">
+          <p>Bonjour,</p>
+          <p className="text-panora-text-secondary">
+            Merci de bien vouloir établir un devis pour le client ci-dessous :
+          </p>
+          <ul className="flex flex-col gap-2">
+            <FieldLine mustHave label="Client">
+              <Slot>{PLACEHOLDER_CLIENT}</Slot>
+            </FieldLine>
+            <FieldLine mustHave label="Produit">
+              <Mark>{produit}</Mark>
+            </FieldLine>
+            <FieldLine mustHave label="Assureurs à consulter">
+              <Mark>{assureurs}</Mark>
+            </FieldLine>
+            <FieldLine mustHave label="Documents joints">
+              <Slot>{PLACEHOLDER_DOCS}</Slot>
+            </FieldLine>
+            <FieldLine label="Précisions">
+              <span className="text-panora-text-muted">
+                {PLACEHOLDER_PRECISIONS}
+              </span>
+            </FieldLine>
+          </ul>
+          <p className="text-panora-text-secondary">Bien cordialement,</p>
+        </div>
+      </div>
+
+      <p className="inline-flex items-center gap-1.5 text-[12px] text-panora-text-muted leading-4">
+        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-panora-green-light">
+          <Check className="w-2.5 h-2.5 text-panora-green-dark" strokeWidth={3} />
+        </span>
+        Les quatre éléments surlignés sont indispensables à une bonne cotation.
+      </p>
+    </section>
+  );
+}
+
+// Pre-filled value (green) vs. a slot the broker fills per cotation (amber).
+function Mark({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded px-1 bg-panora-green-light/70 text-panora-text font-medium">
+      {children}
+    </span>
+  );
+}
+
+function Slot({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded px-1 bg-panora-warning-bg/70 text-panora-warning-text font-medium">
+      {children}
+    </span>
+  );
+}
+
+function MetaRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 text-[13px]">
+      <span className="shrink-0 w-12 text-panora-text-muted">{label}</span>
+      <span className="min-w-0 truncate">{children}</span>
+    </div>
+  );
+}
+
+function FieldLine({
+  label,
+  mustHave,
+  children,
+}: {
+  label: string;
+  mustHave?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-2">
+      <span className="shrink-0 mt-[3px]">
+        {mustHave ? (
+          <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-panora-green-light">
+            <Check
+              className="w-2.5 h-2.5 text-panora-green-dark"
+              strokeWidth={3}
+            />
+          </span>
+        ) : (
+          <span className="inline-block w-3.5 h-3.5 rounded-full border border-panora-border" />
+        )}
+      </span>
+      <span className="text-panora-text-muted">{label} :</span>
+      <span className="min-w-0">{children}</span>
+    </li>
   );
 }
 

@@ -23,6 +23,7 @@ import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHe
 const COTATION_EMAIL = "cotation+a7f3b2@panora.co";
 const SWITCH_TO_EMAIL_GUIDE_URL =
   "https://panora.notion.site/2fa-passer-en-email";
+const PRIVACY_URL = "https://panora.notion.site/confidentialite-messagerie";
 
 /**
  * Two high-level UI states based on whether the broker's portals authorize the
@@ -416,7 +417,7 @@ function MethodPicker({
           title="Connectez votre messagerie"
           recommended
           mode="auto"
-          body="Panora lit uniquement les emails 2FA reçus de vos compagnies d'assurance. Rien à configurer dans votre boîte."
+          body="Panora lit uniquement les e-mails contenant un code de validation de vos compagnies d'assurance — en lecture seule, révocable à tout moment. Rien à configurer dans votre boîte."
         />
         <MethodCard
           selected={value === "forward"}
@@ -531,9 +532,9 @@ function MailboxConnectPanel({
           </div>
         </div>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[640px]">
-          Panora lit uniquement les emails 2FA de vos compagnies
-          d&apos;assurance. Vous pouvez
-          révoquer cet accès à tout moment depuis les paramètres.
+          Panora lit uniquement les e-mails contenant un code de validation de
+          vos compagnies d&apos;assurance, en lecture seule. Vous pouvez révoquer
+          cet accès à tout moment depuis les paramètres.
         </p>
         <div className="flex items-center justify-end pt-1">
           <button
@@ -591,9 +592,11 @@ function MailboxConnectPanel({
           Choisissez votre messagerie
         </h2>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[600px]">
-          Panora ne lira que les emails 2FA envoyés par vos compagnies
-          d&apos;assurance. Aucun
-          autre courrier n&apos;est consulté.
+          Pour vous éviter de saisir manuellement les codes de double
+          authentification, Panora lit uniquement les e-mails contenant un code
+          de validation de vos compagnies d&apos;assurance. L&apos;accès est
+          limité à cet usage, en lecture seule, et révocable à tout moment depuis
+          vos paramètres.
         </p>
       </div>
 
@@ -646,6 +649,17 @@ function ReassuranceBlock() {
         — chiffrement AES-256, serveurs français, accès révocable à tout
         moment.
       </ReassuranceRow>
+      <li className="pt-1">
+        <a
+          href={PRIVACY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[12px] font-medium text-panora-green-dark hover:underline leading-4"
+        >
+          En savoir plus sur la confidentialité
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </li>
     </ul>
   );
 }
