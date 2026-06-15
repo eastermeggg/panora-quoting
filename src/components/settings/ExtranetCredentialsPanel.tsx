@@ -1,54 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Check,
-  Eye,
-  EyeOff,
-  Info,
-  KeyRound,
-  Mail,
-  Shield,
-  Smartphone,
-} from "lucide-react";
+import { Check, Eye, EyeOff, Info, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type AvailableExtranet,
   type ExtranetConfig,
   type InsuranceProduct,
-  type OtpDelivery,
 } from "@/data/settings-mock";
-
-// ── OTP delivery hint ──
-
-function OtpDeliveryHint({ delivery }: { delivery: OtpDelivery }) {
-  const icon =
-    delivery.channel === "email" ? (
-      <Mail className="w-3.5 h-3.5 text-panora-text-secondary" />
-    ) : delivery.channel === "sms" ? (
-      <Smartphone className="w-3.5 h-3.5 text-panora-text-secondary" />
-    ) : (
-      <KeyRound className="w-3.5 h-3.5 text-panora-text-secondary" />
-    );
-  const label =
-    delivery.channel === "email"
-      ? `Code 2FA envoyé par email à ${delivery.hint}`
-      : delivery.channel === "sms"
-        ? `Code 2FA envoyé par SMS au ${delivery.hint}`
-        : `Code 2FA généré dans ${delivery.hint}`;
-
-  return (
-    <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-panora-secondary/30 border border-panora-border">
-      <div className="shrink-0 mt-px">{icon}</div>
-      <p className="text-[12px] leading-[18px] text-panora-text-secondary">
-        {label}.{" "}
-        <span className="text-panora-text-muted">
-          Vous saisirez ce code à chaque activation de session.
-        </span>
-      </p>
-    </div>
-  );
-}
 
 // ── Panel ──
 
@@ -89,12 +48,6 @@ export function ExtranetCredentialsPanel({
   const isEdit = variant === "edit";
   const hasNoModelized = extranet.modelizedProducts.length === 0;
   const existing = isEdit && isExtranetConfig(extranet) ? extranet : null;
-  const otpDelivery: OtpDelivery | undefined =
-    (extranet as AvailableExtranet).otpDelivery ??
-    (existing as ExtranetConfig | null)?.otpDelivery;
-  const requires2FA =
-    (extranet as AvailableExtranet).requires2FA === true ||
-    otpDelivery !== undefined;
 
   const [username, setUsername] = useState(existing?.username ?? "");
   const [password, setPassword] = useState("");
@@ -170,8 +123,6 @@ export function ExtranetCredentialsPanel({
           </span>
         </div>
       </div>
-
-      {requires2FA && otpDelivery && <OtpDeliveryHint delivery={otpDelivery} />}
 
       <div className="flex items-center justify-between gap-3 pt-1">
         <div>
