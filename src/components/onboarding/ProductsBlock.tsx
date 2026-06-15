@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { masterProducts, type InsuranceProduct } from "@/data/settings-mock";
+import { StepNumber } from "@/components/onboarding/StepNumber";
 import {
   useQuotedProducts,
   addQuotedProduct,
@@ -16,7 +17,7 @@ import {
  * selected products shown as removable pills below. Kept independent from the
  * Extranets block.
  */
-export function ProductsBlock() {
+export function ProductsBlock({ step }: { step?: number }) {
   const selected = useQuotedProducts();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -50,9 +51,12 @@ export function ProductsBlock() {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-          Produits que vous cotez régulièrement
-        </h2>
+        <div className="flex items-center gap-2">
+          {step !== undefined && <StepNumber n={step} />}
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Produits que vous cotez régulièrement
+          </h2>
+        </div>
         <p className="text-[13px] text-panora-text-secondary leading-[18px]">
           Indiquez les produits que vous placez le plus souvent. Panora s&apos;en
           sert pour préparer vos cotations.

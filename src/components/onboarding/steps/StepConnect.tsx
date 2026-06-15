@@ -10,6 +10,7 @@ import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetM
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
 import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
+import { StepNumber } from "@/components/onboarding/StepNumber";
 import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
@@ -99,16 +100,19 @@ export function StepConnect({
       />
 
       {/* Block 1 — Produits */}
-      <ProductsBlock />
+      <ProductsBlock step={1} />
 
       <div className="h-px bg-panora-border" />
 
       {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Connexion {EDI_BRAND}
-          </h2>
+          <div className="flex items-center gap-2">
+            <StepNumber n={2} />
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Connexion {EDI_BRAND}
+            </h2>
+          </div>
           <p className="text-[13px] text-panora-text-secondary leading-[18px]">
             Un identifiant pour toutes vos compagnies compatibles. Activez-le une
             fois ; connectez les portails restants ci-dessous.
@@ -122,9 +126,12 @@ export function StepConnect({
       {/* Block 3 — Extranets */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Extranets compagnie
-          </h2>
+          <div className="flex items-center gap-2">
+            <StepNumber n={3} />
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Extranets compagnie
+            </h2>
+          </div>
           <p className="text-[13px] text-panora-text-secondary leading-[18px]">
             Connectez les portails de vos compagnies d&apos;assurance — un accès
             par compagnie.
