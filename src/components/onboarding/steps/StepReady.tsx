@@ -184,35 +184,35 @@ function ForwardExample({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Email mock card */}
-      <div className="rounded-2xl border border-panora-border bg-white overflow-hidden shadow-[0px_4px_20px_-12px_rgba(0,0,0,0.12)]">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-panora-border bg-panora-bg">
-          <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
-            <Mail className="w-3.5 h-3.5 text-panora-green-dark" />
-            Nouveau message
-          </span>
-          <button
-            onClick={handleCopy}
-            className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-green-light text-[12px] font-semibold text-panora-green-dark hover:bg-panora-green/15 transition-colors"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                Copié
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                Copier le modèle
-              </>
-            )}
-          </button>
-        </div>
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
+      {/* Card header — mirrors AddressPanel */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-panora-green-dark shrink-0" />
+          L&apos;email idéal de cotation
+        </h2>
+        <button
+          onClick={handleCopy}
+          className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-green-light text-[12px] font-semibold text-panora-green-dark hover:bg-panora-green/15 transition-colors"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              Copié
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              Copier le modèle
+            </>
+          )}
+        </button>
+      </div>
 
+      {/* Inner white card — email content */}
+      <div className="rounded-xl border border-panora-border bg-white overflow-hidden shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
         {/* Headers */}
-        <div className="px-5 py-3 border-b border-panora-border flex flex-col gap-1.5">
+        <div className="px-4 py-3 border-b border-panora-border flex flex-col gap-1.5">
           <MetaRow label="À">
             <span className="font-mono text-panora-text">{COTATION_EMAIL}</span>
           </MetaRow>
@@ -226,7 +226,7 @@ function ForwardExample({
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 flex flex-col gap-3 text-[13px] text-panora-text leading-5">
+        <div className="px-4 py-4 flex flex-col gap-3 text-[13px] text-panora-text leading-5">
           <p>Bonjour,</p>
           <p className="text-panora-text-secondary">
             Merci de bien vouloir établir un devis pour le client ci-dessous :
