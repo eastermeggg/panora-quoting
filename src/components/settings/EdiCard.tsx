@@ -74,9 +74,7 @@ export function EdiCard() {
                   {EDI_BRAND}
                 </span>
                 <span className="text-[12px] text-panora-text-muted leading-4">
-                  {state.status === "connected" || state.status === "error"
-                    ? `Identifiant · ${state.login}`
-                    : "Un identifiant pour toutes vos compagnies"}
+                  Un identifiant pour toutes vos compagnies
                 </span>
               </div>
             </div>

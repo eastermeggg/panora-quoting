@@ -8,6 +8,7 @@ import {
   type ExtranetConfig,
   type InsuranceProduct,
 } from "@/data/settings-mock";
+import { useEdiConnection } from "@/data/edi-store";
 
 // ── Panel ──
 
@@ -24,6 +25,7 @@ export interface ExtranetCredentialsPanelProps {
     username: string;
     password: string;
     selectedProducts: InsuranceProduct[];
+    useEdi?: boolean;
   }) => void;
   onCancel?: () => void;
   /** Label on the primary save button. Defaults to "Enregistrer". */
@@ -48,10 +50,17 @@ export function ExtranetCredentialsPanel({
   const isEdit = variant === "edit";
   const hasNoModelized = extranet.modelizedProducts.length === 0;
   const existing = isEdit && isExtranetConfig(extranet) ? extranet : null;
+  const ediState = useEdiConnection();
+  const ediConnected = ediState.status === "connected";
+  const ediCompatible = extranet.ediCompatible ?? false;
+  const showEdiToggle = ediCompatible && ediConnected;
 
   const [username, setUsername] = useState(existing?.username ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [useEdi, setUseEdi] = useState(
+    isExtranetConfig(extranet) ? (extranet.useEdi ?? false) : false
+  );
 
   function handleSave() {
     // Products are declared globally in the Produits block, not per insurer.
@@ -60,11 +69,11 @@ export function ExtranetCredentialsPanel({
     const selectedProducts: InsuranceProduct[] =
       existing?.selectedProducts ??
       extranet.modelizedProducts.map((p) => p.product);
-    onSave({ username, password, selectedProducts });
+    onSave({ username, password, selectedProducts, useEdi: showEdiToggle ? useEdi : undefined });
   }
 
   const canSave =
-    username.trim().length > 0 && password.trim().length > 0;
+    useEdi || (username.trim().length > 0 && password.trim().length > 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,48 +88,80 @@ export function ExtranetCredentialsPanel({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-medium text-panora-text leading-5">
-          Identifiant
-        </label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="votre.identifiant@courtier.fr"
-          className="w-full h-[38px] px-3 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-medium text-panora-text leading-5">
-          Mot de passe
-        </label>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={isEdit ? "••••••••" : "Votre mot de passe"}
-            className="w-full h-[38px] px-3 pr-10 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
-          />
+      {showEdiToggle && (
+        <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border border-panora-border bg-panora-secondary/30">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-panora-text leading-5">
+              Utiliser EDI pour cet assureur
+            </span>
+            <span className="text-[11px] text-panora-text-muted leading-4">
+              Les sessions seront ouvertes via votre connexion EDIconnexion
+            </span>
+          </div>
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-panora-text-muted hover:text-panora-text-secondary transition-colors"
-          >
-            {showPassword ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
+            onClick={() => setUseEdi(!useEdi)}
+            className={cn(
+              "relative shrink-0 w-9 h-5 rounded-full transition-colors",
+              useEdi ? "bg-panora-green" : "bg-[#d8d3cc]"
             )}
+            role="switch"
+            aria-checked={useEdi}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)] transition-transform",
+                useEdi && "translate-x-4"
+              )}
+            />
           </button>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3 text-panora-green" />
-          <span className="text-[11px] text-panora-text-muted leading-4">
-            Chiffrement AES-256 de bout en bout
-          </span>
+      )}
+
+      <div className={cn("flex flex-col gap-5 transition-opacity", useEdi && showEdiToggle && "opacity-40 pointer-events-none")}>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-panora-text leading-5">
+            Identifiant
+          </label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="votre.identifiant@courtier.fr"
+            className="w-full h-[38px] px-3 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-panora-text leading-5">
+            Mot de passe
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isEdit ? "••••••••" : "Votre mot de passe"}
+              className="w-full h-[38px] px-3 pr-10 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-panora-text-muted hover:text-panora-text-secondary transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3 h-3 text-panora-green" />
+            <span className="text-[11px] text-panora-text-muted leading-4">
+              Chiffrement AES-256 de bout en bout
+            </span>
+          </div>
         </div>
       </div>
 

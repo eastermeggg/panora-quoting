@@ -79,6 +79,10 @@ export type ExtranetConfig = {
   emailForwardConfigured?: boolean;
   /** How long the session stays active once activated. Varies a lot per insurer. */
   sessionDurationLabel?: string;
+  /** Whether this insurer is reachable via EDIconnexion (single-gateway channel). */
+  ediCompatible?: boolean;
+  /** Whether the broker chose to route this insurer through EDIconnexion. */
+  useEdi?: boolean;
 };
 
 
@@ -95,6 +99,8 @@ export type AvailableExtranet = {
   otpDelivery?: OtpDelivery;
   /** Approximate session lifetime after activation. Varies a lot: AXA ≈ 4h, Generali ≈ 10 jours. */
   sessionDurationLabel?: string;
+  /** Whether this insurer is reachable via EDIconnexion (single-gateway channel). */
+  ediCompatible?: boolean;
 };
 
 // ── Master product list ──
@@ -364,6 +370,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "noreply.2fa@axa.fr",
     },
     sessionDurationLabel: "≈ 4 heures",
+    ediCompatible: true,
   },
   // Generali — two portal entries (both configured)
   {
@@ -384,6 +391,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "securite@generali.fr",
     },
     sessionDurationLabel: "≈ 10 jours",
+    ediCompatible: true,
   },
   {
     id: "avail-generali-sante",
@@ -402,6 +410,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "securite@generali.fr",
     },
     sessionDurationLabel: "≈ 10 jours",
+    ediCompatible: true,
   },
   // MAIF — two separate portals for different product lines
   {

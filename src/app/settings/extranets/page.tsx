@@ -152,11 +152,14 @@ export default function ExtranetsPage() {
                 otpDelivery: source.otpDelivery,
                 emailForwardConfigured: false,
                 sessionDurationLabel: source.sessionDurationLabel,
+                ediCompatible: source.ediCompatible,
+                useEdi: data.useEdi,
               });
             } else {
               updateConfiguredExtranet(modal.extranet.id, {
                 username: data.username,
                 selectedProducts: data.selectedProducts,
+                useEdi: data.useEdi,
               });
             }
             setModal(null);

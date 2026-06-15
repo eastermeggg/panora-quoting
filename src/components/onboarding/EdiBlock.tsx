@@ -25,13 +25,10 @@ export function EdiBlock({ step }: { step?: number }) {
         <div className="flex items-center gap-2">
           {step !== undefined && <StepNumber n={step} />}
           <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Connexion {EDI_BRAND}
+            Utilisez-vous {EDI_BRAND} sur vos extranets&nbsp;?
           </h2>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="text-[13px] text-panora-text-secondary">
-            Utilisez-vous {EDI_BRAND} sur vos extranets&nbsp;?
-          </span>
           <div className="inline-flex items-center gap-0.5 rounded-lg bg-panora-secondary p-0.5">
             <ChoiceBtn active={choice === "yes"} onClick={() => setChoice("yes")}>
               Oui
@@ -49,9 +46,9 @@ export function EdiBlock({ step }: { step?: number }) {
         <div className="flex items-start gap-2.5 rounded-lg border border-panora-border bg-panora-secondary/30 p-3.5">
           <Info className="w-4 h-4 text-panora-text-muted shrink-0 mt-0.5" />
           <p className="text-[12px] text-panora-text-secondary leading-[18px]">
-            Pas de problème. Vous coterez via les extranets ci-dessous. Si vous
-            souscrivez à {EDI_BRAND} plus tard, vous pourrez l&apos;activer à tout
-            moment depuis Paramètres&nbsp;›&nbsp;EDI.
+            Pas de problème. Si vous souscrivez à {EDI_BRAND} plus tard, vous
+            pourrez l&apos;activer à tout moment depuis
+            Paramètres&nbsp;›&nbsp;EDI.
           </p>
         </div>
       )}

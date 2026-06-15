@@ -51,6 +51,7 @@ export function StepConnect({
     username: string;
     password: string;
     selectedProducts: InsuranceProduct[];
+    useEdi?: boolean;
   }) {
     if (!modal) return;
     if (modal.type === "configure") {
@@ -74,12 +75,15 @@ export function StepConnect({
         otpDelivery: source.otpDelivery,
         emailForwardConfigured: false,
         sessionDurationLabel: source.sessionDurationLabel,
+        ediCompatible: source.ediCompatible,
+        useEdi: data.useEdi,
       });
       onConfigured(id);
     } else {
       updateConfiguredExtranet(modal.extranet.id, {
         username: data.username,
         selectedProducts: data.selectedProducts,
+        useEdi: data.useEdi,
       });
     }
     setModal(null);
