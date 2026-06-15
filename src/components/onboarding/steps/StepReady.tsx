@@ -12,6 +12,7 @@ import {
   Globe,
   GitCompare,
   Mail,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExtranetConfig } from "@/data/settings-mock";
@@ -164,9 +165,10 @@ const FLOW_STEPS = [
 function FlowTimeline() {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-panora-text-muted leading-4">
+      <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+        <Rocket className="w-4 h-4 text-panora-green-dark shrink-0" />
         Comment lancer votre première cotation
-      </span>
+      </h2>
       <ol className="flex flex-col">
         {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => {
           const isLast = i === FLOW_STEPS.length - 1;
