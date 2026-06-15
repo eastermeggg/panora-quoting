@@ -46,29 +46,38 @@ export function removeQuotedProduct(product: InsuranceProduct): void {
 }
 
 // ── Custom product requests (feedback loop to the team) ──
-// Free-text products that aren't in the catalog yet. Requesting one signals
-// demand to the team; it's tracked separately from the catalog selection.
+// Products that aren't in the catalog yet. Requesting one signals demand to the
+// team; it carries the insurers that offer it and any extra context, and is
+// tracked separately from the catalog selection.
 
-let requestedStore: string[] = [];
+export type RequestedProduct = {
+  name: string;
+  /** Free-text list of insurers that offer this product. */
+  assureurs?: string;
+  /** Any extra context for the team. */
+  details?: string;
+};
 
-function getRequestedSnapshot(): string[] {
+let requestedStore: RequestedProduct[] = [];
+
+function getRequestedSnapshot(): RequestedProduct[] {
   return requestedStore;
 }
 
-export function useRequestedProducts(): string[] {
+export function useRequestedProducts(): RequestedProduct[] {
   return useSyncExternalStore(subscribe, getRequestedSnapshot, getRequestedSnapshot);
 }
 
-export function requestCustomProduct(name: string): void {
-  const trimmed = name.trim();
-  if (!trimmed) return;
-  if (requestedStore.some((p) => p.toLowerCase() === trimmed.toLowerCase()))
+export function requestCustomProduct(req: RequestedProduct): void {
+  const name = req.name.trim();
+  if (!name) return;
+  if (requestedStore.some((r) => r.name.toLowerCase() === name.toLowerCase()))
     return;
-  requestedStore = [...requestedStore, trimmed];
+  requestedStore = [...requestedStore, { ...req, name }];
   notify();
 }
 
 export function removeRequestedProduct(name: string): void {
-  requestedStore = requestedStore.filter((p) => p !== name);
+  requestedStore = requestedStore.filter((r) => r.name !== name);
   notify();
 }
