@@ -24,21 +24,15 @@ const REVEAL_SUFFIX = "@panora.co";
 const COTATION_EMAIL_LOCKED = `${REVEAL_PREFIX}${"•".repeat(REVEAL_HIDDEN_CHARS.length)}${REVEAL_SUFFIX}`;
 const DOCS_URL = "https://panora.notion.site/";
 
+const PLACEHOLDER_CLIENT = "[Nom du client / raison sociale]";
+const PLACEHOLDER_DOCS = "[Kbis, bilan N-1, questionnaire rempli]";
+const PLACEHOLDER_PRECISIONS = "[échéance souhaitée, particularités du risque…]";
+
 interface StepReadyProps {
   configuredExtranets: ExtranetConfig[];
 }
 
 export function StepReady({ configuredExtranets }: StepReadyProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(COTATION_EMAIL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Pre-fill the example with what the broker actually set up, so the model
-  // reads like one of their own cotations rather than generic boilerplate.
   const insurerNames = Array.from(
     new Set(configuredExtranets.map((c) => c.insurerName))
   );
@@ -50,12 +44,13 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
     new Set(configuredExtranets.flatMap((c) => c.selectedProducts))
   );
   const produit =
-    products.length > 0 ? products.slice(0, 2).join(", ") : "Multirisque professionnelle";
+    products.length > 0
+      ? products.slice(0, 2).join(", ")
+      : "Multirisque professionnelle";
 
   return (
-    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10 items-center text-center">
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        align="center"
         eyebrow="Configuration terminée"
         title={
           <>
@@ -65,30 +60,14 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
         }
       />
 
-      {/* Email reveal — the centerpiece moment */}
-      <section className="relative w-full max-w-[820px]">
-        <div
-          aria-hidden
-          className="absolute inset-x-10 top-6 bottom-6 rounded-[28px] bg-panora-green/8 blur-2xl"
-        />
-        <div className="relative rounded-2xl bg-panora-bg border border-panora-border px-6 lg:px-10 py-8 lg:py-10 flex flex-col items-center gap-5 text-center overflow-hidden">
-          <h2 className="inline-flex items-center gap-2 text-[18px] lg:text-[20px] font-semibold text-panora-text font-display leading-7">
-            <Send className="w-4 h-4 text-panora-green-dark" />
-            Transférez vos cotations à cette adresse
-          </h2>
-          <EmailReveal copied={copied} onCopy={handleCopy} />
-          <p className="text-[12px] text-panora-text-muted leading-5 max-w-[420px]">
-            Transférez n&apos;importe quel email client à cette adresse,
-            l&apos;agent fait le reste.
-          </p>
-        </div>
-      </section>
+      {/* Address + email example side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
+        <AddressPanel />
+        <ForwardExample assureurs={assureurs} produit={produit} />
+      </div>
 
-      {/* The ideal email — what a good forward looks like */}
-      <ForwardExample assureurs={assureurs} produit={produit} />
-
-      {/* How it works — a single vertical flow */}
-      <section className="w-full max-w-[760px] flex flex-col gap-5 items-center">
+      {/* How it works */}
+      <section className="w-full flex flex-col gap-5">
         <h2 className="text-[18px] font-semibold text-panora-text font-display leading-6">
           Comment ça marche, du dossier à la cotation
         </h2>
@@ -127,12 +106,11 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
         </ol>
       </section>
 
-      {/* Secondary doc link */}
       <a
         href={DOCS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
+        className="self-start inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
       >
         Consulter la documentation
         <ExternalLink className="w-3 h-3" />
@@ -141,11 +119,36 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
   );
 }
 
-// ── The ideal email to forward ──
+// ── Left column: Panora address ──
 
-const PLACEHOLDER_CLIENT = "[Nom du client / raison sociale]";
-const PLACEHOLDER_DOCS = "[Kbis, bilan N-1, questionnaire rempli]";
-const PLACEHOLDER_PRECISIONS = "[échéance souhaitée, particularités du risque…]";
+function AddressPanel() {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(COTATION_EMAIL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+          <Send className="w-4 h-4 text-panora-green-dark shrink-0" />
+          Votre adresse de cotation
+        </h2>
+        <p className="text-[13px] text-panora-text-secondary leading-[20px]">
+          Transférez n&apos;importe quel e-mail client à cette adresse —
+          l&apos;agent extrait les informations et lance les cotations
+          automatiquement.
+        </p>
+      </div>
+      <EmailReveal copied={copied} onCopy={handleCopy} />
+    </div>
+  );
+}
+
+// ── Right column: ideal email example ──
 
 function buildTemplate(assureurs: string, produit: string): string {
   return [
@@ -174,27 +177,26 @@ function ForwardExample({
 }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  function handleCopy() {
     navigator.clipboard.writeText(buildTemplate(assureurs, produit));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }
 
   return (
-    <section className="w-full max-w-[760px] flex flex-col gap-5 items-center">
-      <div className="flex flex-col gap-1.5 items-center text-center">
-        <h2 className="text-[18px] font-semibold text-panora-text font-display leading-6">
-          À quoi ressemble un bon email de cotation
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5">
+          L&apos;email idéal de cotation
         </h2>
-        <p className="text-[13px] text-panora-text-secondary leading-5 max-w-[520px]">
+        <p className="text-[13px] text-panora-text-secondary leading-5">
           Pour une cotation complète du premier coup, incluez ces éléments.
-          L&apos;agent saura les retrouver dans votre message ou vos pièces
-          jointes.
+          L&apos;agent les retrouvera dans votre message ou vos pièces jointes.
         </p>
       </div>
 
-      {/* Email-styled card */}
-      <div className="w-full text-left rounded-2xl border border-panora-border bg-white overflow-hidden shadow-[0px_4px_20px_-12px_rgba(0,0,0,0.12)]">
+      {/* Email mock card */}
+      <div className="rounded-2xl border border-panora-border bg-white overflow-hidden shadow-[0px_4px_20px_-12px_rgba(0,0,0,0.12)]">
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-panora-border bg-panora-bg">
           <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
@@ -226,7 +228,8 @@ function ForwardExample({
           </MetaRow>
           <MetaRow label="Objet">
             <span className="text-panora-text">
-              Demande de devis — <Slot>{PLACEHOLDER_CLIENT}</Slot> —{" "}
+              Demande de devis —{" "}
+              <Slot>{PLACEHOLDER_CLIENT}</Slot> —{" "}
               <Mark>{produit}</Mark>
             </span>
           </MetaRow>
@@ -262,16 +265,17 @@ function ForwardExample({
       </div>
 
       <p className="inline-flex items-center gap-1.5 text-[12px] text-panora-text-muted leading-4">
-        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-panora-green-light">
+        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-panora-green-light shrink-0">
           <Check className="w-2.5 h-2.5 text-panora-green-dark" strokeWidth={3} />
         </span>
         Les quatre éléments surlignés sont indispensables à une bonne cotation.
       </p>
-    </section>
+    </div>
   );
 }
 
-// Pre-filled value (green) vs. a slot the broker fills per cotation (amber).
+// ── Primitive display helpers ──
+
 function Mark({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded px-1 bg-panora-green-light/70 text-panora-text font-medium">
@@ -349,20 +353,15 @@ function FlowStep({
 }) {
   return (
     <li className="relative flex gap-4 pb-6 last:pb-0">
-      {/* Numbered marker + connector */}
       <div className="shrink-0 flex flex-col items-center">
         <div className="relative z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-panora-border text-[13px] font-semibold text-panora-text tabular-nums shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
           {number}
         </div>
         {!isLast && (
-          <span
-            aria-hidden
-            className="flex-1 w-px bg-panora-border mt-1"
-          />
+          <span aria-hidden className="flex-1 w-px bg-panora-border mt-1" />
         )}
       </div>
 
-      {/* Content */}
       <div className="flex flex-col gap-1 pt-1 pb-1">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-panora-green-light">
@@ -380,7 +379,7 @@ function FlowStep({
   );
 }
 
-// ── Email reveal (typewriter) ──
+// ── Email address reveal (typewriter) ──
 
 function EmailReveal({
   copied,
@@ -417,14 +416,14 @@ function EmailReveal({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 border rounded-xl px-5 bg-white transition-all duration-300",
+        "flex items-center gap-3 border rounded-xl px-4 bg-white transition-all duration-300",
         pulse
           ? "border-panora-green-dark shadow-[0px_8px_24px_-8px_rgba(0,162,114,0.28)]"
           : "border-panora-green-border shadow-[0px_3px_14px_-6px_rgba(0,162,114,0.15)]"
       )}
       style={{ height: "52px" }}
     >
-      <span className="text-[15px] lg:text-[17px] text-panora-text font-medium flex-1 truncate font-mono tracking-tight">
+      <span className="text-[14px] lg:text-[15px] text-panora-text font-medium flex-1 truncate font-mono tracking-tight">
         {displayed}
       </span>
       <button

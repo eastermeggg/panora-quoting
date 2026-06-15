@@ -142,7 +142,7 @@ function ModesBreakdown() {
             { label: "Lu par Panora", tone: "accent" },
             { label: "Session ouverte", tone: "accent" },
           ]}
-          body="L'agent lit le code et garde vos sessions ouvertes. Activez ce mode chez votre compagnie d'assurance dès qu'il est proposé — seule option automatisable de bout en bout."
+          body="Panora intercepte automatiquement le code et active la session sans intervention de votre part. Seule option entièrement automatisable — activez-le chez vos compagnies dès que c'est proposé."
         />
         <ModeCard
           icon={<Smartphone className="w-5 h-5 text-panora-warning-text" />}
@@ -417,7 +417,7 @@ function MethodPicker({
           title="Connectez votre messagerie"
           recommended
           mode="auto"
-          body="Panora lit uniquement les e-mails contenant un code de validation de vos compagnies d'assurance — en lecture seule, révocable à tout moment. Rien à configurer dans votre boîte."
+          body="Un filtre strict intercepte uniquement les codes de vérification envoyés par vos compagnies d'assurance — aucun autre e-mail n'est accessible. Connexion OAuth révocable à tout moment, rien à configurer dans votre boîte."
         />
         <MethodCard
           selected={value === "forward"}
@@ -532,9 +532,9 @@ function MailboxConnectPanel({
           </div>
         </div>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[640px]">
-          Panora lit uniquement les e-mails contenant un code de validation de
-          vos compagnies d&apos;assurance, en lecture seule. Vous pouvez révoquer
-          cet accès à tout moment depuis les paramètres.
+          Panora intercepte uniquement les codes de vérification envoyés par vos
+          compagnies d&apos;assurance. Aucun autre courrier n&apos;est accessible.
+          Révocable à tout moment depuis vos paramètres.
         </p>
         <div className="flex items-center justify-end pt-1">
           <button
@@ -592,11 +592,10 @@ function MailboxConnectPanel({
           Choisissez votre messagerie
         </h2>
         <p className="text-[13px] text-panora-text-secondary leading-[20px] max-w-[600px]">
-          Pour vous éviter de saisir manuellement les codes de double
-          authentification, Panora lit uniquement les e-mails contenant un code
-          de validation de vos compagnies d&apos;assurance. L&apos;accès est
-          limité à cet usage, en lecture seule, et révocable à tout moment depuis
-          vos paramètres.
+          Pour automatiser la saisie des codes 2FA, Panora se connecte à votre
+          messagerie via OAuth avec un filtre strict : seuls les e-mails de
+          vérification envoyés par vos compagnies d&apos;assurance sont
+          interceptés. Aucun autre courrier n&apos;est accessible à Panora.
         </p>
       </div>
 
@@ -633,21 +632,21 @@ function ReassuranceBlock() {
   return (
     <ul className="flex flex-col gap-1.5 text-[12px] text-panora-text-secondary leading-[18px]">
       <ReassuranceRow>
-        <span className="font-medium text-panora-text">Lecture seule</span>{" "}
-        sur les emails 2FA de vos compagnies d&apos;assurance.
+        <span className="font-medium text-panora-text">Filtre strict</span>{" "}
+        sur les codes 2FA de vos compagnies uniquement — aucun autre e-mail
+        n&apos;est accessible à Panora.
       </ReassuranceRow>
       <ReassuranceRow>
         <span className="font-medium text-panora-text">
-          Aucun autre courrier n&apos;est lu.
+          Pas de stockage de vos e-mails.
         </span>{" "}
-        Le reste de votre boîte vous appartient.
+        Seul le code est transmis à l&apos;agent, puis effacé immédiatement.
       </ReassuranceRow>
       <ReassuranceRow>
         <span className="font-medium text-panora-text">
-          Rien n&apos;est stocké en clair
-        </span>{" "}
-        — chiffrement AES-256, serveurs français, accès révocable à tout
-        moment.
+          Chiffrement AES-256
+        </span>
+        , serveurs hébergés en France, accès révocable à tout moment.
       </ReassuranceRow>
       <li className="pt-1">
         <a
@@ -1350,8 +1349,8 @@ function OAuthConsentModal({
               <li className="flex items-start gap-2.5">
                 <Mail className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#5f6368]" />
                 <span>
-                  Lire les codes 2FA envoyés par vos portails des compagnies
-                  d&apos;assurance.
+                  Accéder aux e-mails de vérification envoyés par vos portails
+                  d&apos;assurance pour en extraire les codes 2FA.
                 </span>
               </li>
             </ul>
