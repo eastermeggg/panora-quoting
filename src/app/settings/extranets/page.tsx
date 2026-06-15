@@ -4,6 +4,7 @@ import { useState } from "react";
 import { KeyRound, ExternalLink } from "lucide-react";
 import { SecurityTrustBar } from "@/components/settings/SecurityTrustBar";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
+import { EdiCard } from "@/components/settings/EdiCard";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { AddExtranetList } from "@/components/settings/AddExtranetList";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
@@ -57,6 +58,24 @@ export default function ExtranetsPage() {
           </div>
           <SecurityTrustBar />
         </div>
+
+        {/* EDI — global channel, a setting that sits above (and separate from)
+            the per-company extranet list. */}
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Connexion EDI
+            </h2>
+            <p className="text-[13px] text-panora-text-secondary leading-[18px] max-w-[560px]">
+              Un canal unique qui couvre toutes vos compagnies compatibles avec
+              un seul identifiant. À activer une fois — distinct de vos accès
+              extranet compagnie par compagnie.
+            </p>
+          </div>
+          <div className="max-w-[520px]">
+            <EdiCard />
+          </div>
+        </section>
 
         {/* Configured extranets */}
         {configuredExtranets.length > 0 ? (

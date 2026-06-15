@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Check,
   Inbox,
+  Network,
 } from "lucide-react";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ProductBadge } from "./ProductBadge";
@@ -24,6 +25,7 @@ import {
   useCotations,
   getPendingDemandesForInsurer,
 } from "@/data/cotations-store";
+import { useEdiCoveredInsurerIds } from "@/data/edi-store";
 
 interface ExtranetCardProps {
   config: ExtranetConfig;
@@ -53,6 +55,9 @@ export function ExtranetCard({
   const [modalOpen, setModalOpen] = useState(false);
   const isSessionActive = config.sessionState.status === "active";
 
+  // Whether the global EDI channel already covers this company.
+  const ediCovered = useEdiCoveredInsurerIds().has(config.insurerId);
+
   // Stock of cotation requests waiting on this insurer's session to reopen.
   const cotations = useCotations();
   const waitingCount = isSessionActive
@@ -75,6 +80,12 @@ export function ExtranetCard({
                 {config.insurerName}
               </span>
             </div>
+            {ediCovered && (
+              <span className="shrink-0 inline-flex items-center gap-1 h-5 px-2 rounded-full bg-panora-green-light text-[11px] font-medium text-panora-green-dark">
+                <Network className="w-3 h-3" />
+                Couvert par EDI
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-x-3 gap-y-1 items-center min-w-0">

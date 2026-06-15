@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
+import { EdiCard } from "@/components/settings/EdiCard";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
@@ -108,10 +109,14 @@ export function StepConnect({
             Extranets compagnie
           </h2>
           <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-            Connectez les portails de vos compagnies d&apos;assurance — un accès
-            par compagnie.
+            Activez l&apos;EDI une fois pour toutes vos compagnies compatibles,
+            puis connectez les portails restants un par un.
           </p>
         </div>
+
+        {/* EDI — one credential for every compatible company, ahead of the
+            per-company extranets (spec §2.1). */}
+        <EdiCard />
 
         {/* Command bar */}
         <div className="flex flex-col gap-2">
