@@ -20,25 +20,26 @@ export function EdiBlock({ step }: { step?: number }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        {step !== undefined && <StepNumber n={step} />}
-        <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-          Connexion {EDI_BRAND}
-        </h2>
-      </div>
-
-      {/* Triage — do they have EDI at all? */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-[13px] text-panora-text-secondary">
-          Avez-vous une connexion EDI&nbsp;?
-        </span>
-        <div className="inline-flex items-center gap-0.5 rounded-lg bg-panora-secondary p-0.5">
-          <ChoiceBtn active={choice === "yes"} onClick={() => setChoice("yes")}>
-            Oui
-          </ChoiceBtn>
-          <ChoiceBtn active={choice === "no"} onClick={() => setChoice("no")}>
-            Non
-          </ChoiceBtn>
+      {/* Title with the "do you have EDI?" triage on the right */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          {step !== undefined && <StepNumber n={step} />}
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Connexion {EDI_BRAND}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[13px] text-panora-text-secondary">
+            Avez-vous une connexion EDI&nbsp;?
+          </span>
+          <div className="inline-flex items-center gap-0.5 rounded-lg bg-panora-secondary p-0.5">
+            <ChoiceBtn active={choice === "yes"} onClick={() => setChoice("yes")}>
+              Oui
+            </ChoiceBtn>
+            <ChoiceBtn active={choice === "no"} onClick={() => setChoice("no")}>
+              Non
+            </ChoiceBtn>
+          </div>
         </div>
       </div>
 
