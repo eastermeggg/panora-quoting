@@ -60,51 +60,14 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
         }
       />
 
+      {/* How it works — compact digest strip, above the main cards */}
+      <FlowStrip />
+
       {/* Address + email example side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
         <AddressPanel />
         <ForwardExample assureurs={assureurs} produit={produit} />
       </div>
-
-      {/* How it works */}
-      <section className="w-full flex flex-col gap-5">
-        <h2 className="text-[18px] font-semibold text-panora-text font-display leading-6">
-          Comment ça marche, du dossier à la cotation
-        </h2>
-        <ol className="w-full text-left flex flex-col">
-          <FlowStep
-            number={1}
-            icon={<FolderInput className="w-4 h-4 text-panora-green-dark" />}
-            title="Vous récupérez les documents du client"
-            body="Pour chaque nouvelle cotation, rassemblez les pièces et informations envoyées par le client : devis, contrats, justificatifs."
-          />
-          <FlowStep
-            number={2}
-            icon={<Forward className="w-4 h-4 text-panora-green-dark" />}
-            title="Vous envoyez ou transférez à Panora"
-            body="Envoyez un email à votre adresse Panora, ou transférez celui du client. Tous les documents sont rattachés automatiquement au nouveau dossier."
-          />
-          <FlowStep
-            number={3}
-            icon={<Sparkles className="w-4 h-4 text-panora-green-dark" />}
-            title="L'agent vérifie les informations"
-            body="Panora lit les pièces et signale ce qui manque. Vous complétez directement dans le dossier : ajout de documents, précisions, échanges avec le client."
-          />
-          <FlowStep
-            number={4}
-            icon={<Globe className="w-4 h-4 text-panora-green-dark" />}
-            title="L'agent ouvre les portails des compagnies d'assurance"
-            body="Quand tout est en place, Panora se connecte aux extranets configurés, remplit les formulaires et lance les cotations dossier par dossier."
-          />
-          <FlowStep
-            number={5}
-            icon={<GitCompare className="w-4 h-4 text-panora-green-dark" />}
-            title="Vos cotations sont prêtes à comparer"
-            body="Les offres reviennent dans Panora, comparables côte à côte. Vous les analysez, vous les annotez, vous les transformez en présentation client."
-            isLast
-          />
-        </ol>
-      </section>
 
       <a
         href={DOCS_URL}
@@ -166,6 +129,42 @@ function buildTemplate(assureurs: string, produit: string): string {
     "",
     "Bien cordialement,",
   ].join("\n");
+}
+
+// ── How it works — compact digest ──
+
+const FLOW_STEPS = [
+  { icon: FolderInput, label: "Documents client" },
+  { icon: Forward,     label: "Transférer à Panora" },
+  { icon: Sparkles,    label: "Vérification IA" },
+  { icon: Globe,       label: "Cotations lancées" },
+  { icon: GitCompare,  label: "Comparaison" },
+] as const;
+
+function FlowStrip() {
+  return (
+    <div className="flex flex-col gap-2.5">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-panora-text-muted leading-4">
+        Comment ça marche
+      </span>
+      <ol className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {FLOW_STEPS.map(({ icon: Icon, label }, i) => (
+          <li
+            key={i}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-panora-border bg-white"
+          >
+            <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tabular-nums">
+              {i + 1}
+            </span>
+            <Icon className="w-3.5 h-3.5 text-panora-green-dark shrink-0" />
+            <span className="text-[12px] font-medium text-panora-text leading-4 truncate">
+              {label}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 function ForwardExample({
@@ -322,49 +321,6 @@ function FieldLine({
       </span>
       <span className="text-panora-text-muted">{label} :</span>
       <span className="min-w-0">{children}</span>
-    </li>
-  );
-}
-
-// ── Vertical flow step ──
-
-function FlowStep({
-  number,
-  icon,
-  title,
-  body,
-  isLast,
-}: {
-  number: number;
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  isLast?: boolean;
-}) {
-  return (
-    <li className="relative flex gap-4 pb-6 last:pb-0">
-      <div className="shrink-0 flex flex-col items-center">
-        <div className="relative z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-panora-border text-[13px] font-semibold text-panora-text tabular-nums shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
-          {number}
-        </div>
-        {!isLast && (
-          <span aria-hidden className="flex-1 w-px bg-panora-border mt-1" />
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1 pt-1 pb-1">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-panora-green-light">
-            {icon}
-          </span>
-          <h3 className="text-[14px] font-semibold text-panora-text leading-5 font-display">
-            {title}
-          </h3>
-        </div>
-        <p className="text-[13px] text-panora-text-secondary leading-5">
-          {body}
-        </p>
-      </div>
     </li>
   );
 }
