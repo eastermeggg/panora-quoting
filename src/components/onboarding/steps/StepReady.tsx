@@ -52,7 +52,6 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        eyebrow="Configuration terminée"
         title={
           <>
             Votre assistant cotation{" "}
@@ -102,8 +101,8 @@ function AddressPanel() {
           Votre adresse de cotation
         </h2>
         <p className="text-[13px] text-panora-text-secondary leading-[20px]">
-          Transférez n&apos;importe quel e-mail client à cette adresse —
-          l&apos;agent extrait les informations et lance les cotations
+          Transférez n&apos;importe quel e-mail client à cette adresse.
+          L&apos;agent extrait les informations et lance les cotations
           automatiquement.
         </p>
       </div>
@@ -116,7 +115,7 @@ function AddressPanel() {
 
 function buildTemplate(assureurs: string, produit: string): string {
   return [
-    `Objet : Demande de devis — ${PLACEHOLDER_CLIENT} — ${produit}`,
+    `Objet : Demande de devis - ${PLACEHOLDER_CLIENT} - ${produit}`,
     "",
     "Bonjour,",
     "",
@@ -249,8 +248,8 @@ function ForwardExample({
           </MetaRow>
           <MetaRow label="Objet">
             <span className="text-panora-text">
-              Demande de devis —{" "}
-              <Slot>{PLACEHOLDER_CLIENT}</Slot> —{" "}
+              Demande de devis -{" "}
+              <Slot>{PLACEHOLDER_CLIENT}</Slot> -{" "}
               <Mark>{produit}</Mark>
             </span>
           </MetaRow>

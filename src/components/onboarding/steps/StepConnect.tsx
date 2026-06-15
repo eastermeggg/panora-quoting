@@ -91,7 +91,6 @@ export function StepConnect({
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        eyebrow="Vos portails"
         title={
           <>
             Connectez vos{" "}
@@ -127,7 +126,7 @@ export function StepConnect({
           </div>
           <p className="text-[13px] text-panora-text-secondary leading-[18px]">
             Ajoutez les compagnies auprès de qui vous cotez. L&apos;agent se
-            connecte à leur portail à votre place — un accès par compagnie.
+            connecte à leur portail à votre place, avec un accès par compagnie.
           </p>
         </div>
 

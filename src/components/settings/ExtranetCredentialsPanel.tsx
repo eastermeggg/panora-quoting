@@ -99,7 +99,7 @@ export function ExtranetCredentialsPanel({
           <Info className="w-4 h-4 text-panora-warning-text shrink-0 mt-0.5" />
           <p className="text-[12px] leading-[18px] text-panora-warning-text">
             Aucun produit n&apos;est encore modélisé pour cet assureur. Vous
-            pouvez enregistrer vos identifiants — on vous notifie dès que des
+            pouvez enregistrer vos identifiants : on vous notifie dès que des
             produits sont disponibles.
           </p>
         </div>

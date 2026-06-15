@@ -9,7 +9,6 @@ export function StepWelcome() {
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        eyebrow="Bienvenue"
         title={
           <>
             Configurons votre <HeroAccent>assistant cotation</HeroAccent> en
