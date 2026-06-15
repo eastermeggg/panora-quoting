@@ -84,7 +84,18 @@ export function EdiCard() {
                 </span>
               </div>
             </div>
-            {headerBadge}
+            <div className="flex items-center gap-2 shrink-0">
+              {headerBadge}
+              {state.status === "connected" && (
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md border border-panora-border bg-white text-[12px] font-medium text-panora-text-secondary hover:bg-panora-secondary/50 transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Modifier
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Error banner — one bad credential breaks every EDI company */}
@@ -99,49 +110,35 @@ export function EdiCard() {
           )}
         </div>
 
-        {/* Action strip */}
-        <div className="border-t border-panora-border flex items-center justify-between gap-2 px-4 py-2.5">
-          {state.status === "connecting" ? (
-            <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Vérification des identifiants…
-            </span>
-          ) : state.status === "connected" ? (
-            <>
+        {/* Action strip — only when there's a primary action to take. Once
+            connected, modify/deactivate live next to the badge and in the modal. */}
+        {state.status !== "connected" && (
+          <div className="border-t border-panora-border flex items-center justify-between gap-2 px-4 py-2.5">
+            {state.status === "connecting" ? (
+              <span className="inline-flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Vérification des identifiants…
+              </span>
+            ) : state.status === "error" ? (
               <button
                 onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md border border-panora-border bg-white text-[12px] font-medium text-panora-text-secondary hover:bg-panora-secondary/50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-error text-white text-[12px] font-semibold hover:brightness-110 transition"
               >
-                <RefreshCw className="w-3 h-3" />
-                Mettre à jour les identifiants
+                <KeyRound className="w-3 h-3" />
+                Corriger les identifiants
               </button>
+            ) : (
               <button
-                onClick={() => setEdiState({ status: "idle" })}
-                className="inline-flex items-center gap-1.5 px-2 h-7 rounded-md text-[12px] font-medium text-panora-text-muted hover:text-panora-error transition-colors"
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-white text-[12px] font-semibold hover:brightness-110 transition"
+                style={{ backgroundColor: EDI_BLUE }}
               >
-                <Power className="w-3 h-3" />
-                Désactiver
+                <KeyRound className="w-3.5 h-3.5" />
+                Activer la connexion {EDI_BRAND}
               </button>
-            </>
-          ) : state.status === "error" ? (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-error text-white text-[12px] font-semibold hover:brightness-110 transition"
-            >
-              <KeyRound className="w-3 h-3" />
-              Corriger les identifiants
-            </button>
-          ) : (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-white text-[12px] font-semibold hover:brightness-110 transition"
-              style={{ backgroundColor: EDI_BLUE }}
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              Activer la connexion {EDI_BRAND}
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {modalOpen && (
@@ -257,13 +254,28 @@ function EdiConnectionModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-5 flex items-center justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-3 h-9 rounded-md text-[13px] font-medium text-panora-text-secondary hover:text-panora-text transition-colors"
-          >
-            Annuler
-          </button>
+        <div className="px-6 pb-5 flex items-center justify-between gap-2">
+          <div>
+            {initial && (
+              <button
+                onClick={() => {
+                  setEdiState({ status: "idle" });
+                  onClose();
+                }}
+                className="inline-flex items-center gap-1.5 px-2 h-9 rounded-md text-[13px] font-medium text-panora-text-muted hover:text-panora-error transition-colors"
+              >
+                <Power className="w-3.5 h-3.5" />
+                Désactiver
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3 h-9 rounded-md text-[13px] font-medium text-panora-text-secondary hover:text-panora-text transition-colors"
+            >
+              Annuler
+            </button>
           <button
             onClick={submit}
             disabled={!canSubmit || submitting}
@@ -281,7 +293,8 @@ function EdiConnectionModal({
                 {initial ? "Mettre à jour" : "Connecter"}
               </>
             )}
-          </button>
+            </button>
+          </div>
         </div>
       </div>
     </div>
