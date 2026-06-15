@@ -185,16 +185,6 @@ function ForwardExample({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5">
-          L&apos;email idéal de cotation
-        </h2>
-        <p className="text-[13px] text-panora-text-secondary leading-5">
-          Pour une cotation complète du premier coup, incluez ces éléments.
-          L&apos;agent les retrouvera dans votre message ou vos pièces jointes.
-        </p>
-      </div>
-
       {/* Email mock card */}
       <div className="rounded-2xl border border-panora-border bg-white overflow-hidden shadow-[0px_4px_20px_-12px_rgba(0,0,0,0.12)]">
         {/* Toolbar */}
