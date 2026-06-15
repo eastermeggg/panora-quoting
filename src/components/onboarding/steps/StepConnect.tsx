@@ -110,17 +110,11 @@ export function StepConnect({
 
       {/* Block 3 — Extranets */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <StepNumber n={3} />
-            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-              Extranets compagnie
-            </h2>
-          </div>
-          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-            Connectez les portails de vos compagnies d&apos;assurance — un accès
-            par compagnie.
-          </p>
+        <div className="flex items-center gap-2">
+          <StepNumber n={3} />
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Extranets compagnie
+          </h2>
         </div>
 
         {/* Command bar */}

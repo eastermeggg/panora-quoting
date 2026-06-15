@@ -20,17 +20,11 @@ export function EdiBlock({ step }: { step?: number }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          {step !== undefined && <StepNumber n={step} />}
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Connexion {EDI_BRAND}
-          </h2>
-        </div>
-        <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-          {EDI_BRAND} couvre toutes vos compagnies compatibles avec un seul
-          identifiant. C&apos;est optionnel — indiquez si vous y avez accès.
-        </p>
+      <div className="flex items-center gap-2">
+        {step !== undefined && <StepNumber n={step} />}
+        <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+          Connexion {EDI_BRAND}
+        </h2>
       </div>
 
       {/* Triage — do they have EDI at all? */}
