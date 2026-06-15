@@ -147,8 +147,8 @@ const FLOW_STEPS = [
   },
   {
     icon: Sparkles,
-    label: "Laissez l'agent vérifier",
-    sub: "Il analyse les pièces et vous signale automatiquement ce qui manque.",
+    label: "Notre agent constitue le dossier",
+    sub: "Il rassemble les pièces, repère ce qui manque et vous le signale.",
   },
   {
     icon: Globe,
