@@ -1,6 +1,13 @@
 "use client";
 
-import { Building2, Check, Loader2, LayoutGrid, Clock } from "lucide-react";
+import {
+  Building2,
+  Check,
+  Loader2,
+  LayoutGrid,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
@@ -9,8 +16,8 @@ import { getCotationStatus } from "@/data/mock";
 import { useConfiguredExtranets, type ExtranetConfig } from "@/data/settings-mock";
 import { getBlockedInsurerIds } from "@/data/cotations-store";
 
-/* ── Insurer row — marks insurers whose request is stuck behind a closed
-   session with an amber clock, and trails an "en attente" chip. ── */
+/* ── Insurer row — flags insurers that need the broker: a clock when a request
+   waits on a closed session, an alert when the agent needs input (HITL). ── */
 function InsurerRow({
   insurers,
   blocked,
@@ -22,6 +29,8 @@ function InsurerRow({
     <div className="flex items-center gap-x-2.5 gap-y-1.5 flex-wrap">
       {insurers.map((insurer) => {
         const isBlocked = blocked.has(insurer.id);
+        const needsInput = insurer.status === "action_required";
+        const flagged = isBlocked || needsInput;
         return (
           <div key={insurer.id} className="flex items-center gap-[7px]">
             <div className="relative shrink-0">
@@ -30,16 +39,20 @@ function InsurerRow({
                 name={insurer.name}
                 size="sm"
               />
-              {isBlocked && (
+              {flagged && (
                 <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-panora-warning-bg border border-white flex items-center justify-center">
-                  <Clock className="w-2 h-2 text-panora-warning-text" />
+                  {needsInput ? (
+                    <AlertTriangle className="w-2 h-2 text-panora-warning-text" />
+                  ) : (
+                    <Clock className="w-2 h-2 text-panora-warning-text" />
+                  )}
                 </span>
               )}
             </div>
             <span
               className={cn(
                 "text-[13px] leading-5",
-                isBlocked
+                flagged
                   ? "text-panora-warning-text font-medium"
                   : "text-panora-text-muted"
               )}
@@ -91,15 +104,59 @@ function getDisplayStatus(
   return getCotationStatus(cotation);
 }
 
+/**
+ * Attention is the second axis, orthogonal to the column: does this cotation
+ * need the broker's hand, and why. It's a single concept ("Action requise") with
+ * a typed reason — adding a future reason is one entry here, never a new column
+ * or status. Reason drives the icon; the per-insurer badges show which insurers.
+ *
+ *  - "hitl":    an insurer needs input now (2FA code, missing info).
+ *  - "session": a request is waiting on a closed portal session to reopen.
+ *
+ * HITL outranks session: the agent is paused on the broker right now, whereas a
+ * closed session is a batch the broker releases by reopening the portal.
+ */
+type AttentionReason = "hitl" | "session";
+
+const ATTENTION: Record<
+  AttentionReason,
+  { label: string; Icon: typeof Clock }
+> = {
+  hitl: { label: "Action requise", Icon: AlertTriangle },
+  session: { label: "Action requise", Icon: Clock },
+};
+
+function getAttention(
+  cotation: Cotation,
+  extranets: ExtranetConfig[]
+): AttentionReason | null {
+  if (cotation.insurers.some((i) => i.status === "action_required")) {
+    return "hitl";
+  }
+  if (isStuck(cotation, extranets)) return "session";
+  return null;
+}
+
+/** The amber "Action requise" pill, shared by the card footer. */
+function AttentionFlag({ reason }: { reason: AttentionReason }) {
+  const { label, Icon } = ATTENTION[reason];
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-warning-bg text-[12px] font-medium text-panora-warning-text">
+      <Icon className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 /* ── Card footer per status ── */
 function CardFooter({
   cotation,
   status,
-  stuck,
+  attention,
 }: {
   cotation: Cotation;
   status: CotationStatus;
-  stuck: boolean;
+  attention: AttentionReason | null;
 }) {
   const completed = cotation.insurers.filter(
     (i) => i.status === "completed"
@@ -120,18 +177,15 @@ function CardFooter({
   }
 
   if (status === "en_cours") {
-    // Stuck behind a closed session: flag it instead of a progress bar that
-    // can't move until the broker reactivates.
-    if (stuck) {
+    // Needs the broker (HITL or a closed session): flag it. The progress bar
+    // can't tell the broker to act, and a session-stuck bar can't even move.
+    if (attention) {
       return (
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#85827b]">
             {cotation.createdAt}
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-warning-bg text-[12px] font-medium text-panora-warning-text">
-            <Clock className="w-3 h-3" />
-            En attente de session
-          </span>
+          <AttentionFlag reason={attention} />
         </div>
       );
     }
@@ -271,12 +325,12 @@ function CotationCard({
   cotation,
   status,
   blocked,
-  stuck,
+  attention,
 }: {
   cotation: Cotation;
   status: CotationStatus;
   blocked: Set<string>;
-  stuck: boolean;
+  attention: AttentionReason | null;
 }) {
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
@@ -327,7 +381,7 @@ function CotationCard({
         <div className="h-px bg-[#d9d9d9]" />
 
         {/* Footer */}
-        <CardFooter cotation={cotation} status={status} stuck={stuck} />
+        <CardFooter cotation={cotation} status={status} attention={attention} />
       </div>
     </Link>
   );
@@ -377,7 +431,7 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
                   cotation={cotation}
                   status={column.key}
                   blocked={getBlockedInsurerIds(cotation, extranets)}
-                  stuck={isStuck(cotation, extranets)}
+                  attention={getAttention(cotation, extranets)}
                 />
               ))
             )}
