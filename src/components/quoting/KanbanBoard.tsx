@@ -237,7 +237,7 @@ function SingleAutoPreparationCard({
         {/* Title + client */}
         <div className="flex flex-col gap-0.5">
           <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
-            {cotation.product} — {auto.conducteur.split(" ")[0]}
+            {cotation.product} · {auto.conducteur.split(" ")[0]}
           </h3>
           <span className="text-[13px] text-panora-text-muted leading-5">
             {cotation.client}

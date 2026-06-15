@@ -46,8 +46,8 @@ export function SessionExpiredBanner() {
         </span>
         <span className="text-panora-error/85">
           {waiting > 0
-            ? ` — ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} pour ${waitingPlural ? "les" : "la"} lancer.`
-            : ` — réactivez${plural ? "-les" : "-la"} pour reprendre les cotations.`}
+            ? `. ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} pour ${waitingPlural ? "les" : "la"} lancer.`
+            : `. Réactivez${plural ? "-les" : "-la"} pour reprendre les cotations.`}
         </span>
       </p>
       <Link

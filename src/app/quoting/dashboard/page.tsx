@@ -55,7 +55,7 @@ export default function DashboardPage() {
           <KanbanBoard cotations={cotations} />
         ) : (
           <div className="text-sm text-panora-text-muted text-center py-12">
-            Vue table — à venir
+            Vue tableau à venir
           </div>
         )}
       </div>
