@@ -49,57 +49,57 @@ function InsurerRow({
           </div>
         );
       })}
-      {blocked.size > 0 && (
-        <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-full bg-panora-warning-bg text-[11px] font-medium text-panora-warning-text">
-          <Clock className="w-3 h-3" />
-          En attente de session
-        </span>
-      )}
     </div>
   );
 }
 
 const columns: {
-  key: DisplayStatus;
+  key: CotationStatus;
   label: string;
   dotColor: string;
 }[] = [
   { key: "preparation", label: "En préparation", dotColor: "bg-[#f5ae73]" },
-  { key: "bloque", label: "En attente de session", dotColor: "bg-[#cb8052]" },
   { key: "en_cours", label: "En cours", dotColor: "bg-[#be93e4]" },
   { key: "terminee", label: "Terminé", dotColor: "bg-[#94ce9a]" },
 ];
 
 /**
- * Board status, session-aware. A cotation is "bloque" only when nothing is
- * actively in flight (no in_progress) and at least one insurer is waiting on a
- * closed session — i.e. the only thing standing between it and progress is a
- * reactivation. Cards with live work stay in their natural column (with the
- * amber chip). Everything else falls back to the base status.
+ * A cotation is "stuck" when nothing is actively in flight (no in_progress) and
+ * at least one insurer is waiting on a closed session — the only thing standing
+ * between it and progress is a reactivation. Stuck cards live in "En cours" with
+ * a warning flag rather than a column of their own.
  */
-type DisplayStatus = CotationStatus | "bloque";
-
-function getDisplayStatus(
-  cotation: Cotation,
-  extranets: ExtranetConfig[]
-): DisplayStatus {
-  const base = getCotationStatus(cotation);
-  if (base === "terminee") return "terminee";
+function isStuck(cotation: Cotation, extranets: ExtranetConfig[]): boolean {
+  if (getCotationStatus(cotation) === "terminee") return false;
   const blocked = getBlockedInsurerIds(cotation, extranets);
   const hasInProgress = cotation.insurers.some(
     (i) => i.status === "in_progress"
   );
-  if (blocked.size > 0 && !hasInProgress) return "bloque";
-  return base;
+  return blocked.size > 0 && !hasInProgress;
+}
+
+/**
+ * Board column for a cotation. Stuck cards (launched but waiting on a closed
+ * session) surface in "En cours" so the broker sees them alongside live work,
+ * flagged as needing a reactivation.
+ */
+function getDisplayStatus(
+  cotation: Cotation,
+  extranets: ExtranetConfig[]
+): CotationStatus {
+  if (isStuck(cotation, extranets)) return "en_cours";
+  return getCotationStatus(cotation);
 }
 
 /* ── Card footer per status ── */
 function CardFooter({
   cotation,
   status,
+  stuck,
 }: {
   cotation: Cotation;
-  status: DisplayStatus;
+  status: CotationStatus;
+  stuck: boolean;
 }) {
   const completed = cotation.insurers.filter(
     (i) => i.status === "completed"
@@ -119,21 +119,22 @@ function CardFooter({
     );
   }
 
-  if (status === "bloque") {
-    return (
-      <div className="flex items-center justify-between">
-        <span className="text-[12px] text-[#85827b]">
-          {cotation.cotationId} - {cotation.createdAt}
-        </span>
-        <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-warning-bg text-[12px] font-medium text-panora-warning-text">
-          <Clock className="w-3 h-3" />
-          Réactiver pour lancer
-        </span>
-      </div>
-    );
-  }
-
   if (status === "en_cours") {
+    // Stuck behind a closed session: flag it instead of a progress bar that
+    // can't move until the broker reactivates.
+    if (stuck) {
+      return (
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#85827b]">
+            {cotation.createdAt}
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-warning-bg text-[12px] font-medium text-panora-warning-text">
+            <Clock className="w-3 h-3" />
+            En attente de session
+          </span>
+        </div>
+      );
+    }
     const pct = total > 0 ? (completed / total) * 100 : 0;
     return (
       <div className="flex items-center justify-between">
@@ -270,10 +271,12 @@ function CotationCard({
   cotation,
   status,
   blocked,
+  stuck,
 }: {
   cotation: Cotation;
-  status: DisplayStatus;
+  status: CotationStatus;
   blocked: Set<string>;
+  stuck: boolean;
 }) {
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
@@ -324,7 +327,7 @@ function CotationCard({
         <div className="h-px bg-[#d9d9d9]" />
 
         {/* Footer */}
-        <CardFooter cotation={cotation} status={status} />
+        <CardFooter cotation={cotation} status={status} stuck={stuck} />
       </div>
     </Link>
   );
@@ -337,16 +340,12 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ cotations }: KanbanBoardProps) {
   const extranets = useConfiguredExtranets();
-  const grouped = columns
-    .map((col) => ({
-      ...col,
-      items: cotations.filter(
-        (c) => getDisplayStatus(c, extranets) === col.key
-      ),
-    }))
-    // "En attente de session" is an exception lane — only show it when
-    // something is actually stuck, so the default board stays at 3 columns.
-    .filter((col) => col.key !== "bloque" || col.items.length > 0);
+  const grouped = columns.map((col) => ({
+    ...col,
+    items: cotations.filter(
+      (c) => getDisplayStatus(c, extranets) === col.key
+    ),
+  }));
 
   return (
     <div className="flex gap-6 min-h-0 flex-1">
@@ -378,6 +377,7 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
                   cotation={cotation}
                   status={column.key}
                   blocked={getBlockedInsurerIds(cotation, extranets)}
+                  stuck={isStuck(cotation, extranets)}
                 />
               ))
             )}
