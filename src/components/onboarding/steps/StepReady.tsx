@@ -134,11 +134,31 @@ function buildTemplate(assureurs: string, produit: string): string {
 // ── How it works — compact digest ──
 
 const FLOW_STEPS = [
-  { icon: FolderInput, label: "Documents client" },
-  { icon: Forward,     label: "Transférer à Panora" },
-  { icon: Sparkles,    label: "Vérification IA" },
-  { icon: Globe,       label: "Cotations lancées" },
-  { icon: GitCompare,  label: "Comparaison" },
+  {
+    icon: FolderInput,
+    label: "Documents client",
+    sub: "Rassemblez les pièces envoyées par le client.",
+  },
+  {
+    icon: Forward,
+    label: "Transférez à Panora",
+    sub: "Un email ou un transfert crée le dossier.",
+  },
+  {
+    icon: Sparkles,
+    label: "L'agent vérifie",
+    sub: "Panora lit les pièces et signale ce qui manque.",
+  },
+  {
+    icon: Globe,
+    label: "Cotations lancées",
+    sub: "L'agent remplit et soumet les formulaires.",
+  },
+  {
+    icon: GitCompare,
+    label: "Comparaison",
+    sub: "Les offres reviennent côte à côte dans Panora.",
+  },
 ] as const;
 
 function FlowStrip() {
@@ -148,18 +168,25 @@ function FlowStrip() {
         Comment ça marche
       </span>
       <ol className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {FLOW_STEPS.map(({ icon: Icon, label }, i) => (
+        {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => (
           <li
             key={i}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-panora-border bg-white"
+            className="flex flex-col gap-2 px-3 py-3 rounded-lg border border-panora-border bg-white"
           >
-            <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tabular-nums">
-              {i + 1}
-            </span>
-            <Icon className="w-3.5 h-3.5 text-panora-green-dark shrink-0" />
-            <span className="text-[12px] font-medium text-panora-text leading-4 truncate">
-              {label}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-panora-secondary border border-panora-border text-[10px] font-semibold text-panora-text-secondary tabular-nums">
+                {i + 1}
+              </span>
+              <Icon className="w-3.5 h-3.5 text-panora-green-dark shrink-0" />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[12px] font-semibold text-panora-text leading-4">
+                {label}
+              </span>
+              <span className="text-[11px] text-panora-text-muted leading-[15px]">
+                {sub}
+              </span>
+            </div>
           </li>
         ))}
       </ol>
