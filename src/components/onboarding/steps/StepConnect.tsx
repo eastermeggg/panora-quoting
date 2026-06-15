@@ -4,8 +4,7 @@ import { useMemo, useState } from "react";
 import { ShieldCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
-import { EdiCard } from "@/components/settings/EdiCard";
-import { EDI_BRAND } from "@/data/edi-store";
+import { EdiBlock } from "@/components/onboarding/EdiBlock";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
@@ -105,21 +104,7 @@ export function StepConnect({
       <div className="h-px bg-panora-border" />
 
       {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <StepNumber n={2} />
-            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-              Connexion {EDI_BRAND}
-            </h2>
-          </div>
-          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-            Un identifiant pour toutes vos compagnies compatibles. Activez-le une
-            fois ; connectez les portails restants ci-dessous.
-          </p>
-        </div>
-        <EdiCard />
-      </div>
+      <EdiBlock step={2} />
 
       <div className="h-px bg-panora-border" />
 
