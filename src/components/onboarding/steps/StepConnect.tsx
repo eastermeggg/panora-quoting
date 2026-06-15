@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { EdiBlock } from "@/components/onboarding/EdiBlock";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
@@ -138,15 +137,6 @@ export function StepConnect({
             configuredCatalogIds={configuredCatalogIds}
             onSelect={(extranet) => setModal({ type: "configure", extranet })}
           />
-          <div className="flex items-center justify-end px-1">
-            <Link
-              href="/matrice-couverture"
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
-            >
-              Voir la matrice extranets × produits
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-          </div>
         </div>
 
         {/* Configured cards / empty state */}
