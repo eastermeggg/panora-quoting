@@ -60,13 +60,13 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
         }
       />
 
-      {/* Left: address + how-it-works timeline · Right: email example */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
+      {/* Left: email example · Right: address + how-it-works timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-5 items-start">
+        <ForwardExample assureurs={assureurs} produit={produit} />
         <div className="flex flex-col gap-5">
           <AddressPanel />
           <FlowTimeline />
         </div>
-        <ForwardExample assureurs={assureurs} produit={produit} />
       </div>
 
       <a
