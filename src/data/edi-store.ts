@@ -7,13 +7,9 @@
 
 import { useSyncExternalStore } from "react";
 
-export type EdiProvider = "edicourtage" | "assurconnect" | "autre";
-
-export const EDI_PROVIDERS: { id: EdiProvider; label: string }[] = [
-  { id: "edicourtage", label: "EDICourtage" },
-  { id: "assurconnect", label: "AssurConnect" },
-  { id: "autre", label: "Autre fournisseur" },
-];
+/** The EDI channel is EDIconnexion ("le France Connect de l'assurance") — a
+ *  single gateway, not a list of providers. */
+export const EDI_BRAND = "EDIconnexion";
 
 /** Companies reachable over EDI (catalog-level knowledge). insurerId matches the
  *  extranet store, so covered extranet cards can be tagged. */
@@ -26,8 +22,8 @@ export const EDI_COMPATIBLE_INSURERS: { id: string; name: string }[] = [
 export type EdiState =
   | { status: "idle" }
   | { status: "connecting" }
-  | { status: "connected"; provider: EdiProvider; login: string }
-  | { status: "error"; provider: EdiProvider; login: string; message: string };
+  | { status: "connected"; login: string }
+  | { status: "error"; login: string; message: string };
 
 let store: EdiState = { status: "idle" };
 const subscribers = new Set<() => void>();

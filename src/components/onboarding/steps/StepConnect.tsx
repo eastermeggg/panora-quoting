@@ -5,6 +5,7 @@ import { ShieldCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { EdiCard } from "@/components/settings/EdiCard";
+import { EDI_BRAND } from "@/data/edi-store";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
@@ -102,21 +103,33 @@ export function StepConnect({
 
       <div className="h-px bg-panora-border" />
 
-      {/* Block 2 — Extranets */}
+      {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Connexion {EDI_BRAND}
+          </h2>
+          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+            Un identifiant pour toutes vos compagnies compatibles. Activez-le une
+            fois ; connectez les portails restants ci-dessous.
+          </p>
+        </div>
+        <EdiCard />
+      </div>
+
+      <div className="h-px bg-panora-border" />
+
+      {/* Block 3 — Extranets */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
             Extranets compagnie
           </h2>
           <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-            Activez l&apos;EDI une fois pour toutes vos compagnies compatibles,
-            puis connectez les portails restants un par un.
+            Connectez les portails de vos compagnies d&apos;assurance — un accès
+            par compagnie.
           </p>
         </div>
-
-        {/* EDI — one credential for every compatible company, ahead of the
-            per-company extranets (spec §2.1). */}
-        <EdiCard />
 
         {/* Command bar */}
         <div className="flex flex-col gap-2">

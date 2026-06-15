@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Network,
   Check,
   AlertCircle,
   KeyRound,
@@ -16,13 +15,30 @@ import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import {
   useEdiConnection,
   setEdiState,
-  EDI_PROVIDERS,
+  EDI_BRAND,
   EDI_COMPATIBLE_INSURERS,
-  type EdiProvider,
 } from "@/data/edi-store";
 
 const CONNECT_DELAY_MS = 1500;
 const COMPANY_COUNT = EDI_COMPATIBLE_INSURERS.length;
+
+// EDIconnexion brand blue (approx — swap for the exact token if provided).
+const EDI_BLUE = "#1366b3";
+
+/** EDIconnexion brand mark — an "edi" monogram in the brand blue. */
+function EdiMark({ size = "md" }: { size?: "md" | "sm" }) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-lg flex items-center justify-center font-bold lowercase tracking-tight text-white",
+        size === "md" ? "w-9 h-9 text-[15px]" : "w-7 h-7 text-[12px]"
+      )}
+      style={{ backgroundColor: EDI_BLUE }}
+    >
+      edi
+    </span>
+  );
+}
 
 /** Compatible-company logos, shared by every state. */
 function CompanyRow({ muted }: { muted?: boolean }) {
@@ -41,9 +57,9 @@ function CompanyRow({ muted }: { muted?: boolean }) {
 }
 
 /**
- * The global EDI channel card. Distinct from the per-company extranet cards —
- * it's a setting that sits above the list and covers every compatible company
- * with a single credential (spec §1.2).
+ * The EDIconnexion channel card. EDI is a global channel — one credential set
+ * covers every compatible company — so it lives on its own, never inside the
+ * per-company extranet list.
  */
 export function EdiCard() {
   const state = useEdiConnection();
@@ -82,23 +98,14 @@ export function EdiCard() {
           {/* Identity */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div
-                className={cn(
-                  "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
-                  state.status === "connected"
-                    ? "bg-panora-green-light text-panora-green-dark"
-                    : "bg-panora-secondary text-panora-text-secondary"
-                )}
-              >
-                <Network className="w-4.5 h-4.5" />
-              </div>
+              <EdiMark />
               <div className="flex flex-col min-w-0">
                 <span className="text-[15px] font-medium text-panora-text-primary leading-5">
-                  Canal EDI
+                  {EDI_BRAND}
                 </span>
                 <span className="text-[12px] text-panora-text-muted leading-4">
                   {state.status === "connected" || state.status === "error"
-                    ? `${ediProviderLabel(state.provider)} · ${state.login}`
+                    ? `Identifiant · ${state.login}`
                     : "Un identifiant pour toutes vos compagnies"}
                 </span>
               </div>
@@ -156,10 +163,11 @@ export function EdiCard() {
           ) : (
             <button
               onClick={() => setModalOpen(true)}
-              className="btn-primary inline-flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-white text-[12px] font-semibold hover:brightness-110 transition"
+              style={{ backgroundColor: EDI_BLUE }}
             >
               <KeyRound className="w-3.5 h-3.5" />
-              Activer la connexion EDI
+              Activer la connexion {EDI_BRAND}
             </button>
           )}
         </div>
@@ -169,7 +177,7 @@ export function EdiCard() {
         <EdiConnectionModal
           initial={
             state.status === "connected" || state.status === "error"
-              ? { provider: state.provider, login: state.login }
+              ? { login: state.login }
               : undefined
           }
           onClose={() => setModalOpen(false)}
@@ -179,22 +187,15 @@ export function EdiCard() {
   );
 }
 
-function ediProviderLabel(id: EdiProvider): string {
-  return EDI_PROVIDERS.find((p) => p.id === id)?.label ?? id;
-}
-
 // ── Connection modal (connect + credential rotation) ──
 
 function EdiConnectionModal({
   initial,
   onClose,
 }: {
-  initial?: { provider: EdiProvider; login: string };
+  initial?: { login: string };
   onClose: () => void;
 }) {
-  const [provider, setProvider] = useState<EdiProvider>(
-    initial?.provider ?? "edicourtage"
-  );
   const [login, setLogin] = useState(initial?.login ?? "");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -211,12 +212,11 @@ function EdiConnectionModal({
       if (fails) {
         setEdiState({
           status: "error",
-          provider,
           login,
-          message: "Identifiants EDI invalides.",
+          message: "Identifiants EDIconnexion invalides.",
         });
       } else {
-        setEdiState({ status: "connected", provider, login });
+        setEdiState({ status: "connected", login });
       }
       setSubmitting(false);
       onClose();
@@ -235,12 +235,12 @@ function EdiConnectionModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-panora-secondary flex items-center justify-center text-panora-text-secondary">
-              <Network className="w-4.5 h-4.5" />
-            </div>
+            <EdiMark />
             <div className="flex flex-col">
               <span className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-                {initial ? "Mettre à jour la connexion EDI" : "Activer la connexion EDI"}
+                {initial
+                  ? `Mettre à jour ${EDI_BRAND}`
+                  : `Connexion ${EDI_BRAND}`}
               </span>
               <span className="text-[12px] text-panora-text-muted leading-4">
                 Un identifiant pour {COMPANY_COUNT} compagnies compatibles
@@ -260,25 +260,11 @@ function EdiConnectionModal({
 
         {/* Form */}
         <div className="px-6 py-5 flex flex-col gap-4">
-          <Field label="Fournisseur EDI">
-            <select
-              value={provider}
-              onChange={(e) => setProvider(e.target.value as EdiProvider)}
-              className="w-full h-9 px-3 rounded-lg bg-white border border-[#e2dfd8] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-[13px] text-panora-text outline-none focus:border-panora-green-border"
-            >
-              {EDI_PROVIDERS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
           <Field label="Identifiant">
             <input
               value={login}
               onChange={(e) => setLogin(e.target.value)}
-              placeholder="Identifiant adhérent EDI"
+              placeholder="Identifiant adhérent EDIconnexion"
               className="w-full h-9 px-3 rounded-lg bg-white border border-[#e2dfd8] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-[13px] text-panora-text placeholder:text-panora-text-muted outline-none focus:border-panora-green-border"
             />
           </Field>
@@ -294,8 +280,8 @@ function EdiConnectionModal({
           </Field>
 
           <p className="text-[12px] text-panora-text-muted leading-[18px]">
-            Ces identifiants couvrent toutes vos compagnies EDI à la fois. Ils
-            sont chiffrés (AES-256) et révocables à tout moment.
+            Ces identifiants couvrent toutes vos compagnies {EDI_BRAND} à la
+            fois. Ils sont chiffrés (AES-256) et révocables à tout moment.
           </p>
         </div>
 
@@ -310,7 +296,8 @@ function EdiConnectionModal({
           <button
             onClick={submit}
             disabled={!canSubmit || submitting}
-            className="btn-primary inline-flex items-center gap-2 px-4 h-9 text-[13px] font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 h-9 rounded-md text-white text-[13px] font-semibold hover:brightness-110 transition disabled:opacity-50"
+            style={{ backgroundColor: EDI_BLUE }}
           >
             {submitting ? (
               <>

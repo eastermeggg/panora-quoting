@@ -81,7 +81,7 @@ export function ExtranetCard({
               </span>
             </div>
             {ediCovered && (
-              <span className="shrink-0 inline-flex items-center gap-1 h-5 px-2 rounded-full bg-panora-green-light text-[11px] font-medium text-panora-green-dark">
+              <span className="shrink-0 inline-flex items-center gap-1 h-5 px-2 rounded-full bg-[#1366b3]/10 text-[11px] font-medium text-[#1366b3]">
                 <Network className="w-3 h-3" />
                 Couvert par EDI
               </span>
