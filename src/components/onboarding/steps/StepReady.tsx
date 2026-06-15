@@ -136,28 +136,28 @@ function buildTemplate(assureurs: string, produit: string): string {
 const FLOW_STEPS = [
   {
     icon: FolderInput,
-    label: "Documents client",
-    sub: "Rassemblez les pièces envoyées par le client.",
+    label: "Rassemblez les documents",
+    sub: "Réunissez les pièces envoyées par le client.",
   },
   {
     icon: Forward,
     label: "Transférez à Panora",
-    sub: "Un email ou un transfert crée le dossier.",
+    sub: "Un simple email crée le dossier.",
   },
   {
     icon: Sparkles,
-    label: "L'agent vérifie",
-    sub: "Panora lit les pièces et signale ce qui manque.",
+    label: "Complétez le dossier",
+    sub: "Ajoutez ce que l'agent signale comme manquant.",
   },
   {
     icon: Globe,
-    label: "Cotations lancées",
-    sub: "L'agent remplit et soumet les formulaires.",
+    label: "Lancez les cotations",
+    sub: "L'agent ouvre les portails et remplit les formulaires.",
   },
   {
     icon: GitCompare,
-    label: "Comparaison",
-    sub: "Les offres reviennent côte à côte dans Panora.",
+    label: "Comparez les offres",
+    sub: "Analysez les devis côte à côte dans Panora.",
   },
 ] as const;
 
@@ -165,7 +165,7 @@ function FlowTimeline() {
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
       <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-panora-text-muted leading-4">
-        Comment ça marche
+        Comment lancer votre première cotation
       </span>
       <ol className="flex flex-col">
         {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => {
