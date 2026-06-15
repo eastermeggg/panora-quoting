@@ -11,48 +11,22 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { InsurerLogo } from "@/components/ui/InsurerLogo";
-import {
-  useEdiConnection,
-  setEdiState,
-  EDI_BRAND,
-  EDI_COMPATIBLE_INSURERS,
-} from "@/data/edi-store";
+import { useEdiConnection, setEdiState, EDI_BRAND } from "@/data/edi-store";
 
 const CONNECT_DELAY_MS = 1500;
-const COMPANY_COUNT = EDI_COMPATIBLE_INSURERS.length;
 
 // EDIconnexion brand blue (approx — swap for the exact token if provided).
 const EDI_BLUE = "#1366b3";
 
 /** EDIconnexion brand mark — an "edi" monogram in the brand blue. */
-function EdiMark({ size = "md" }: { size?: "md" | "sm" }) {
+function EdiMark() {
   return (
     <span
-      className={cn(
-        "shrink-0 rounded-lg flex items-center justify-center font-bold lowercase tracking-tight text-white",
-        size === "md" ? "w-9 h-9 text-[15px]" : "w-7 h-7 text-[12px]"
-      )}
+      className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center font-bold lowercase tracking-tight text-white text-[15px]"
       style={{ backgroundColor: EDI_BLUE }}
     >
       edi
     </span>
-  );
-}
-
-/** Compatible-company logos, shared by every state. */
-function CompanyRow({ muted }: { muted?: boolean }) {
-  return (
-    <div className={cn("flex items-center gap-2.5 flex-wrap", muted && "opacity-70")}>
-      {EDI_COMPATIBLE_INSURERS.map((c) => (
-        <div key={c.id} className="flex items-center gap-1.5">
-          <InsurerLogo insurerId={c.id} name={c.name} size="sm" />
-          <span className="text-[12px] text-panora-text-secondary leading-4">
-            {c.name}
-          </span>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -69,7 +43,7 @@ export function EdiCard() {
     state.status === "connected" ? (
       <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
         <Check className="w-3 h-3" strokeWidth={3} />
-        EDI actif · {COMPANY_COUNT} compagnies
+        Connexion active
       </span>
     ) : state.status === "error" ? (
       <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-[#f6e1db] text-[11px] font-semibold text-panora-error">
@@ -123,9 +97,6 @@ export function EdiCard() {
               </p>
             </div>
           )}
-
-          {/* Covered / compatible companies */}
-          <CompanyRow muted={state.status !== "connected"} />
         </div>
 
         {/* Action strip */}
@@ -243,7 +214,7 @@ function EdiConnectionModal({
                   : `Connexion ${EDI_BRAND}`}
               </span>
               <span className="text-[12px] text-panora-text-muted leading-4">
-                Un identifiant pour {COMPANY_COUNT} compagnies compatibles
+                Un identifiant pour toutes vos compagnies compatibles
               </span>
             </div>
           </div>

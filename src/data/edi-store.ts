@@ -11,14 +11,6 @@ import { useSyncExternalStore } from "react";
  *  single gateway, not a list of providers. */
 export const EDI_BRAND = "EDIconnexion";
 
-/** Companies reachable over EDI (catalog-level knowledge). insurerId matches the
- *  extranet store, so covered extranet cards can be tagged. */
-export const EDI_COMPATIBLE_INSURERS: { id: string; name: string }[] = [
-  { id: "axa", name: "Axa" },
-  { id: "generali", name: "Generali" },
-  { id: "allianz", name: "Allianz" },
-];
-
 export type EdiState =
   | { status: "idle" }
   | { status: "connecting" }
@@ -54,17 +46,4 @@ export function getEdiConnection(): EdiState {
 export function setEdiState(next: EdiState): void {
   store = next;
   notify();
-}
-
-/** The insurerIds currently covered by an active EDI connection (empty unless
- *  connected). Used to tag the extranet cards. */
-export function getEdiCoveredInsurerIds(): Set<string> {
-  if (store.status !== "connected") return new Set();
-  return new Set(EDI_COMPATIBLE_INSURERS.map((c) => c.id));
-}
-
-export function useEdiCoveredInsurerIds(): Set<string> {
-  const state = useEdiConnection();
-  if (state.status !== "connected") return new Set();
-  return new Set(EDI_COMPATIBLE_INSURERS.map((c) => c.id));
 }
