@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Plus, Sparkles } from "lucide-react";
+import { Search, X, Plus, Sparkles, Clock, Send, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { masterProducts, type InsuranceProduct } from "@/data/settings-mock";
 import { StepNumber } from "@/components/onboarding/StepNumber";
@@ -9,29 +9,47 @@ import {
   useQuotedProducts,
   addQuotedProduct,
   removeQuotedProduct,
+  useRequestedProducts,
+  requestCustomProduct,
+  removeRequestedProduct,
 } from "@/data/products-store";
+
+const availabilityById = new Map(
+  masterProducts.map((p) => [p.id as string, p.available])
+);
 
 /**
  * "Produits que vous cotez régulièrement" — the first block of the Portails
- * step (spec §3.1). A search bar over the master product list, with the
- * selected products shown as removable pills below. Kept independent from the
- * Extranets block.
+ * step. The catalog dropdown separates products available today from those not
+ * yet modelized, and lets the broker request a product that isn't listed (sent
+ * to the team as a feedback signal).
  */
 export function ProductsBlock({ step }: { step?: number }) {
   const selected = useQuotedProducts();
+  const requested = useRequestedProducts();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [justSent, setJustSent] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return masterProducts.filter(
-      (p) =>
-        !selectedSet.has(p.id) &&
-        (q === "" || p.id.toLowerCase().includes(q))
-    );
-  }, [query, selectedSet]);
+  const q = query.trim().toLowerCase();
+
+  const matches = useMemo(
+    () =>
+      masterProducts.filter(
+        (p) =>
+          !selectedSet.has(p.id) && (q === "" || p.id.toLowerCase().includes(q))
+      ),
+    [q, selectedSet]
+  );
+  const available = matches.filter((p) => p.available);
+  const coming = matches.filter((p) => !p.available);
+
+  // Offer a "request" row when the typed term isn't a known catalog product.
+  const exactCatalogMatch = masterProducts.some((p) => p.id.toLowerCase() === q);
+  const alreadyRequested = requested.some((r) => r.toLowerCase() === q);
+  const showRequestRow = q.length > 0 && !exactCatalogMatch && !alreadyRequested;
 
   useEffect(() => {
     if (!open) return;
@@ -43,9 +61,24 @@ export function ProductsBlock({ step }: { step?: number }) {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
+  useEffect(() => {
+    if (!justSent) return;
+    const t = window.setTimeout(() => setJustSent(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [justSent]);
+
   function add(product: InsuranceProduct) {
     addQuotedProduct(product);
     setQuery("");
+  }
+
+  function sendRequest() {
+    const name = query.trim();
+    if (!name) return;
+    requestCustomProduct(name);
+    setJustSent(name);
+    setQuery("");
+    setOpen(false);
   }
 
   return (
@@ -61,10 +94,8 @@ export function ProductsBlock({ step }: { step?: number }) {
       <div className="relative" ref={wrapRef}>
         <div
           className={cn(
-            "flex items-center gap-2.5 h-[42px] px-3.5 rounded-lg bg-white border transition-colors",
-            open
-              ? "border-panora-green-border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
-              : "border-panora-border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+            "flex items-center gap-2.5 h-[42px] px-3.5 rounded-lg bg-white border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors",
+            open ? "border-panora-green-border" : "border-panora-border"
           )}
         >
           <Search className="w-4 h-4 text-panora-text-muted shrink-0" />
@@ -72,60 +103,106 @@ export function ProductsBlock({ step }: { step?: number }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && showRequestRow) sendRequest();
+            }}
             placeholder="Rechercher un produit (Auto, RC Pro, Flotte…)"
             className="flex-1 text-[14px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-transparent outline-none"
           />
         </div>
 
         {open && (
-          <div className="absolute z-20 mt-1.5 w-full max-h-[240px] overflow-y-auto rounded-lg bg-white border border-panora-border shadow-[0px_8px_24px_-8px_rgba(0,0,0,0.16)] py-1.5">
-            {matches.length === 0 ? (
+          <div className="absolute z-20 mt-1.5 w-full max-h-[300px] overflow-y-auto rounded-lg bg-white border border-panora-border shadow-[0px_8px_24px_-8px_rgba(0,0,0,0.16)] py-1.5">
+            {available.length > 0 && (
+              <Group label={`Disponible (${available.length})`}>
+                {available.map((p) => (
+                  <ProductRow key={p.id} onClick={() => add(p.id)}>
+                    <span className="text-[13px] text-panora-text">{p.id}</span>
+                    {p.isNew ? <Tag tone="new">Nouveau</Tag> : <Tag tone="ok">Disponible</Tag>}
+                  </ProductRow>
+                ))}
+              </Group>
+            )}
+
+            {coming.length > 0 && (
+              <Group label={`Bientôt disponible (${coming.length})`}>
+                {coming.map((p) => (
+                  <ProductRow key={p.id} onClick={() => add(p.id)}>
+                    <span className="text-[13px] text-panora-text-secondary">
+                      {p.id}
+                    </span>
+                    <Tag tone="soon">Bientôt</Tag>
+                  </ProductRow>
+                ))}
+              </Group>
+            )}
+
+            {showRequestRow && (
+              <>
+                {(available.length > 0 || coming.length > 0) && (
+                  <div className="h-px bg-panora-border mx-2 my-1" />
+                )}
+                <button
+                  type="button"
+                  onClick={sendRequest}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-panora-secondary/50 transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5 text-panora-green-dark shrink-0" />
+                  <span className="text-[13px] text-panora-text">
+                    Demander l&apos;ajout de «&nbsp;{query.trim()}&nbsp;»
+                  </span>
+                </button>
+              </>
+            )}
+
+            {available.length === 0 && coming.length === 0 && !showRequestRow && (
               <p className="px-3.5 py-2 text-[13px] text-panora-text-muted">
                 Aucun produit à ajouter.
               </p>
-            ) : (
-              matches.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => add(p.id)}
-                  className="w-full flex items-center justify-between gap-2 px-3.5 py-2 text-left hover:bg-panora-secondary/50 transition-colors"
-                >
-                  <span className="inline-flex items-center gap-2 text-[13px] text-panora-text">
-                    {p.id}
-                    {p.isNew && (
-                      <span className="inline-flex items-center gap-1 px-1.5 h-[18px] rounded-full bg-purple-100 text-[10px] font-semibold text-purple-700">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        Nouveau
-                      </span>
-                    )}
-                  </span>
-                  <Plus className="w-3.5 h-3.5 text-panora-text-muted" />
-                </button>
-              ))
             )}
           </div>
         )}
       </div>
 
-      {/* Selected pills */}
-      {selected.length > 0 ? (
+      {/* Confirmation after a request */}
+      {justSent && (
+        <p className="inline-flex items-center gap-1.5 text-[12px] text-panora-green-dark leading-4">
+          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+          «&nbsp;{justSent}&nbsp;» a été transmis à l&apos;équipe Panora.
+        </p>
+      )}
+
+      {/* Selected + requested pills */}
+      {selected.length > 0 || requested.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {selected.map((product) => (
-            <span
-              key={product}
-              className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 h-7 rounded-full bg-panora-green-light text-[12px] font-medium text-panora-green-dark"
-            >
-              {product}
-              <button
-                type="button"
-                onClick={() => removeQuotedProduct(product)}
-                aria-label={`Retirer ${product}`}
-                className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-panora-green/20 transition-colors"
+          {selected.map((product) => {
+            const isAvailable = availabilityById.get(product) !== false;
+            return (
+              <Pill
+                key={product}
+                tone={isAvailable ? "ok" : "soon"}
+                onRemove={() => removeQuotedProduct(product)}
+                removeLabel={`Retirer ${product}`}
               >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
+                {product}
+                {!isAvailable && (
+                  <span className="text-[10px] font-normal opacity-80">
+                    · bientôt
+                  </span>
+                )}
+              </Pill>
+            );
+          })}
+          {requested.map((name) => (
+            <Pill
+              key={`req-${name}`}
+              tone="requested"
+              onRemove={() => removeRequestedProduct(name)}
+              removeLabel={`Retirer la demande ${name}`}
+            >
+              {name}
+              <span className="text-[10px] font-normal opacity-80">· demandé</span>
+            </Pill>
           ))}
         </div>
       ) : (
@@ -134,5 +211,103 @@ export function ProductsBlock({ step }: { step?: number }) {
         </p>
       )}
     </section>
+  );
+}
+
+// ── Small building blocks ──
+
+function Group({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <div className="px-3.5 pt-2 pb-1">
+        <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      {children}
+    </>
+  );
+}
+
+function ProductRow({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between gap-2 px-3.5 py-2 text-left hover:bg-panora-secondary/50 transition-colors"
+    >
+      <span className="inline-flex items-center gap-2">{children}</span>
+      <Plus className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
+    </button>
+  );
+}
+
+function Tag({
+  tone,
+  children,
+}: {
+  tone: "ok" | "new" | "soon";
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 h-[18px] rounded-full text-[10px] font-semibold",
+        tone === "ok" && "bg-panora-green-light text-panora-green-dark",
+        tone === "new" && "bg-purple-100 text-purple-700",
+        tone === "soon" && "bg-panora-warning-bg text-panora-warning-text"
+      )}
+    >
+      {tone === "new" && <Sparkles className="w-2.5 h-2.5" />}
+      {tone === "soon" && <Clock className="w-2.5 h-2.5" />}
+      {children}
+    </span>
+  );
+}
+
+function Pill({
+  tone,
+  onRemove,
+  removeLabel,
+  children,
+}: {
+  tone: "ok" | "soon" | "requested";
+  onRemove: () => void;
+  removeLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 pl-2.5 pr-1.5 h-7 rounded-full text-[12px] font-medium",
+        tone === "ok" && "bg-panora-green-light text-panora-green-dark",
+        tone === "soon" &&
+          "bg-panora-warning-bg text-panora-warning-text",
+        tone === "requested" &&
+          "border border-dashed border-panora-text-muted/40 text-panora-text-muted"
+      )}
+    >
+      <span className="inline-flex items-center gap-1">{children}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={removeLabel}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-black/5 transition-colors"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </span>
   );
 }

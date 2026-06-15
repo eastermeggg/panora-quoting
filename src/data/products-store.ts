@@ -44,3 +44,31 @@ export function removeQuotedProduct(product: InsuranceProduct): void {
   store = store.filter((p) => p !== product);
   notify();
 }
+
+// ── Custom product requests (feedback loop to the team) ──
+// Free-text products that aren't in the catalog yet. Requesting one signals
+// demand to the team; it's tracked separately from the catalog selection.
+
+let requestedStore: string[] = [];
+
+function getRequestedSnapshot(): string[] {
+  return requestedStore;
+}
+
+export function useRequestedProducts(): string[] {
+  return useSyncExternalStore(subscribe, getRequestedSnapshot, getRequestedSnapshot);
+}
+
+export function requestCustomProduct(name: string): void {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  if (requestedStore.some((p) => p.toLowerCase() === trimmed.toLowerCase()))
+    return;
+  requestedStore = [...requestedStore, trimmed];
+  notify();
+}
+
+export function removeRequestedProduct(name: string): void {
+  requestedStore = requestedStore.filter((p) => p !== name);
+  notify();
+}
