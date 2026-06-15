@@ -30,7 +30,7 @@ export function EdiBlock({ step }: { step?: number }) {
         </div>
         <div className="flex items-center gap-2.5">
           <span className="text-[13px] text-panora-text-secondary">
-            Avez-vous une connexion EDI&nbsp;?
+            Utilisez-vous {EDI_BRAND} sur vos extranets&nbsp;?
           </span>
           <div className="inline-flex items-center gap-0.5 rounded-lg bg-panora-secondary p-0.5">
             <ChoiceBtn active={choice === "yes"} onClick={() => setChoice("yes")}>

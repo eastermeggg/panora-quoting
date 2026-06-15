@@ -1,18 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, ExternalLink } from "lucide-react";
+import { ShieldCheck, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { EdiBlock } from "@/components/onboarding/EdiBlock";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
+import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
 import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
 import { StepNumber } from "@/components/onboarding/StepNumber";
 import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
+  availableExtranets,
   removeConfiguredExtranet,
   updateConfiguredExtranet,
   type AvailableExtranet,
@@ -46,6 +48,20 @@ export function StepConnect({
       ),
     [configuredExtranets]
   );
+
+  // A few popular insurers to add in one tap — deduped by company, excluding
+  // anything already configured.
+  const suggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: AvailableExtranet[] = [];
+    for (const ex of availableExtranets) {
+      if (configuredCatalogIds.has(ex.id) || seen.has(ex.insurerId)) continue;
+      seen.add(ex.insurerId);
+      out.push(ex);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [configuredCatalogIds]);
 
   function handleSave(data: {
     username: string;
@@ -110,60 +126,86 @@ export function StepConnect({
 
       {/* Block 3 — Extranets */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <StepNumber n={3} />
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Extranets compagnie
-          </h2>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={3} />
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Extranets compagnie
+            </h2>
+            {configuredExtranets.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
+                {configuredExtranets.length}
+              </span>
+            )}
+          </div>
+          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+            Ajoutez les compagnies auprès de qui vous cotez. L&apos;agent se
+            connecte à leur portail à votre place — un accès par compagnie.
+          </p>
         </div>
 
-        {/* Command bar */}
-        <div className="flex flex-col gap-2">
+        {/* Add bar + suggestions */}
+        <div className="flex flex-col gap-2.5">
           <InsurerCommandBar
             configuredCatalogIds={configuredCatalogIds}
             onSelect={(extranet) => setModal({ type: "configure", extranet })}
           />
-          <div className="flex items-center justify-end px-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            {suggestions.length > 0 && (
+              <>
+                <span className="text-[12px] text-panora-text-muted">
+                  Suggestions&nbsp;:
+                </span>
+                {suggestions.map((ex) => (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => setModal({ type: "configure", extranet: ex })}
+                    className="group inline-flex items-center gap-1.5 pl-1.5 pr-2.5 h-7 rounded-full border border-panora-border bg-white hover:border-panora-green/40 hover:shadow-[0px_1px_3px_0px_rgba(0,0,0,0.06)] transition-all text-[12px] font-medium text-panora-text"
+                  >
+                    <InsurerLogo
+                      insurerId={ex.insurerId}
+                      name={ex.insurerName}
+                      size="sm"
+                    />
+                    {ex.insurerName}
+                    <Plus className="w-3 h-3 text-panora-text-muted group-hover:text-panora-green" />
+                  </button>
+                ))}
+              </>
+            )}
             <Link
               href="/matrice-couverture"
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
+              className="ml-auto inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
             >
               Voir la matrice extranets × produits
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
         </div>
-      </div>
 
-      {/* Configured cards */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Vos extranets
-          </h2>
-          {configuredExtranets.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
-              {configuredExtranets.length}
-            </span>
-          )}
-        </div>
-
+        {/* Configured cards / empty state */}
         {configuredExtranets.length === 0 ? (
           <EmptyState />
         ) : (
-          <CardGrid minCardWidth={320}>
-            {configuredExtranets.map((config) => (
-              <ExtranetCard
-                key={config.id}
-                config={config}
-                hideSessionActivation
-                onEdit={() => setModal({ type: "edit", extranet: config })}
-                onDelete={() => removeConfiguredExtranet(config.id)}
-              />
-            ))}
-          </CardGrid>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-panora-text-muted">
+              Vos extranets
+            </span>
+            <CardGrid minCardWidth={320}>
+              {configuredExtranets.map((config) => (
+                <ExtranetCard
+                  key={config.id}
+                  config={config}
+                  hideSessionActivation
+                  onEdit={() => setModal({ type: "edit", extranet: config })}
+                  onDelete={() => removeConfiguredExtranet(config.id)}
+                />
+              ))}
+            </CardGrid>
+          </div>
         )}
-      </section>
+      </div>
 
       {/* Setup modal */}
       {modal && (

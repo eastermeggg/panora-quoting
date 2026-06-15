@@ -83,11 +83,17 @@ export function ProductsBlock({ step }: { step?: number }) {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        {step !== undefined && <StepNumber n={step} />}
-        <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-          Produits que vous cotez régulièrement
-        </h2>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          {step !== undefined && <StepNumber n={step} />}
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Produits que vous cotez régulièrement
+          </h2>
+        </div>
+        <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+          Indiquez les produits que vous placez le plus souvent. Panora s&apos;en
+          sert pour préparer et prioriser vos cotations.
+        </p>
       </div>
 
       {/* Search + dropdown */}
