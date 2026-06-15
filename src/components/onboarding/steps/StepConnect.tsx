@@ -7,6 +7,7 @@ import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
+import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
 import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
@@ -95,20 +96,38 @@ export function StepConnect({
         }
       />
 
-      {/* Command bar */}
-      <div className="flex flex-col gap-2">
-        <InsurerCommandBar
-          configuredCatalogIds={configuredCatalogIds}
-          onSelect={(extranet) => setModal({ type: "configure", extranet })}
-        />
-        <div className="flex items-center justify-end px-1">
-          <Link
-            href="/matrice-couverture"
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
-          >
-            Voir la matrice extranets × produits
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+      {/* Block 1 — Produits */}
+      <ProductsBlock />
+
+      <div className="h-px bg-panora-border" />
+
+      {/* Block 2 — Extranets */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+            Extranets compagnie
+          </h2>
+          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+            Connectez les portails de vos compagnies d&apos;assurance — un accès
+            par compagnie.
+          </p>
+        </div>
+
+        {/* Command bar */}
+        <div className="flex flex-col gap-2">
+          <InsurerCommandBar
+            configuredCatalogIds={configuredCatalogIds}
+            onSelect={(extranet) => setModal({ type: "configure", extranet })}
+          />
+          <div className="flex items-center justify-end px-1">
+            <Link
+              href="/matrice-couverture"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
+            >
+              Voir la matrice extranets × produits
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
       </div>
 
