@@ -331,11 +331,12 @@ function CotationCard({
     }
   }
 
-  // Session-stuck cards fast-forward to reactivation; everything else opens the
-  // cotation at its natural stage.
+  // Session-stuck cards fast-forward to the reactivation of the exact insurer
+  // that's blocking them; everything else opens the cotation at its natural stage.
+  const blockedInsurerId = [...blocked][0];
   const href =
     reason === "session"
-      ? REACTIVATE_HREF
+      ? `${REACTIVATE_HREF}?activate=${blockedInsurerId ?? ""}`
       : getCotationStatus(cotation) === "preparation"
         ? `/quoting/preparation?id=${cotation.id}`
         : `/quoting/followup?id=${cotation.id}`;

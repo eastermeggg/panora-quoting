@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Globe,
   User,
@@ -11,6 +11,7 @@ import {
   Check,
   Inbox,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { ProductBadge } from "./ProductBadge";
 import { SessionStatusPill } from "./ExtranetSessionPanel";
@@ -33,6 +34,12 @@ interface ExtranetCardProps {
   /** Hide the session activation CTA and status pill. Used in onboarding Step 2
    *  where the broker only stores credentials; activation happens later. */
   hideSessionActivation?: boolean;
+  /** DOM id on the card root, so the page can scroll to it. */
+  domId?: string;
+  /** Open the activation modal on mount (e.g. arriving from a "Réactiver" CTA). */
+  autoOpenActivation?: boolean;
+  /** Briefly ring the card to draw the eye after a deep-link. */
+  highlight?: boolean;
 }
 
 export function ExtranetCard({
@@ -40,6 +47,9 @@ export function ExtranetCard({
   onEdit,
   onDelete,
   hideSessionActivation,
+  domId,
+  autoOpenActivation,
+  highlight,
 }: ExtranetCardProps) {
   const activeProducts = getActiveProducts(config);
   const requestedProducts = getRequestedProducts(config);
@@ -60,9 +70,26 @@ export function ExtranetCard({
     ? 0
     : getPendingDemandesForInsurer(cotations, config.insurerId).length;
 
+  // Arriving from a "Réactiver la session" CTA: open the activation right away,
+  // unless the session is already active or this insurer runs through EDI.
+  useEffect(() => {
+    if (autoOpenActivation && !isSessionActive && !config.useEdi) {
+      setModalOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenActivation]);
+
   return (
     <>
-      <div className="group flex flex-col bg-white border border-panora-border rounded-xl shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05)] hover:shadow-[0px_5px_9px_0px_rgba(0,0,0,0.06)] transition-shadow duration-200">
+      <div
+        id={domId}
+        className={cn(
+          "group flex flex-col bg-white border rounded-xl shadow-[0px_1px_1px_0px_rgba(0,0,0,0.05)] hover:shadow-[0px_5px_9px_0px_rgba(0,0,0,0.06)] transition-all duration-200 scroll-mt-24",
+          highlight
+            ? "border-panora-warning/60 ring-2 ring-panora-warning/30"
+            : "border-panora-border"
+        )}
+      >
         {/* Top: identity */}
         <div className="p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between gap-2 min-w-0">

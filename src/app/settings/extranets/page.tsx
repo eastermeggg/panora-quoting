@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { KeyRound, ExternalLink } from "lucide-react";
 import { SecurityTrustBar } from "@/components/settings/SecurityTrustBar";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
@@ -29,6 +29,33 @@ type ModalState =
 export default function ExtranetsPage() {
   const [modal, setModal] = useState<ModalState>(null);
   const configuredExtranets = useConfiguredExtranets();
+
+  // Deep-link from a "Réactiver la session" card: ?activate=<insurerId>. Read it
+  // client-side (no Suspense boundary needed) and target the first down session.
+  const [activateInsurerId, setActivateInsurerId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setActivateInsurerId(params.get("activate"));
+  }, []);
+
+  const targetConfigId = useMemo(() => {
+    if (!activateInsurerId) return null;
+    return (
+      configuredExtranets.find(
+        (c) =>
+          c.insurerId === activateInsurerId &&
+          c.sessionState.status !== "active" &&
+          !c.useEdi
+      )?.id ?? null
+    );
+  }, [activateInsurerId, configuredExtranets]);
+
+  useEffect(() => {
+    if (!targetConfigId) return;
+    document
+      .getElementById(`extranet-${targetConfigId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [targetConfigId]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-white">
@@ -120,6 +147,9 @@ export default function ExtranetsPage() {
                 <ExtranetCard
                   key={config.id}
                   config={config}
+                  domId={`extranet-${config.id}`}
+                  autoOpenActivation={config.id === targetConfigId}
+                  highlight={config.id === targetConfigId}
                   onEdit={() => setModal({ type: "edit", extranet: config })}
                   onDelete={() => console.log("Delete:", config.id)}
                 />
