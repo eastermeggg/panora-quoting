@@ -9,6 +9,7 @@ import { AddExtranetList } from "@/components/settings/AddExtranetList";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import {
   addConfiguredExtranet,
+  addEdiCoveredExtranet,
   COVERAGE_MATRIX_URL,
   removeConfiguredExtranet,
   updateConfiguredExtranet,
@@ -16,6 +17,7 @@ import {
   type AvailableExtranet,
   type ExtranetConfig,
 } from "@/data/settings-mock";
+import { getEdiConnection } from "@/data/edi-store";
 
 type ModalState =
   | { type: "configure"; extranet: AvailableExtranet }
@@ -119,9 +121,17 @@ export default function ExtranetsPage() {
 
         {/* Catalog */}
         <AddExtranetList
-          onConfigure={(extranet) =>
-            setModal({ type: "configure", extranet })
-          }
+          onConfigure={(extranet) => {
+            // EDI active + insurer covered by it → add directly, no modal.
+            if (
+              getEdiConnection().status === "connected" &&
+              extranet.ediCompatible
+            ) {
+              addEdiCoveredExtranet(extranet);
+              return;
+            }
+            setModal({ type: "configure", extranet });
+          }}
         />
       </div>
 

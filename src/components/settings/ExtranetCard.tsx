@@ -24,6 +24,7 @@ import {
   useCotations,
   getPendingDemandesForInsurer,
 } from "@/data/cotations-store";
+import { EDI_BRAND } from "@/data/edi-store";
 
 interface ExtranetCardProps {
   config: ExtranetConfig;
@@ -87,10 +88,17 @@ export function ExtranetCard({
               <Globe className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{config.portalUrl}</span>
             </a>
-            <div className="flex items-center gap-1.5 text-[12px] text-panora-text-secondary min-w-0">
-              <User className="w-3.5 h-3.5 shrink-0 text-panora-text-muted" />
-              <span className="truncate">{config.username}</span>
-            </div>
+            {config.useEdi ? (
+              <span className="flex items-center gap-1.5 text-[12px] text-panora-text-secondary min-w-0">
+                <KeyRound className="w-3.5 h-3.5 shrink-0 text-panora-text-muted" />
+                <span className="truncate">Via {EDI_BRAND}</span>
+              </span>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[12px] text-panora-text-secondary min-w-0">
+                <User className="w-3.5 h-3.5 shrink-0 text-panora-text-muted" />
+                <span className="truncate">{config.username}</span>
+              </div>
+            )}
           </div>
 
           {/* Products */}
@@ -113,7 +121,12 @@ export function ExtranetCard({
 
         {/* Bottom strip */}
         <div className="border-t border-panora-border flex items-center justify-between gap-2 pl-4 pr-[13px] py-2.5">
-          {hideSessionActivation ? (
+          {config.useEdi ? (
+            <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
+              <Check className="w-3 h-3" strokeWidth={3} />
+              Couvert par {EDI_BRAND}
+            </span>
+          ) : hideSessionActivation ? (
             <span className="inline-flex items-center gap-1.5 px-2 h-5 rounded-full bg-panora-green-light text-[11px] font-semibold text-panora-green-dark">
               <Check className="w-3 h-3" strokeWidth={3} />
               Identifiants enregistrés

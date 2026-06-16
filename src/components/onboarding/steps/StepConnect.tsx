@@ -12,12 +12,14 @@ import { StepNumber } from "@/components/onboarding/StepNumber";
 import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
+  addEdiCoveredExtranet,
   removeConfiguredExtranet,
   updateConfiguredExtranet,
   type AvailableExtranet,
   type ExtranetConfig,
   type InsuranceProduct,
 } from "@/data/settings-mock";
+import { getEdiConnection } from "@/data/edi-store";
 
 interface StepConnectProps {
   configuredExtranets: ExtranetConfig[];
@@ -45,6 +47,16 @@ export function StepConnect({
       ),
     [configuredExtranets]
   );
+
+  // When EDIconnexion is active and the insurer is reachable through it, there's
+  // nothing to enter — skip the credentials modal and add it covered by EDI.
+  function handleSelect(extranet: AvailableExtranet) {
+    if (getEdiConnection().status === "connected" && extranet.ediCompatible) {
+      onConfigured(addEdiCoveredExtranet(extranet));
+      return;
+    }
+    setModal({ type: "configure", extranet });
+  }
 
   function handleSave(data: {
     username: string;
@@ -134,7 +146,7 @@ export function StepConnect({
         <div className="flex flex-col gap-2">
           <InsurerCommandBar
             configuredCatalogIds={configuredCatalogIds}
-            onSelect={(extranet) => setModal({ type: "configure", extranet })}
+            onSelect={handleSelect}
           />
         </div>
 

@@ -291,6 +291,37 @@ export function addConfiguredExtranet(config: ExtranetConfig): void {
   notify();
 }
 
+/**
+ * Add an EDI-compatible insurer that's covered by the active EDIconnexion
+ * channel — no per-insurer credentials needed. Used to skip the credentials
+ * modal entirely when EDI is connected and the insurer supports it.
+ */
+export function addEdiCoveredExtranet(source: AvailableExtranet): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const id = `cfg-${source.insurerId}-${Date.now()}`;
+  addConfiguredExtranet({
+    id,
+    insurerId: source.insurerId,
+    insurerName: source.insurerName,
+    portalLabel: source.portalLabel,
+    portalUrl: source.portalUrl,
+    username: "", // covered by EDIconnexion — no per-insurer login
+    modelizedProducts: source.modelizedProducts,
+    selectedProducts: source.modelizedProducts.map((p) => p.product),
+    catalogEntryId: source.id,
+    configuredAt: today,
+    connectionStatus: "connected",
+    lastVerified: today,
+    sessionState: { status: "inactive" },
+    otpDelivery: source.otpDelivery,
+    emailForwardConfigured: false,
+    sessionDurationLabel: source.sessionDurationLabel,
+    ediCompatible: source.ediCompatible,
+    useEdi: true,
+  });
+  return id;
+}
+
 export function removeConfiguredExtranet(id: string): void {
   storeState = storeState.filter((c) => c.id !== id);
   notify();
