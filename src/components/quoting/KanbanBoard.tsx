@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Building2,
   Clock,
@@ -14,6 +15,7 @@ import type { Cotation, CotationInsurer } from "@/data/mock";
 import { getCotationStatus } from "@/data/mock";
 import { useConfiguredExtranets, type ExtranetConfig } from "@/data/settings-mock";
 import { getBlockedInsurerIds } from "@/data/cotations-store";
+import { ActivateSessionModal } from "@/components/settings/ActivateSessionModal";
 
 /* ── Insurer row — flags insurers that need the broker: a clock when a request
    waits on a closed session, an alert when the agent needs input (HITL). ── */
@@ -140,9 +142,6 @@ function getDisplayStatus(
   if (getAttentionReason(cotation, extranets)) return "action_requise";
   return getCotationStatus(cotation); // "preparation" | "en_cours"
 }
-
-/** Where a card click should go, fast-forwarding session cards to reactivation. */
-const REACTIVATE_HREF = "/settings/extranets";
 
 /* ── Card footer per status ── */
 function CardFooter({
@@ -327,11 +326,15 @@ function CotationCard({
   status,
   blocked,
   reason,
+  onReactivate,
 }: {
   cotation: Cotation;
   status: DisplayStatus;
   blocked: Set<string>;
   reason: AttentionReason | null;
+  /** Session-stuck cards call this with the blocking insurer to open the
+   *  activation modal in place, over the board. */
+  onReactivate?: (insurerId: string) => void;
 }) {
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
@@ -343,52 +346,63 @@ function CotationCard({
     }
   }
 
-  // Session-stuck cards fast-forward to the reactivation of the exact insurer
-  // that's blocking them; everything else opens the cotation at its natural stage.
+  const isSessionReactivate = reason === "session";
   const blockedInsurerId = [...blocked][0];
   const href =
-    reason === "session"
-      ? `${REACTIVATE_HREF}?activate=${blockedInsurerId ?? ""}`
-      : getCotationStatus(cotation) === "preparation"
-        ? `/quoting/preparation?id=${cotation.id}`
-        : `/quoting/followup?id=${cotation.id}`;
+    getCotationStatus(cotation) === "preparation"
+      ? `/quoting/preparation?id=${cotation.id}`
+      : `/quoting/followup?id=${cotation.id}`;
 
-  return (
-    <Link href={href}>
-      <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
-        {/* Title + client. Status is carried by the column, not a per-card badge. */}
-        <div className="flex flex-col gap-0.5">
-          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
-            {cotation.product} {cotation.client.split(" ")[0]} 2026
-          </h3>
-          <div className="flex items-center gap-[9px]">
-            <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
-              <Building2 className="w-2 h-2 text-[#85827b]" />
-            </div>
-            <span className="text-[13px] text-panora-text-muted leading-5 truncate">
-              {cotation.client}
-            </span>
+  const body = (
+    <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+      {/* Title + client. Status is carried by the column, not a per-card badge. */}
+      <div className="flex flex-col gap-0.5">
+        <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+          {cotation.product} {cotation.client.split(" ")[0]} 2026
+        </h3>
+        <div className="flex items-center gap-[9px]">
+          <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
+            <Building2 className="w-2 h-2 text-[#85827b]" />
           </div>
-        </div>
-
-        {/* Product badge */}
-        <div className="flex items-start">
-          <span className="inline-flex items-center h-5 px-2 rounded-[6px] bg-panora-secondary text-[12px] font-medium text-panora-text-muted">
-            {cotation.product}
+          <span className="text-[13px] text-panora-text-muted leading-5 truncate">
+            {cotation.client}
           </span>
         </div>
-
-        {/* Insurers list — always inline horizontal */}
-        <InsurerRow insurers={cotation.insurers} blocked={blocked} />
-
-        {/* Separator */}
-        <div className="h-px bg-[#d9d9d9]" />
-
-        {/* Footer */}
-        <CardFooter cotation={cotation} status={status} reason={reason} />
       </div>
-    </Link>
+
+      {/* Product badge */}
+      <div className="flex items-start">
+        <span className="inline-flex items-center h-5 px-2 rounded-[6px] bg-panora-secondary text-[12px] font-medium text-panora-text-muted">
+          {cotation.product}
+        </span>
+      </div>
+
+      {/* Insurers list — always inline horizontal */}
+      <InsurerRow insurers={cotation.insurers} blocked={blocked} />
+
+      {/* Separator */}
+      <div className="h-px bg-[#d9d9d9]" />
+
+      {/* Footer */}
+      <CardFooter cotation={cotation} status={status} reason={reason} />
+    </div>
   );
+
+  // Session-stuck cards open the reactivation modal over the board; everything
+  // else navigates to the cotation at its natural stage.
+  if (isSessionReactivate) {
+    return (
+      <button
+        type="button"
+        onClick={() => blockedInsurerId && onReactivate?.(blockedInsurerId)}
+        className="block w-full text-left"
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return <Link href={href}>{body}</Link>;
 }
 
 /* ── Kanban board ── */
@@ -398,12 +412,26 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ cotations }: KanbanBoardProps) {
   const extranets = useConfiguredExtranets();
+  const [activateConfig, setActivateConfig] = useState<ExtranetConfig | null>(
+    null
+  );
   const grouped = columns.map((col) => ({
     ...col,
     items: cotations.filter(
       (c) => getDisplayStatus(c, extranets) === col.key
     ),
   }));
+
+  // Resolve the blocking insurer to its (down) extranet and open activation here.
+  function openReactivation(insurerId: string) {
+    const config = extranets.find(
+      (c) =>
+        c.insurerId === insurerId &&
+        c.sessionState.status !== "active" &&
+        !c.useEdi
+    );
+    if (config) setActivateConfig(config);
+  }
 
   return (
     <div className="flex gap-4 min-h-0 flex-1">
@@ -439,12 +467,20 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
                   status={column.key}
                   blocked={getBlockedInsurerIds(cotation, extranets)}
                   reason={getAttentionReason(cotation, extranets)}
+                  onReactivate={openReactivation}
                 />
               ))
             )}
           </div>
         </div>
       ))}
+
+      {activateConfig && (
+        <ActivateSessionModal
+          config={activateConfig}
+          onClose={() => setActivateConfig(null)}
+        />
+      )}
     </div>
   );
 }
