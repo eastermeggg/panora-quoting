@@ -1,10 +1,10 @@
 "use client";
 
-import { Building2, Check, Clock, AlertTriangle } from "lucide-react";
+import { Building2, Clock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
-import type { Cotation, CotationStatus, CotationInsurer } from "@/data/mock";
+import type { Cotation, CotationInsurer } from "@/data/mock";
 import { getCotationStatus } from "@/data/mock";
 import { useConfiguredExtranets, type ExtranetConfig } from "@/data/settings-mock";
 import { getBlockedInsurerIds } from "@/data/cotations-store";
@@ -59,12 +59,20 @@ function InsurerRow({
   );
 }
 
+/** Board lifecycle, with "Action requise" promoted to its own column. */
+type DisplayStatus =
+  | "preparation"
+  | "action_requise"
+  | "en_cours"
+  | "terminee";
+
 const columns: {
-  key: CotationStatus;
+  key: DisplayStatus;
   label: string;
   dotColor: string;
 }[] = [
-  { key: "preparation", label: "En préparation", dotColor: "bg-[#f5ae73]" },
+  { key: "preparation", label: "En préparation", dotColor: "bg-[#b3afa6]" },
+  { key: "action_requise", label: "Action requise", dotColor: "bg-[#cb8052]" },
   { key: "en_cours", label: "En cours", dotColor: "bg-[#be93e4]" },
   { key: "terminee", label: "Terminé", dotColor: "bg-[#94ce9a]" },
 ];
@@ -72,8 +80,7 @@ const columns: {
 /**
  * A cotation is "stuck" when nothing is actively in flight (no in_progress) and
  * at least one insurer is waiting on a closed session — the only thing standing
- * between it and progress is a reactivation. Stuck cards live in "En cours" with
- * a warning flag rather than a column of their own.
+ * between it and progress is a reactivation.
  */
 function isStuck(cotation: Cotation, extranets: ExtranetConfig[]): boolean {
   if (getCotationStatus(cotation) === "terminee") return false;
@@ -85,70 +92,27 @@ function isStuck(cotation: Cotation, extranets: ExtranetConfig[]): boolean {
 }
 
 /**
- * Board column for a cotation. Stuck cards (launched but waiting on a closed
- * session) surface in "En cours" so the broker sees them alongside live work,
- * flagged as needing a reactivation.
+ * Whether a cotation needs the broker's hand — either an insurer paused on input
+ * (HITL: 2FA code, missing info) or a request waiting on a closed session. Both
+ * route into the "Action requise" column; the per-insurer badges show which is
+ * which (alert vs clock).
  */
+function needsAttention(
+  cotation: Cotation,
+  extranets: ExtranetConfig[]
+): boolean {
+  const hitl = cotation.insurers.some((i) => i.status === "action_required");
+  return hitl || isStuck(cotation, extranets);
+}
+
+/** The column a cotation belongs to. Attention outranks the raw pipeline stage. */
 function getDisplayStatus(
   cotation: Cotation,
   extranets: ExtranetConfig[]
-): CotationStatus {
-  if (isStuck(cotation, extranets)) return "en_cours";
-  return getCotationStatus(cotation);
-}
-
-/**
- * Attention is the second axis, orthogonal to the column: does this cotation
- * need the broker's hand, and why. It's a single concept ("Action requise") with
- * a typed reason — adding a future reason is one entry here, never a new column
- * or status. Reason drives the icon; the per-insurer badges show which insurers.
- *
- *  - "hitl":    an insurer needs input now (2FA code, missing info).
- *  - "session": a request is waiting on a closed portal session to reopen.
- *
- * HITL outranks session: the agent is paused on the broker right now, whereas a
- * closed session is a batch the broker releases by reopening the portal.
- */
-type AttentionReason = "hitl" | "session";
-
-const ATTENTION: Record<
-  AttentionReason,
-  { label: string; Icon: typeof Clock }
-> = {
-  hitl: { label: "Action requise", Icon: AlertTriangle },
-  session: { label: "Action requise", Icon: Clock },
-};
-
-function getAttention(
-  cotation: Cotation,
-  extranets: ExtranetConfig[]
-): AttentionReason | null {
-  if (cotation.insurers.some((i) => i.status === "action_required")) {
-    return "hitl";
-  }
-  if (isStuck(cotation, extranets)) return "session";
-  return null;
-}
-
-/** The "Action requise" badge — the card's primary signal when it needs the broker. */
-function AttentionFlag({ reason }: { reason: AttentionReason }) {
-  const { label, Icon } = ATTENTION[reason];
-  return (
-    <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-[22px] rounded-full bg-panora-warning-bg border border-panora-warning/40 text-[12px] font-semibold text-panora-warning-text">
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
-/** The "Terminé" status badge — same slot, same dimensions as AttentionFlag. */
-function DoneBadge() {
-  return (
-    <span className="shrink-0 inline-flex items-center gap-1.5 px-2 h-[22px] rounded-full bg-[#daf1db] text-[12px] font-medium text-[#203c25]">
-      <Check className="w-3 h-3" strokeWidth={3} />
-      Terminé
-    </span>
-  );
+): DisplayStatus {
+  if (getCotationStatus(cotation) === "terminee") return "terminee";
+  if (needsAttention(cotation, extranets)) return "action_requise";
+  return getCotationStatus(cotation); // "preparation" | "en_cours"
 }
 
 /* ── Card footer per status ── */
@@ -157,7 +121,7 @@ function CardFooter({
   status,
 }: {
   cotation: Cotation;
-  status: CotationStatus;
+  status: DisplayStatus;
 }) {
   const completed = cotation.insurers.filter(
     (i) => i.status === "completed"
@@ -177,8 +141,14 @@ function CardFooter({
     );
   }
 
-  // en_cours + terminee: both are launched, so both show devis progress in the
-  // footer (terminee simply reads 100%). The status badge lives in the header.
+  // Done: every devis is in, so a progress bar adds nothing — just the date.
+  if (status === "terminee") {
+    return (
+      <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
+    );
+  }
+
+  // en_cours + action_requise: launched, so show devis progress.
   const pct = total > 0 ? (completed / total) * 100 : 0;
   return (
     <div className="flex items-center justify-between">
@@ -250,7 +220,6 @@ function FleetPreparationCard({
   cotation: Cotation;
   blocked: Set<string>;
 }) {
-  const fleet = cotation.fleetMeta!;
   const href = `/quoting/preparation?id=${cotation.id}&scenario=flotte-auto`;
 
   return (
@@ -303,12 +272,10 @@ function CotationCard({
   cotation,
   status,
   blocked,
-  attention,
 }: {
   cotation: Cotation;
-  status: CotationStatus;
+  status: DisplayStatus;
   blocked: Set<string>;
-  attention: AttentionReason | null;
 }) {
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
@@ -329,36 +296,20 @@ function CotationCard({
 
   return (
     <Link href={href}>
-      <div
-        className={cn(
-          "bg-[#fdfdfc] border rounded-[12px] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer",
-          attention
-            ? // Orange top inner border flags a card that needs the broker.
-              "border-panora-border shadow-[inset_0_2px_0_0_#cb8052,0px_1px_2px_0px_rgba(0,0,0,0.05)]"
-            : "border-panora-border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
-        )}
-      >
-        {/* Title + client, with the attention badge as the card's primary signal */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
-              {cotation.product} {cotation.client.split(" ")[0]} 2026
-            </h3>
-            <div className="flex items-center gap-[9px]">
-              <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
-                <Building2 className="w-2 h-2 text-[#85827b]" />
-              </div>
-              <span className="text-[13px] text-panora-text-muted leading-5 truncate">
-                {cotation.client}
-              </span>
+      <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+        {/* Title + client. Status is carried by the column, not a per-card badge. */}
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+            {cotation.product} {cotation.client.split(" ")[0]} 2026
+          </h3>
+          <div className="flex items-center gap-[9px]">
+            <div className="w-4 h-4 rounded-[4px] bg-gradient-to-b from-white to-[#c8c7cb] border-[1.2px] border-[rgba(0,0,0,0.1)] shadow-[0px_1.2px_2.4px_0px_rgba(0,0,0,0.05)] flex items-center justify-center shrink-0">
+              <Building2 className="w-2 h-2 text-[#85827b]" />
             </div>
+            <span className="text-[13px] text-panora-text-muted leading-5 truncate">
+              {cotation.client}
+            </span>
           </div>
-          {/* One status-badge slot, top-right of every card. */}
-          {attention ? (
-            <AttentionFlag reason={attention} />
-          ) : status === "terminee" ? (
-            <DoneBadge />
-          ) : null}
         </div>
 
         {/* Product badge */}
@@ -396,11 +347,12 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
   }));
 
   return (
-    <div className="flex gap-6 min-h-0 flex-1">
+    // Fixed-width columns that scroll horizontally rather than squeezing.
+    <div className="flex gap-4 min-h-0 flex-1 overflow-x-auto pb-1">
       {grouped.map((column) => (
         <div
           key={column.key}
-          className="flex-1 min-w-[280px] bg-panora-secondary rounded-[11px] p-2.5 flex flex-col gap-3.5"
+          className="w-[300px] shrink-0 bg-panora-drop rounded-[11px] p-2.5 flex flex-col gap-3.5"
         >
           {/* Column header */}
           <div className="flex items-center gap-2 pl-1 h-5">
@@ -408,10 +360,13 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
             <span className="text-[12px] font-medium text-[#2d2a26]">
               {column.label}
             </span>
+            <span className="text-[11px] font-medium text-panora-text-muted tabular-nums">
+              {column.items.length}
+            </span>
           </div>
 
           {/* Cards */}
-          <div className="flex flex-col gap-3.5 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-3.5 flex-1 min-h-0 overflow-y-auto">
             {column.items.length === 0 ? (
               <div className="border border-dashed border-panora-border rounded-[12px] p-6 flex items-center justify-center">
                 <span className="text-[12px] text-panora-text-muted">
@@ -425,7 +380,6 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
                   cotation={cotation}
                   status={column.key}
                   blocked={getBlockedInsurerIds(cotation, extranets)}
-                  attention={getAttention(cotation, extranets)}
                 />
               ))
             )}
