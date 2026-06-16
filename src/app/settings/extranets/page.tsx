@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { KeyRound, ExternalLink } from "lucide-react";
 import { SecurityTrustBar } from "@/components/settings/SecurityTrustBar";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { AddExtranetList } from "@/components/settings/AddExtranetList";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
+import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
+import { EdiBlock } from "@/components/onboarding/EdiBlock";
 import {
   addConfiguredExtranet,
+  addEdiCoveredExtranet,
   COVERAGE_MATRIX_URL,
   removeConfiguredExtranet,
   updateConfiguredExtranet,
@@ -16,6 +19,7 @@ import {
   type AvailableExtranet,
   type ExtranetConfig,
 } from "@/data/settings-mock";
+import { getEdiConnection } from "@/data/edi-store";
 
 type ModalState =
   | { type: "configure"; extranet: AvailableExtranet }
@@ -25,6 +29,33 @@ type ModalState =
 export default function ExtranetsPage() {
   const [modal, setModal] = useState<ModalState>(null);
   const configuredExtranets = useConfiguredExtranets();
+
+  // Deep-link from a "Réactiver la session" card: ?activate=<insurerId>. Read it
+  // client-side (no Suspense boundary needed) and target the first down session.
+  const [activateInsurerId, setActivateInsurerId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setActivateInsurerId(params.get("activate"));
+  }, []);
+
+  const targetConfigId = useMemo(() => {
+    if (!activateInsurerId) return null;
+    return (
+      configuredExtranets.find(
+        (c) =>
+          c.insurerId === activateInsurerId &&
+          c.sessionState.status !== "active" &&
+          !c.useEdi
+      )?.id ?? null
+    );
+  }, [activateInsurerId, configuredExtranets]);
+
+  useEffect(() => {
+    if (!targetConfigId) return;
+    document
+      .getElementById(`extranet-${targetConfigId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [targetConfigId]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-white">
@@ -58,17 +89,40 @@ export default function ExtranetsPage() {
           <SecurityTrustBar />
         </div>
 
-        {/* Configured extranets */}
-        {configuredExtranets.length > 0 ? (
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-                Extranets configurés
-              </h2>
+        {/* Produits — same block as onboarding (shared products store) */}
+        <ProductsBlock />
+
+        <div className="h-px bg-panora-border" />
+
+        {/* EDIconnexion — global channel, can cover compatible insurers */}
+        <EdiBlock />
+
+        <div className="h-px bg-panora-border" />
+
+        {/* Extranets section header */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Extranets compagnie
+            </h2>
+            {configuredExtranets.length > 0 && (
               <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
                 {configuredExtranets.length}
               </span>
-            </div>
+            )}
+          </div>
+          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+            Ajoutez les compagnies auprès de qui vous cotez. L&apos;agent se
+            connecte à leur portail à votre place, avec un accès par compagnie.
+          </p>
+        </div>
+
+        {/* Configured extranets */}
+        {configuredExtranets.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-panora-text-muted">
+              Vos extranets
+            </span>
 
             {/* Session activation explainer */}
             <div className="flex items-start gap-3 bg-panora-secondary/40 border border-panora-border rounded-lg px-4 py-3 max-w-[720px]">
@@ -93,6 +147,9 @@ export default function ExtranetsPage() {
                 <ExtranetCard
                   key={config.id}
                   config={config}
+                  domId={`extranet-${config.id}`}
+                  autoOpenActivation={config.id === targetConfigId}
+                  highlight={config.id === targetConfigId}
                   onEdit={() => setModal({ type: "edit", extranet: config })}
                   onDelete={() => console.log("Delete:", config.id)}
                 />
@@ -119,9 +176,17 @@ export default function ExtranetsPage() {
 
         {/* Catalog */}
         <AddExtranetList
-          onConfigure={(extranet) =>
-            setModal({ type: "configure", extranet })
-          }
+          onConfigure={(extranet) => {
+            // EDI active + insurer covered by it → add directly, no modal.
+            if (
+              getEdiConnection().status === "connected" &&
+              extranet.ediCompatible
+            ) {
+              addEdiCoveredExtranet(extranet);
+              return;
+            }
+            setModal({ type: "configure", extranet });
+          }}
         />
       </div>
 
@@ -152,11 +217,14 @@ export default function ExtranetsPage() {
                 otpDelivery: source.otpDelivery,
                 emailForwardConfigured: false,
                 sessionDurationLabel: source.sessionDurationLabel,
+                ediCompatible: source.ediCompatible,
+                useEdi: data.useEdi,
               });
             } else {
               updateConfiguredExtranet(modal.extranet.id, {
                 username: data.username,
                 selectedProducts: data.selectedProducts,
+                useEdi: data.useEdi,
               });
             }
             setModal(null);

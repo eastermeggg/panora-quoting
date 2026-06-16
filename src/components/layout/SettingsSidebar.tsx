@@ -13,6 +13,7 @@ import {
   PanelLeftClose,
   Palette,
   Plug,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
@@ -23,6 +24,7 @@ const settingsNavItems = [
   { label: "Collaborateurs", href: "/settings/collaborators", icon: Users },
   { label: "Présentation", href: "/settings/presentation", icon: Palette },
   { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
+  { label: "EDI", href: "/settings/edi", icon: Network },
   { label: "Intégrations", href: "/settings/integrations", icon: Plug },
 ];
 

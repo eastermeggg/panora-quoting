@@ -1,264 +1,15 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-} from "react";
-import {
-  Check,
-  Eye,
-  EyeOff,
-  Info,
-  KeyRound,
-  Mail,
-  Search,
-  Shield,
-  Smartphone,
-  X,
-} from "lucide-react";
+import { useState } from "react";
+import { Check, Eye, EyeOff, Info, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  masterProducts,
   type AvailableExtranet,
   type ExtranetConfig,
   type InsuranceProduct,
-  type InsurerProduct,
-  type OtpDelivery,
 } from "@/data/settings-mock";
-
-// ── Two-zone product selector ──
-
-function ProductSearchSelect({
-  modelizedProducts,
-  selected,
-  onToggle,
-}: {
-  modelizedProducts: InsurerProduct[];
-  selected: Set<InsuranceProduct>;
-  onToggle: (product: InsuranceProduct) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [open]);
-
-  const modelizedSet = useMemo(
-    () => new Set(modelizedProducts.map((p) => p.product)),
-    [modelizedProducts]
-  );
-  const modelizedNewSet = useMemo(
-    () =>
-      new Set(modelizedProducts.filter((p) => p.isNew).map((p) => p.product)),
-    [modelizedProducts]
-  );
-
-  const selectedList = Array.from(selected).map((product) => ({
-    product,
-    isModelized: modelizedSet.has(product),
-    isNew: modelizedNewSet.has(product),
-  }));
-
-  const lowerQuery = query.toLowerCase();
-
-  const disponibleItems = modelizedProducts.filter(
-    (p) =>
-      !selected.has(p.product) && p.product.toLowerCase().includes(lowerQuery)
-  );
-
-  const surDemandeItems = masterProducts.filter(
-    (p) =>
-      !selected.has(p.id) &&
-      !modelizedSet.has(p.id) &&
-      p.id.toLowerCase().includes(lowerQuery)
-  );
-
-  const hasResults = disponibleItems.length > 0 || surDemandeItems.length > 0;
-
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[13px] font-medium text-panora-text leading-5">
-        Produits que vous souhaitez côter
-      </label>
-
-      <div className="relative" ref={ref}>
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-1.5 min-h-[38px] px-2.5 py-1.5 bg-white border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors cursor-text",
-            open ? "border-panora-green/40" : "border-panora-border"
-          )}
-          onClick={() => {
-            setOpen(true);
-            inputRef.current?.focus();
-          }}
-        >
-          {selectedList.map(({ product, isModelized }) => (
-            <span
-              key={product}
-              className={cn(
-                "inline-flex items-center gap-1 pl-2 pr-1 h-6 rounded-md text-[12px] font-medium leading-4",
-                isModelized
-                  ? "bg-panora-green-light text-panora-green-dark"
-                  : "border border-dashed border-panora-text-muted/40 text-panora-text-muted"
-              )}
-            >
-              {product}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle(product);
-                }}
-                className="flex items-center justify-center w-4 h-4 rounded hover:bg-black/5 transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-
-          <div className="flex items-center gap-1.5 flex-1 min-w-[80px]">
-            {selectedList.length === 0 && (
-              <Search className="w-3.5 h-3.5 text-panora-text-muted shrink-0" />
-            )}
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setOpen(true);
-              }}
-              onFocus={() => setOpen(true)}
-              placeholder={
-                selectedList.length === 0 ? "Rechercher un produit..." : ""
-              }
-              className="flex-1 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-transparent outline-none min-w-0"
-            />
-          </div>
-        </div>
-
-        {open && (
-          <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-panora-border rounded-lg shadow-[0px_8px_24px_0px_rgba(0,0,0,0.12)] z-[60] py-1 max-h-[280px] overflow-y-auto">
-            {!hasResults ? (
-              <div className="px-3 py-2 text-[13px] text-panora-text-muted">
-                Aucun produit trouvé
-              </div>
-            ) : (
-              <>
-                {disponibleItems.length > 0 && (
-                  <>
-                    <div className="px-3 pt-2 pb-1">
-                      <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">
-                        Disponible ({disponibleItems.length})
-                      </span>
-                    </div>
-                    {disponibleItems.map((p) => (
-                      <button
-                        key={p.product}
-                        onClick={() => {
-                          onToggle(p.product);
-                          setQuery("");
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] w-full text-left text-panora-text hover:bg-panora-drop transition-colors"
-                      >
-                        <span className="font-medium flex-1">{p.product}</span>
-                        {p.isNew ? (
-                          <span className="px-1.5 py-px rounded-full text-[10px] font-medium bg-purple-100 text-purple-700">
-                            Nouveau
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-px rounded-full text-[10px] font-medium bg-panora-green-light text-panora-green-dark">
-                            Disponible
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {disponibleItems.length > 0 && surDemandeItems.length > 0 && (
-                  <div className="h-px bg-panora-border mx-2 my-1" />
-                )}
-
-                {surDemandeItems.length > 0 && (
-                  <>
-                    <div className="px-3 pt-2 pb-1">
-                      <span className="text-[11px] font-medium text-panora-text-muted uppercase tracking-wide">
-                        Sur demande ({surDemandeItems.length})
-                      </span>
-                    </div>
-                    {surDemandeItems.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          onToggle(p.id);
-                          setQuery("");
-                        }}
-                        className="flex items-center gap-2.5 px-3 py-2 text-[13px] w-full text-left text-panora-text-muted hover:bg-panora-drop transition-colors"
-                      >
-                        <span className="font-medium flex-1">{p.id}</span>
-                        <span className="px-1.5 py-px rounded-full text-[10px] font-medium bg-panora-secondary text-panora-text-secondary">
-                          Sur demande
-                        </span>
-                      </button>
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {selected.size === 0 && (
-        <p className="text-[11px] text-panora-text-muted leading-4">
-          Sélectionnez au moins un produit
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── OTP delivery hint ──
-
-function OtpDeliveryHint({ delivery }: { delivery: OtpDelivery }) {
-  const icon =
-    delivery.channel === "email" ? (
-      <Mail className="w-3.5 h-3.5 text-panora-text-secondary" />
-    ) : delivery.channel === "sms" ? (
-      <Smartphone className="w-3.5 h-3.5 text-panora-text-secondary" />
-    ) : (
-      <KeyRound className="w-3.5 h-3.5 text-panora-text-secondary" />
-    );
-  const label =
-    delivery.channel === "email"
-      ? `Code 2FA envoyé par email à ${delivery.hint}`
-      : delivery.channel === "sms"
-        ? `Code 2FA envoyé par SMS au ${delivery.hint}`
-        : `Code 2FA généré dans ${delivery.hint}`;
-
-  return (
-    <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-panora-secondary/30 border border-panora-border">
-      <div className="shrink-0 mt-px">{icon}</div>
-      <p className="text-[12px] leading-[18px] text-panora-text-secondary">
-        {label}.{" "}
-        <span className="text-panora-text-muted">
-          Vous saisirez ce code à chaque activation de session.
-        </span>
-      </p>
-    </div>
-  );
-}
+import { useEdiConnection } from "@/data/edi-store";
+import { EdiConnectionModal } from "./EdiCard";
 
 // ── Panel ──
 
@@ -275,6 +26,7 @@ export interface ExtranetCredentialsPanelProps {
     username: string;
     password: string;
     selectedProducts: InsuranceProduct[];
+    useEdi?: boolean;
   }) => void;
   onCancel?: () => void;
   /** Label on the primary save button. Defaults to "Enregistrer". */
@@ -299,39 +51,46 @@ export function ExtranetCredentialsPanel({
   const isEdit = variant === "edit";
   const hasNoModelized = extranet.modelizedProducts.length === 0;
   const existing = isEdit && isExtranetConfig(extranet) ? extranet : null;
-  const otpDelivery: OtpDelivery | undefined =
-    (extranet as AvailableExtranet).otpDelivery ??
-    (existing as ExtranetConfig | null)?.otpDelivery;
-  const requires2FA =
-    (extranet as AvailableExtranet).requires2FA === true ||
-    otpDelivery !== undefined;
+  const ediState = useEdiConnection();
+  const ediConnected = ediState.status === "connected";
+  const ediCompatible = extranet.ediCompatible ?? false;
+  // Show the toggle for every EDI-compatible insurer, even when EDI isn't set
+  // up yet — flipping it on then walks the broker through the EDI connection.
+  const showEdiToggle = ediCompatible;
 
   const [username, setUsername] = useState(existing?.username ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<
-    Set<InsuranceProduct>
-  >(new Set(existing?.selectedProducts ?? []));
+  const [useEdi, setUseEdi] = useState(
+    isExtranetConfig(extranet) ? (extranet.useEdi ?? false) : false
+  );
+  const [ediModalOpen, setEdiModalOpen] = useState(false);
 
-  function toggleProduct(product: InsuranceProduct) {
-    setSelectedProducts((prev) => {
-      const next = new Set(prev);
-      if (next.has(product)) next.delete(product);
-      else next.add(product);
-      return next;
-    });
+  function handleToggleEdi() {
+    if (useEdi) {
+      setUseEdi(false);
+      return;
+    }
+    // Turning EDI on: connect first if the channel isn't active yet.
+    if (ediConnected) {
+      setUseEdi(true);
+    } else {
+      setEdiModalOpen(true);
+    }
   }
 
   function handleSave() {
-    onSave({
-      username,
-      password,
-      selectedProducts: Array.from(selectedProducts),
-    });
+    // Products are declared globally in the Produits block, not per insurer.
+    // On edit we keep whatever was already stored; on configure we default to
+    // everything this insurer can model.
+    const selectedProducts: InsuranceProduct[] =
+      existing?.selectedProducts ??
+      extranet.modelizedProducts.map((p) => p.product);
+    onSave({ username, password, selectedProducts, useEdi: showEdiToggle ? useEdi : undefined });
   }
 
   const canSave =
-    username.trim().length > 0 && password.trim().length > 0;
+    useEdi || (username.trim().length > 0 && password.trim().length > 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -340,64 +99,100 @@ export function ExtranetCredentialsPanel({
           <Info className="w-4 h-4 text-panora-warning-text shrink-0 mt-0.5" />
           <p className="text-[12px] leading-[18px] text-panora-warning-text">
             Aucun produit n&apos;est encore modélisé pour cet assureur. Vous
-            pouvez enregistrer vos identifiants et indiquer les produits
-            souhaités — on vous notifie dès qu&apos;ils sont disponibles.
+            pouvez enregistrer vos identifiants : on vous notifie dès que des
+            produits sont disponibles.
           </p>
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-medium text-panora-text leading-5">
-          Identifiant
-        </label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="votre.identifiant@courtier.fr"
-          className="w-full h-[38px] px-3 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-medium text-panora-text leading-5">
-          Mot de passe
-        </label>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={isEdit ? "••••••••" : "Votre mot de passe"}
-            className="w-full h-[38px] px-3 pr-10 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
-          />
+      {showEdiToggle && (
+        <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border border-panora-border bg-panora-secondary/30">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-panora-text leading-5">
+              Utiliser EDI pour cet assureur
+            </span>
+            <span className="text-[11px] text-panora-text-muted leading-4">
+              {ediConnected
+                ? "Les sessions seront ouvertes via votre connexion EDIconnexion"
+                : "Activez votre connexion EDIconnexion pour cet assureur"}
+            </span>
+          </div>
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-panora-text-muted hover:text-panora-text-secondary transition-colors"
-          >
-            {showPassword ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
+            onClick={handleToggleEdi}
+            className={cn(
+              "relative shrink-0 w-9 h-5 rounded-full transition-colors",
+              useEdi ? "bg-panora-green" : "bg-[#d8d3cc]"
             )}
+            role="switch"
+            aria-checked={useEdi}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-[0px_1px_2px_rgba(0,0,0,0.15)] transition-transform",
+                useEdi && "translate-x-4"
+              )}
+            />
           </button>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Shield className="w-3 h-3 text-panora-green" />
-          <span className="text-[11px] text-panora-text-muted leading-4">
-            Chiffrement AES-256 de bout en bout
-          </span>
+      )}
+
+      {ediModalOpen && (
+        <EdiConnectionModal
+          onClose={() => setEdiModalOpen(false)}
+          onConnected={() => {
+            setUseEdi(true);
+            setEdiModalOpen(false);
+          }}
+        />
+      )}
+
+      <div className={cn("flex flex-col gap-5 transition-opacity", useEdi && showEdiToggle && "opacity-40 pointer-events-none")}>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-panora-text leading-5">
+            Identifiant
+          </label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="votre.identifiant@courtier.fr"
+            className="w-full h-[38px] px-3 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-panora-text leading-5">
+            Mot de passe
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isEdit ? "••••••••" : "Votre mot de passe"}
+              className="w-full h-[38px] px-3 pr-10 text-[13px] leading-5 text-panora-text placeholder:text-panora-text-muted bg-white border border-panora-border rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] outline-none focus:border-panora-green/40 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-panora-text-muted hover:text-panora-text-secondary transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3 h-3 text-panora-green" />
+            <span className="text-[11px] text-panora-text-muted leading-4">
+              Chiffrement AES-256 de bout en bout
+            </span>
+          </div>
         </div>
       </div>
-
-      <ProductSearchSelect
-        modelizedProducts={extranet.modelizedProducts}
-        selected={selectedProducts}
-        onToggle={toggleProduct}
-      />
-
-      {requires2FA && otpDelivery && <OtpDeliveryHint delivery={otpDelivery} />}
 
       <div className="flex items-center justify-between gap-3 pt-1">
         <div>

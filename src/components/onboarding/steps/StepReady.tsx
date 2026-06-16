@@ -11,6 +11,8 @@ import {
   Sparkles,
   Globe,
   GitCompare,
+  Mail,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExtranetConfig } from "@/data/settings-mock";
@@ -23,24 +25,33 @@ const REVEAL_SUFFIX = "@panora.co";
 const COTATION_EMAIL_LOCKED = `${REVEAL_PREFIX}${"•".repeat(REVEAL_HIDDEN_CHARS.length)}${REVEAL_SUFFIX}`;
 const DOCS_URL = "https://panora.notion.site/";
 
+const PLACEHOLDER_CLIENT = "[Nom du client / raison sociale]";
+const PLACEHOLDER_DOCS = "[Kbis, bilan N-1, questionnaire rempli]";
+const PLACEHOLDER_PRECISIONS = "[échéance souhaitée, particularités du risque…]";
+
 interface StepReadyProps {
   configuredExtranets: ExtranetConfig[];
 }
 
-export function StepReady(_props: StepReadyProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(COTATION_EMAIL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+export function StepReady({ configuredExtranets }: StepReadyProps) {
+  const insurerNames = Array.from(
+    new Set(configuredExtranets.map((c) => c.insurerName))
+  );
+  const assureurs =
+    insurerNames.length > 0
+      ? insurerNames.slice(0, 3).join(", ")
+      : "AXA, Generali, Allianz";
+  const products = Array.from(
+    new Set(configuredExtranets.flatMap((c) => c.selectedProducts))
+  );
+  const produit =
+    products.length > 0
+      ? products.slice(0, 2).join(", ")
+      : "Multirisque professionnelle";
 
   return (
-    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10 items-center text-center">
+    <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        align="center"
-        eyebrow="Configuration terminée"
         title={
           <>
             Votre assistant cotation{" "}
@@ -49,71 +60,20 @@ export function StepReady(_props: StepReadyProps) {
         }
       />
 
-      {/* Email reveal — the centerpiece moment */}
-      <section className="relative w-full max-w-[820px]">
-        <div
-          aria-hidden
-          className="absolute inset-x-10 top-6 bottom-6 rounded-[28px] bg-panora-green/8 blur-2xl"
-        />
-        <div className="relative rounded-2xl bg-panora-bg border border-panora-border px-6 lg:px-10 py-8 lg:py-10 flex flex-col items-center gap-5 text-center overflow-hidden">
-          <h2 className="inline-flex items-center gap-2 text-[18px] lg:text-[20px] font-semibold text-panora-text font-display leading-7">
-            <Send className="w-4 h-4 text-panora-green-dark" />
-            Transférez vos cotations à cette adresse
-          </h2>
-          <EmailReveal copied={copied} onCopy={handleCopy} />
-          <p className="text-[12px] text-panora-text-muted leading-5 max-w-[420px]">
-            Transférez n&apos;importe quel email client à cette adresse,
-            l&apos;agent fait le reste.
-          </p>
+      {/* Left: how-it-works timeline · Right: address + email example */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
+        <FlowTimeline />
+        <div className="flex flex-col gap-5">
+          <AddressPanel />
+          <ForwardExample assureurs={assureurs} produit={produit} />
         </div>
-      </section>
+      </div>
 
-      {/* How it works — a single vertical flow */}
-      <section className="w-full max-w-[760px] flex flex-col gap-5 items-center">
-        <h2 className="text-[18px] font-semibold text-panora-text font-display leading-6">
-          Comment ça marche, du dossier à la cotation
-        </h2>
-        <ol className="w-full text-left flex flex-col">
-          <FlowStep
-            number={1}
-            icon={<FolderInput className="w-4 h-4 text-panora-green-dark" />}
-            title="Vous récupérez les documents du client"
-            body="Pour chaque nouvelle cotation, rassemblez les pièces et informations envoyées par le client : devis, contrats, justificatifs."
-          />
-          <FlowStep
-            number={2}
-            icon={<Forward className="w-4 h-4 text-panora-green-dark" />}
-            title="Vous envoyez ou transférez à Panora"
-            body="Envoyez un email à votre adresse Panora, ou transférez celui du client. Tous les documents sont rattachés automatiquement au nouveau dossier."
-          />
-          <FlowStep
-            number={3}
-            icon={<Sparkles className="w-4 h-4 text-panora-green-dark" />}
-            title="L'agent vérifie les informations"
-            body="Panora lit les pièces et signale ce qui manque. Vous complétez directement dans le dossier : ajout de documents, précisions, échanges avec le client."
-          />
-          <FlowStep
-            number={4}
-            icon={<Globe className="w-4 h-4 text-panora-green-dark" />}
-            title="L'agent ouvre les portails des compagnies d'assurance"
-            body="Quand tout est en place, Panora se connecte aux extranets configurés, remplit les formulaires et lance les cotations dossier par dossier."
-          />
-          <FlowStep
-            number={5}
-            icon={<GitCompare className="w-4 h-4 text-panora-green-dark" />}
-            title="Vos cotations sont prêtes à comparer"
-            body="Les offres reviennent dans Panora, comparables côte à côte. Vous les analysez, vous les annotez, vous les transformez en présentation client."
-            isLast
-          />
-        </ol>
-      </section>
-
-      {/* Secondary doc link */}
       <a
         href={DOCS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
+        className="self-start inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
       >
         Consulter la documentation
         <ExternalLink className="w-3 h-3" />
@@ -122,55 +82,281 @@ export function StepReady(_props: StepReadyProps) {
   );
 }
 
-// ── Vertical flow step ──
+// ── Left column: Panora address ──
 
-function FlowStep({
-  number,
-  icon,
-  title,
-  body,
-  isLast,
-}: {
-  number: number;
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  isLast?: boolean;
-}) {
+function AddressPanel() {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(COTATION_EMAIL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
-    <li className="relative flex gap-4 pb-6 last:pb-0">
-      {/* Numbered marker + connector */}
-      <div className="shrink-0 flex flex-col items-center">
-        <div className="relative z-10 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white border border-panora-border text-[13px] font-semibold text-panora-text tabular-nums shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
-          {number}
-        </div>
-        {!isLast && (
-          <span
-            aria-hidden
-            className="flex-1 w-px bg-panora-border mt-1"
-          />
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-col gap-1 pt-1 pb-1">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-panora-green-light">
-            {icon}
-          </span>
-          <h3 className="text-[14px] font-semibold text-panora-text leading-5 font-display">
-            {title}
-          </h3>
-        </div>
-        <p className="text-[13px] text-panora-text-secondary leading-5">
-          {body}
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+          <Send className="w-4 h-4 text-panora-green-dark shrink-0" />
+          Votre adresse de cotation
+        </h2>
+        <p className="text-[13px] text-panora-text-secondary leading-[20px]">
+          Transférez n&apos;importe quel e-mail client à cette adresse.
+          L&apos;agent extrait les informations et lance les cotations
+          automatiquement.
         </p>
       </div>
+      <EmailReveal copied={copied} onCopy={handleCopy} />
+    </div>
+  );
+}
+
+// ── Right column: ideal email example ──
+
+function buildTemplate(assureurs: string, produit: string): string {
+  return [
+    `Objet : Demande de devis - ${PLACEHOLDER_CLIENT} - ${produit}`,
+    "",
+    "Bonjour,",
+    "",
+    "Merci de bien vouloir établir un devis pour le client ci-dessous :",
+    "",
+    `- Client : ${PLACEHOLDER_CLIENT}`,
+    `- Produit : ${produit}`,
+    `- Assureurs à consulter : ${assureurs}`,
+    `- Documents joints : ${PLACEHOLDER_DOCS}`,
+    `- Précisions : ${PLACEHOLDER_PRECISIONS}`,
+    "",
+    "Bien cordialement,",
+  ].join("\n");
+}
+
+// ── How it works — compact digest ──
+
+const FLOW_STEPS = [
+  {
+    icon: FolderInput,
+    label: "Rassemblez les documents",
+    sub: "Réunissez les pièces envoyées par le client.",
+  },
+  {
+    icon: Forward,
+    label: "Transférez à Panora",
+    sub: "Un simple email crée le dossier.",
+  },
+  {
+    icon: Sparkles,
+    label: "Notre agent constitue le dossier",
+    sub: "Il rassemble les pièces, repère ce qui manque et vous le signale.",
+  },
+  {
+    icon: Globe,
+    label: "Validez et lancez la cotation",
+    sub: "Notre agent va chercher les devis pour vous auprès des compagnies.",
+  },
+  {
+    icon: GitCompare,
+    label: "Comparez les offres",
+    sub: "Analysez les devis côte à côte dans Panora.",
+  },
+] as const;
+
+function FlowTimeline() {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
+      <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+        <Rocket className="w-4 h-4 text-panora-green-dark shrink-0" />
+        Comment lancer votre première cotation
+      </h2>
+      <ol className="flex flex-col">
+        {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => {
+          const isLast = i === FLOW_STEPS.length - 1;
+          return (
+            <li key={i} className="flex gap-3 relative">
+              {/* Connecting line */}
+              {!isLast && (
+                <div className="absolute left-[13px] top-7 bottom-0 w-px bg-panora-border" />
+              )}
+              {/* Icon marker */}
+              <div className="relative z-10 shrink-0 inline-flex items-center justify-center w-[27px] h-[27px] rounded-full bg-panora-green-light border border-panora-green-border">
+                <Icon className="w-3.5 h-3.5 text-panora-green-dark" />
+              </div>
+              {/* Content */}
+              <div className={cn("min-w-0 pt-[3px]", !isLast && "pb-4")}>
+                <p className="text-[13px] font-semibold text-panora-text leading-4">
+                  {label}
+                </p>
+                <p className="text-[12px] text-panora-text-secondary leading-[17px] mt-1">
+                  {sub}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function ForwardExample({
+  assureurs,
+  produit,
+}: {
+  assureurs: string;
+  produit: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(buildTemplate(assureurs, produit));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
+      {/* Card header — mirrors AddressPanel */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-panora-green-dark shrink-0" />
+          L&apos;email idéal de cotation
+        </h2>
+        <button
+          onClick={handleCopy}
+          className="shrink-0 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-panora-green-light text-[12px] font-semibold text-panora-green-dark hover:bg-panora-green/15 transition-colors"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              Copié
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              Copier le modèle
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Inner white card — email content */}
+      <div className="rounded-xl border border-panora-border bg-white overflow-hidden shadow-[0px_1px_4px_0px_rgba(0,0,0,0.05)]">
+        {/* Headers */}
+        <div className="px-4 py-3 border-b border-panora-border flex flex-col gap-1.5">
+          <MetaRow label="À">
+            <span className="font-mono text-panora-text">{COTATION_EMAIL}</span>
+          </MetaRow>
+          <MetaRow label="Objet">
+            <span className="text-panora-text">
+              Demande de devis -{" "}
+              <Slot>{PLACEHOLDER_CLIENT}</Slot> -{" "}
+              <Mark>{produit}</Mark>
+            </span>
+          </MetaRow>
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-4 flex flex-col gap-3 text-[13px] text-panora-text leading-5">
+          <p>Bonjour,</p>
+          <p className="text-panora-text-secondary">
+            Merci de bien vouloir établir un devis pour le client ci-dessous :
+          </p>
+          <ul className="flex flex-col gap-2">
+            <FieldLine mustHave label="Client">
+              <Slot>{PLACEHOLDER_CLIENT}</Slot>
+            </FieldLine>
+            <FieldLine mustHave label="Produit">
+              <Mark>{produit}</Mark>
+            </FieldLine>
+            <FieldLine mustHave label="Assureurs à consulter">
+              <Mark>{assureurs}</Mark>
+            </FieldLine>
+            <FieldLine mustHave label="Documents joints">
+              <Slot>{PLACEHOLDER_DOCS}</Slot>
+            </FieldLine>
+            <FieldLine label="Précisions">
+              <span className="text-panora-text-muted">
+                {PLACEHOLDER_PRECISIONS}
+              </span>
+            </FieldLine>
+          </ul>
+          <p className="text-panora-text-secondary">Bien cordialement,</p>
+        </div>
+      </div>
+
+      <p className="inline-flex items-center gap-1.5 text-[12px] text-panora-text-muted leading-4">
+        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-panora-green-light shrink-0">
+          <Check className="w-2.5 h-2.5 text-panora-green-dark" strokeWidth={3} />
+        </span>
+        Les quatre éléments surlignés sont indispensables à une bonne cotation.
+      </p>
+    </div>
+  );
+}
+
+// ── Primitive display helpers ──
+
+function Mark({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded px-1 bg-panora-green-light/70 text-panora-text font-medium">
+      {children}
+    </span>
+  );
+}
+
+function Slot({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded px-1 bg-panora-warning-bg/70 text-panora-warning-text font-medium">
+      {children}
+    </span>
+  );
+}
+
+function MetaRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline gap-2 text-[13px]">
+      <span className="shrink-0 w-12 text-panora-text-muted">{label}</span>
+      <span className="min-w-0 truncate">{children}</span>
+    </div>
+  );
+}
+
+function FieldLine({
+  label,
+  mustHave,
+  children,
+}: {
+  label: string;
+  mustHave?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-start gap-2">
+      <span className="shrink-0 mt-[3px]">
+        {mustHave ? (
+          <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-panora-green-light">
+            <Check
+              className="w-2.5 h-2.5 text-panora-green-dark"
+              strokeWidth={3}
+            />
+          </span>
+        ) : (
+          <span className="inline-block w-3.5 h-3.5 rounded-full border border-panora-border" />
+        )}
+      </span>
+      <span className="text-panora-text-muted">{label} :</span>
+      <span className="min-w-0">{children}</span>
     </li>
   );
 }
 
-// ── Email reveal (typewriter) ──
+// ── Email address reveal (typewriter) ──
 
 function EmailReveal({
   copied,
@@ -207,14 +393,14 @@ function EmailReveal({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 border rounded-xl px-5 bg-white transition-all duration-300",
+        "flex items-center gap-3 border rounded-xl px-4 bg-white transition-all duration-300",
         pulse
           ? "border-panora-green-dark shadow-[0px_8px_24px_-8px_rgba(0,162,114,0.28)]"
           : "border-panora-green-border shadow-[0px_3px_14px_-6px_rgba(0,162,114,0.15)]"
       )}
       style={{ height: "52px" }}
     >
-      <span className="text-[15px] lg:text-[17px] text-panora-text font-medium flex-1 truncate font-mono tracking-tight">
+      <span className="text-[14px] lg:text-[15px] text-panora-text font-medium flex-1 truncate font-mono tracking-tight">
         {displayed}
       </span>
       <button

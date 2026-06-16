@@ -48,7 +48,7 @@ export function ConfigureExtranetModal({
                   {extranet.insurerName}
                   {extranet.portalLabel && (
                     <span className="text-[13px] font-normal text-panora-text-muted ml-1.5">
-                      — {extranet.portalLabel}
+                      · {extranet.portalLabel}
                     </span>
                   )}
                 </span>

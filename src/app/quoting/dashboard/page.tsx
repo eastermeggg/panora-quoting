@@ -1,22 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { Copy, Check, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Copy, Check } from "lucide-react";
 import { TopBar, ViewMode } from "@/components/layout/TopBar";
 import { KanbanBoard } from "@/components/quoting/KanbanBoard";
-import { cotationsList } from "@/data/mock";
-import { useConfiguredExtranets } from "@/data/settings-mock";
+import { useCotations } from "@/data/cotations-store";
+import {
+  getConfiguredExtranets,
+  seedConfiguredExtranets,
+} from "@/data/settings-mock";
 
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [copied, setCopied] = useState(false);
 
-  const extranets = useConfiguredExtranets();
-  const expiredSessionsCount = extranets.filter(
-    (c) => c.sessionState.status !== "active"
-  ).length;
-  const hasExpiredSessions = extranets.length > 0 && expiredSessionsCount > 0;
+  // Demo: populate realistic extranets (some with closed sessions) on first
+  // load so the board shows the full lifecycle — Action requise included — and
+  // the reactivation flow is reachable. Skipped once the broker has any of their
+  // own configured, so it never clobbers real data.
+  useEffect(() => {
+    if (getConfiguredExtranets().length === 0) seedConfiguredExtranets();
+  }, []);
+
+  const cotations = useCotations();
 
   const handleCopy = () => {
     navigator.clipboard.writeText("cotation+a7f3b2@panora.co");
@@ -52,28 +58,16 @@ export default function DashboardPage() {
               <Copy className="w-4 h-4 text-[#173c2d]/50 hover:text-[#173c2d] transition-colors" />
             )}
           </button>
-          {hasExpiredSessions && (
-            <Link
-              href="/settings/extranets"
-              className="ml-1 inline-flex items-center gap-1.5 h-5 px-2 rounded-full bg-[#f6e1db] hover:bg-[#f1d4cb] transition-colors"
-            >
-              <Clock className="w-3 h-3 text-panora-error" />
-              <span className="text-[12px] font-medium text-panora-error leading-4">
-                {expiredSessionsCount} session
-                {expiredSessionsCount > 1 ? "s" : ""} à réactiver
-              </span>
-            </Link>
-          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-5">
         {viewMode === "kanban" ? (
-          <KanbanBoard cotations={cotationsList} />
+          <KanbanBoard cotations={cotations} />
         ) : (
           <div className="text-sm text-panora-text-muted text-center py-12">
-            Vue table — à venir
+            Vue tableau à venir
           </div>
         )}
       </div>

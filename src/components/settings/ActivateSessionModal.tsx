@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   X,
   ExternalLink,
@@ -8,11 +9,13 @@ import {
   ShieldCheck,
   ChevronDown,
   HelpCircle,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { AgentLivePanel } from "@/components/ui/AgentLivePanel";
 import { SessionActionBlock } from "./ExtranetSessionPanel";
+import { WaitingDemandesPanel } from "./WaitingDemandesPanel";
 import { useSessionActivation } from "@/hooks/useSessionActivation";
 import {
   updateConfiguredExtranet,
@@ -20,6 +23,11 @@ import {
   mockConnectionSteps,
   type ExtranetConfig,
 } from "@/data/settings-mock";
+import {
+  getCotations,
+  getPendingDemandesForInsurer,
+  launchPendingForInsurer,
+} from "@/data/cotations-store";
 
 interface ActivateSessionModalProps {
   config: ExtranetConfig;
@@ -32,6 +40,14 @@ export function ActivateSessionModal({
 }: ActivateSessionModalProps) {
   const [livePanelOpen, setLivePanelOpen] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
+
+  // The stock of demandes waiting on this session, snapshotted when the modal
+  // opens. Captured once: activating launches them (flipping them out of
+  // "pending"), so we keep this list to confirm what just went out.
+  const [waitingAtOpen] = useState(() =>
+    getPendingDemandesForInsurer(getCotations(), config.insurerId)
+  );
+  const hasWaiting = waitingAtOpen.length > 0;
 
   const otpFormat =
     config.sessionState.status === "otp_required"
@@ -50,11 +66,14 @@ export function ActivateSessionModal({
   } = useSessionActivation({
     initialState: config.sessionState,
     otpFormat,
-    onActivated: () =>
+    onActivated: () => {
       updateExtranetSession(config.id, {
         status: "active",
         expiresAtLabel: "18h",
-      }),
+      });
+      // Release the backlog the moment the session is live.
+      launchPendingForInsurer(config.insurerId);
+    },
   });
 
   // The card's "Activer la session" CTA already counts as the broker's intent
@@ -70,12 +89,14 @@ export function ActivateSessionModal({
   }, [config.sessionState.status, startConnecting]);
 
   // Auto-close as soon as the session becomes active. Only fires if the modal
-  // opened on a non-active session (i.e. the broker came here to activate).
+  // opened on a non-active session (i.e. the broker came here to activate) AND
+  // there was no backlog — when demandes were waiting, we hold the modal open on
+  // the "X demandes lancées" confirmation so the broker sees the payoff.
   const openedActiveRef = useRef(config.sessionState.status === "active");
   useEffect(() => {
-    if (openedActiveRef.current) return;
+    if (openedActiveRef.current || hasWaiting) return;
     if (state.status === "active") onClose();
-  }, [state.status, onClose]);
+  }, [state.status, onClose, hasWaiting]);
 
   const isActive = state.status === "active";
 
@@ -140,11 +161,23 @@ export function ActivateSessionModal({
               <p className="text-[12px] text-panora-text-secondary leading-[18px]">
                 {isActive
                   ? "L'agent peut coter sur ce portail jusqu'à expiration de la session."
-                  : "L'agent se connecte au portail à votre place. Si l'assureur demande un code 2FA, vous le saisissez ici."}
+                  : hasWaiting
+                    ? "L'agent se connecte au portail à votre place. Dès la session ouverte, les demandes en attente partent automatiquement."
+                    : "L'agent se connecte au portail à votre place. Si l'assureur demande un code 2FA, vous le saisissez ici."}
               </p>
             </div>
 
+            {/* Stock of demandes waiting on this session */}
+            {hasWaiting && (
+              <WaitingDemandesPanel
+                demandes={waitingAtOpen}
+                mode={isActive ? "launched" : "queued"}
+              />
+            )}
+
             {/* Action block (reused from the inline card surface) */}
+            {!isActive && (
+            <>
             <SessionActionBlock
               state={state}
               submitting={submitting}
@@ -192,6 +225,29 @@ export function ActivateSessionModal({
                 </div>
               )}
             </div>
+            </>
+            )}
+
+            {/* Success footer — shown when the modal stays open on the
+                "demandes lancées" confirmation (i.e. there was a backlog). */}
+            {isActive && hasWaiting && (
+              <div className="flex items-center justify-between gap-3 border-t border-panora-border pt-4">
+                <button
+                  onClick={onClose}
+                  className="text-[13px] font-medium text-panora-text-secondary hover:text-panora-text transition-colors"
+                >
+                  Fermer
+                </button>
+                <Link
+                  href="/quoting/dashboard"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-panora-green hover:underline"
+                >
+                  Voir le suivi
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
 
         </div>

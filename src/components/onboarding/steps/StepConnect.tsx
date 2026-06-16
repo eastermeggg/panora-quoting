@@ -1,21 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { ExtranetCard } from "@/components/settings/ExtranetCard";
+import { EdiBlock } from "@/components/onboarding/EdiBlock";
 import { ConfigureExtranetModal } from "@/components/settings/ConfigureExtranetModal";
 import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
+import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
+import { StepNumber } from "@/components/onboarding/StepNumber";
 import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
+  addEdiCoveredExtranet,
   removeConfiguredExtranet,
   updateConfiguredExtranet,
   type AvailableExtranet,
   type ExtranetConfig,
   type InsuranceProduct,
 } from "@/data/settings-mock";
+import { getEdiConnection } from "@/data/edi-store";
 
 interface StepConnectProps {
   configuredExtranets: ExtranetConfig[];
@@ -44,10 +48,21 @@ export function StepConnect({
     [configuredExtranets]
   );
 
+  // When EDIconnexion is active and the insurer is reachable through it, there's
+  // nothing to enter — skip the credentials modal and add it covered by EDI.
+  function handleSelect(extranet: AvailableExtranet) {
+    if (getEdiConnection().status === "connected" && extranet.ediCompatible) {
+      onConfigured(addEdiCoveredExtranet(extranet));
+      return;
+    }
+    setModal({ type: "configure", extranet });
+  }
+
   function handleSave(data: {
     username: string;
     password: string;
     selectedProducts: InsuranceProduct[];
+    useEdi?: boolean;
   }) {
     if (!modal) return;
     if (modal.type === "configure") {
@@ -71,12 +86,15 @@ export function StepConnect({
         otpDelivery: source.otpDelivery,
         emailForwardConfigured: false,
         sessionDurationLabel: source.sessionDurationLabel,
+        ediCompatible: source.ediCompatible,
+        useEdi: data.useEdi,
       });
       onConfigured(id);
     } else {
       updateConfiguredExtranet(modal.extranet.id, {
         username: data.username,
         selectedProducts: data.selectedProducts,
+        useEdi: data.useEdi,
       });
     }
     setModal(null);
@@ -85,7 +103,6 @@ export function StepConnect({
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        eyebrow="Vos portails"
         title={
           <>
             Connectez vos{" "}
@@ -95,52 +112,66 @@ export function StepConnect({
         }
       />
 
-      {/* Command bar */}
-      <div className="flex flex-col gap-2">
-        <InsurerCommandBar
-          configuredCatalogIds={configuredCatalogIds}
-          onSelect={(extranet) => setModal({ type: "configure", extranet })}
-        />
-        <div className="flex items-center justify-end px-1">
-          <Link
-            href="/matrice-couverture"
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4 transition-colors"
-          >
-            Voir la matrice extranets × produits
-            <ExternalLink className="w-3 h-3" />
-          </Link>
-        </div>
-      </div>
+      {/* Block 1 — Produits */}
+      <ProductsBlock step={1} />
 
-      {/* Configured cards */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-            Vos extranets
-          </h2>
-          {configuredExtranets.length > 0 && (
-            <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
-              {configuredExtranets.length}
-            </span>
-          )}
+      <div className="h-px bg-panora-border" />
+
+      {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
+      <EdiBlock step={2} />
+
+      <div className="h-px bg-panora-border" />
+
+      {/* Block 3 — Extranets */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <StepNumber n={3} />
+            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+              Extranets compagnie
+            </h2>
+            {configuredExtranets.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
+                {configuredExtranets.length}
+              </span>
+            )}
+          </div>
+          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+            Ajoutez les compagnies auprès de qui vous cotez. L&apos;agent se
+            connecte à leur portail à votre place, avec un accès par compagnie.
+          </p>
         </div>
 
+        {/* Add bar */}
+        <div className="flex flex-col gap-2">
+          <InsurerCommandBar
+            configuredCatalogIds={configuredCatalogIds}
+            onSelect={handleSelect}
+          />
+        </div>
+
+        {/* Configured cards / empty state */}
         {configuredExtranets.length === 0 ? (
           <EmptyState />
         ) : (
-          <CardGrid minCardWidth={320}>
-            {configuredExtranets.map((config) => (
-              <ExtranetCard
-                key={config.id}
-                config={config}
-                hideSessionActivation
-                onEdit={() => setModal({ type: "edit", extranet: config })}
-                onDelete={() => removeConfiguredExtranet(config.id)}
-              />
-            ))}
-          </CardGrid>
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-panora-text-muted">
+              Vos extranets
+            </span>
+            <CardGrid minCardWidth={320}>
+              {configuredExtranets.map((config) => (
+                <ExtranetCard
+                  key={config.id}
+                  config={config}
+                  hideSessionActivation
+                  onEdit={() => setModal({ type: "edit", extranet: config })}
+                  onDelete={() => removeConfiguredExtranet(config.id)}
+                />
+              ))}
+            </CardGrid>
+          </div>
         )}
-      </section>
+      </div>
 
       {/* Setup modal */}
       {modal && (

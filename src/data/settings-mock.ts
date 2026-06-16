@@ -23,6 +23,7 @@ export type InsuranceProduct =
 export type MasterProduct = {
   id: InsuranceProduct;
   isNew: boolean; // recently modelized (30-day window)
+  available: boolean; // Panora can quote it today (false = modelization planned)
 };
 
 // Per insurer: which products from the master list are modelized
@@ -78,6 +79,10 @@ export type ExtranetConfig = {
   emailForwardConfigured?: boolean;
   /** How long the session stays active once activated. Varies a lot per insurer. */
   sessionDurationLabel?: string;
+  /** Whether this insurer is reachable via EDIconnexion (single-gateway channel). */
+  ediCompatible?: boolean;
+  /** Whether the broker chose to route this insurer through EDIconnexion. */
+  useEdi?: boolean;
 };
 
 
@@ -94,27 +99,29 @@ export type AvailableExtranet = {
   otpDelivery?: OtpDelivery;
   /** Approximate session lifetime after activation. Varies a lot: AXA ≈ 4h, Generali ≈ 10 jours. */
   sessionDurationLabel?: string;
+  /** Whether this insurer is reachable via EDIconnexion (single-gateway channel). */
+  ediCompatible?: boolean;
 };
 
 // ── Master product list ──
 // All ~60 product types known to the platform (showing 15 for mock)
 
 export const masterProducts: MasterProduct[] = [
-  { id: "Auto", isNew: false },
-  { id: "MRI", isNew: false },
-  { id: "MRP", isNew: false },
-  { id: "Santé", isNew: false },
-  { id: "RC Pro", isNew: false },
-  { id: "Cyber", isNew: true },
-  { id: "Flotte", isNew: false },
-  { id: "Décennale", isNew: true },
-  { id: "D&O", isNew: true },
-  { id: "PJ", isNew: false },
-  { id: "Homme clé", isNew: true },
-  { id: "Marchandises transportées", isNew: false },
-  { id: "Bris de machine", isNew: false },
-  { id: "Perte d'exploitation", isNew: false },
-  { id: "Construction", isNew: true },
+  { id: "Auto", isNew: false, available: true },
+  { id: "MRI", isNew: false, available: true },
+  { id: "MRP", isNew: false, available: true },
+  { id: "Santé", isNew: false, available: true },
+  { id: "RC Pro", isNew: false, available: true },
+  { id: "Cyber", isNew: true, available: true },
+  { id: "Flotte", isNew: false, available: true },
+  { id: "Décennale", isNew: true, available: false },
+  { id: "D&O", isNew: true, available: true },
+  { id: "PJ", isNew: false, available: true },
+  { id: "Homme clé", isNew: true, available: false },
+  { id: "Marchandises transportées", isNew: false, available: true },
+  { id: "Bris de machine", isNew: false, available: true },
+  { id: "Perte d'exploitation", isNew: false, available: true },
+  { id: "Construction", isNew: true, available: false },
 ];
 
 // ── External resources ──
@@ -284,6 +291,37 @@ export function addConfiguredExtranet(config: ExtranetConfig): void {
   notify();
 }
 
+/**
+ * Add an EDI-compatible insurer that's covered by the active EDIconnexion
+ * channel — no per-insurer credentials needed. Used to skip the credentials
+ * modal entirely when EDI is connected and the insurer supports it.
+ */
+export function addEdiCoveredExtranet(source: AvailableExtranet): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const id = `cfg-${source.insurerId}-${Date.now()}`;
+  addConfiguredExtranet({
+    id,
+    insurerId: source.insurerId,
+    insurerName: source.insurerName,
+    portalLabel: source.portalLabel,
+    portalUrl: source.portalUrl,
+    username: "", // covered by EDIconnexion — no per-insurer login
+    modelizedProducts: source.modelizedProducts,
+    selectedProducts: source.modelizedProducts.map((p) => p.product),
+    catalogEntryId: source.id,
+    configuredAt: today,
+    connectionStatus: "connected",
+    lastVerified: today,
+    sessionState: { status: "inactive" },
+    otpDelivery: source.otpDelivery,
+    emailForwardConfigured: false,
+    sessionDurationLabel: source.sessionDurationLabel,
+    ediCompatible: source.ediCompatible,
+    useEdi: true,
+  });
+  return id;
+}
+
 export function removeConfiguredExtranet(id: string): void {
   storeState = storeState.filter((c) => c.id !== id);
   notify();
@@ -363,6 +401,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "noreply.2fa@axa.fr",
     },
     sessionDurationLabel: "≈ 4 heures",
+    ediCompatible: true,
   },
   // Generali — two portal entries (both configured)
   {
@@ -383,6 +422,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "securite@generali.fr",
     },
     sessionDurationLabel: "≈ 10 jours",
+    ediCompatible: true,
   },
   {
     id: "avail-generali-sante",
@@ -401,6 +441,7 @@ export const availableExtranets: AvailableExtranet[] = [
       sourceAddress: "securite@generali.fr",
     },
     sessionDurationLabel: "≈ 10 jours",
+    ediCompatible: true,
   },
   // MAIF — two separate portals for different product lines
   {

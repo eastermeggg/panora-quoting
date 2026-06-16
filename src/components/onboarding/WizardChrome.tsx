@@ -338,7 +338,7 @@ function QuitConfirmModal({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-[18px] font-serif text-panora-text leading-6">
+          <h2 className="text-[16px] font-semibold font-display text-panora-text leading-6">
             Quitter la configuration ?
           </h2>
           <p className="text-[13px] text-panora-text-secondary leading-5">
