@@ -406,12 +406,11 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
   }));
 
   return (
-    // Fixed-width columns that scroll horizontally rather than squeezing.
-    <div className="flex gap-4 min-h-0 flex-1 overflow-x-auto pb-1">
+    <div className="flex gap-4 min-h-0 flex-1">
       {grouped.map((column) => (
         <div
           key={column.key}
-          className="w-[300px] shrink-0 bg-panora-drop rounded-[11px] p-2.5 flex flex-col gap-3.5"
+          className="flex-1 min-w-[240px] bg-panora-drop rounded-[11px] p-2.5 flex flex-col gap-3.5"
         >
           {/* Column header */}
           <div className="flex items-center gap-2 pl-1 h-5">
