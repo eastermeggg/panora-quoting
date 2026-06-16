@@ -119,12 +119,24 @@ function getAttentionReason(
   return null;
 }
 
-/** The column a cotation belongs to. Attention outranks the raw pipeline stage. */
+/**
+ * The column a cotation belongs to.
+ *  - Terminé: every devis is in.
+ *  - En cours: an agent is actively working (≥1 in_progress) — like done, but
+ *    quotes are still coming back. Any insurer that also needs the broker is
+ *    flagged per-row, but the card stays here because work is happening.
+ *  - Action requise: nothing is running and the broker is the blocker (a 2FA/info
+ *    request or a closed session).
+ *  - En préparation: launched nothing yet (all pending), no blocker.
+ */
 function getDisplayStatus(
   cotation: Cotation,
   extranets: ExtranetConfig[]
 ): DisplayStatus {
   if (getCotationStatus(cotation) === "terminee") return "terminee";
+  if (cotation.insurers.some((i) => i.status === "in_progress")) {
+    return "en_cours";
+  }
   if (getAttentionReason(cotation, extranets)) return "action_requise";
   return getCotationStatus(cotation); // "preparation" | "en_cours"
 }
