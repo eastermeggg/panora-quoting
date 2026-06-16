@@ -1,6 +1,12 @@
 "use client";
 
-import { Building2, Clock, AlertTriangle } from "lucide-react";
+import {
+  Building2,
+  Clock,
+  AlertTriangle,
+  FastForward,
+  ArrowRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
@@ -92,17 +98,25 @@ function isStuck(cotation: Cotation, extranets: ExtranetConfig[]): boolean {
 }
 
 /**
- * Whether a cotation needs the broker's hand — either an insurer paused on input
- * (HITL: 2FA code, missing info) or a request waiting on a closed session. Both
- * route into the "Action requise" column; the per-insurer badges show which is
- * which (alert vs clock).
+ * Why a cotation needs the broker's hand. Both route into "Action requise", but
+ * they want different actions:
+ *  - "session": a request is stuck on a closed portal. One click should fast-
+ *    forward straight to reactivation (Paramètres › Extranets), not the cotation.
+ *  - "hitl": an insurer is paused on input (2FA, missing info). The broker opens
+ *    the cotation to handle it.
+ * HITL outranks session when both are present.
  */
-function needsAttention(
+type AttentionReason = "hitl" | "session";
+
+function getAttentionReason(
   cotation: Cotation,
   extranets: ExtranetConfig[]
-): boolean {
-  const hitl = cotation.insurers.some((i) => i.status === "action_required");
-  return hitl || isStuck(cotation, extranets);
+): AttentionReason | null {
+  if (cotation.insurers.some((i) => i.status === "action_required")) {
+    return "hitl";
+  }
+  if (isStuck(cotation, extranets)) return "session";
+  return null;
 }
 
 /** The column a cotation belongs to. Attention outranks the raw pipeline stage. */
@@ -111,17 +125,22 @@ function getDisplayStatus(
   extranets: ExtranetConfig[]
 ): DisplayStatus {
   if (getCotationStatus(cotation) === "terminee") return "terminee";
-  if (needsAttention(cotation, extranets)) return "action_requise";
+  if (getAttentionReason(cotation, extranets)) return "action_requise";
   return getCotationStatus(cotation); // "preparation" | "en_cours"
 }
+
+/** Where a card click should go, fast-forwarding session cards to reactivation. */
+const REACTIVATE_HREF = "/settings/extranets";
 
 /* ── Card footer per status ── */
 function CardFooter({
   cotation,
   status,
+  reason,
 }: {
   cotation: Cotation;
   status: DisplayStatus;
+  reason: AttentionReason | null;
 }) {
   const completed = cotation.insurers.filter(
     (i) => i.status === "completed"
@@ -136,6 +155,29 @@ function CardFooter({
         </span>
         <span className="text-[13px] font-medium text-panora-green">
           Préparer et lancer →
+        </span>
+      </div>
+    );
+  }
+
+  // Action requise: a reason-specific call to action, not a progress bar.
+  // Session → fast-forward to reactivation; HITL → open the cotation to handle it.
+  if (status === "action_requise") {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
+        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-panora-warning-text">
+          {reason === "session" ? (
+            <>
+              <FastForward className="w-3.5 h-3.5" />
+              Réactiver la session
+            </>
+          ) : (
+            <>
+              Traiter la demande
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
         </span>
       </div>
     );
@@ -272,10 +314,12 @@ function CotationCard({
   cotation,
   status,
   blocked,
+  reason,
 }: {
   cotation: Cotation;
   status: DisplayStatus;
   blocked: Set<string>;
+  reason: AttentionReason | null;
 }) {
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
@@ -287,12 +331,14 @@ function CotationCard({
     }
   }
 
-  // Route by the natural pipeline stage (a "bloque" card still goes to
-  // preparation or followup depending on whether it's been launched).
+  // Session-stuck cards fast-forward to reactivation; everything else opens the
+  // cotation at its natural stage.
   const href =
-    getCotationStatus(cotation) === "preparation"
-      ? `/quoting/preparation?id=${cotation.id}`
-      : `/quoting/followup?id=${cotation.id}`;
+    reason === "session"
+      ? REACTIVATE_HREF
+      : getCotationStatus(cotation) === "preparation"
+        ? `/quoting/preparation?id=${cotation.id}`
+        : `/quoting/followup?id=${cotation.id}`;
 
   return (
     <Link href={href}>
@@ -326,7 +372,7 @@ function CotationCard({
         <div className="h-px bg-[#d9d9d9]" />
 
         {/* Footer */}
-        <CardFooter cotation={cotation} status={status} />
+        <CardFooter cotation={cotation} status={status} reason={reason} />
       </div>
     </Link>
   );
@@ -380,6 +426,7 @@ export function KanbanBoard({ cotations }: KanbanBoardProps) {
                   cotation={cotation}
                   status={column.key}
                   blocked={getBlockedInsurerIds(cotation, extranets)}
+                  reason={getAttentionReason(cotation, extranets)}
                 />
               ))
             )}
