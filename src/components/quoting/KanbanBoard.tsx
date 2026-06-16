@@ -173,11 +173,12 @@ function CardFooter({
 
   // Action requise: a reason-specific call to action, not a progress bar.
   // Session → fast-forward to reactivation; HITL → open the cotation to handle it.
+  // Rendered as a prominent full-width button so the next step is unmissable.
   if (status === "action_requise") {
     return (
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2">
         <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-panora-warning-text">
+        <span className="inline-flex items-center justify-center gap-1.5 w-full h-8 rounded-md bg-panora-warning-bg border border-panora-warning/40 text-panora-warning-text text-[12px] font-semibold group-hover:bg-panora-warning/15 transition-colors">
           {reason === "session" ? (
             <>
               <FastForward className="w-3.5 h-3.5" />
@@ -354,7 +355,7 @@ function CotationCard({
       : `/quoting/followup?id=${cotation.id}`;
 
   const body = (
-    <div className="bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+    <div className="group bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
       {/* Title + client. Status is carried by the column, not a per-card badge. */}
       <div className="flex flex-col gap-0.5">
         <h3 className="text-[14px] font-medium text-[#21201c] leading-5">

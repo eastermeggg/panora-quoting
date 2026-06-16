@@ -1,8 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useConfiguredExtranets } from "@/data/settings-mock";
 import { useCotations, getWaitingDemandeCount } from "@/data/cotations-store";
 
@@ -46,21 +45,10 @@ export function SessionExpiredBanner() {
         </span>
         <span className="text-panora-warning-text/85">
           {waiting > 0
-            ? `. ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} pour ${waitingPlural ? "les" : "la"} lancer.`
-            : `. Réactivez${plural ? "-les" : "-la"} pour reprendre les cotations.`}
+            ? `. ${waiting} demande${waitingPlural ? "s" : ""} en attente, réactivez${plural ? "-les" : "-la"} depuis les cotations concernées.`
+            : `. Réactivez${plural ? "-les" : "-la"} depuis les cotations concernées.`}
         </span>
       </p>
-      <Link
-        href="/settings/extranets"
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white border border-panora-warning/40 text-[12px] font-medium text-panora-warning-text hover:bg-panora-warning-bg/70 transition-colors"
-      >
-        {waiting > 0
-          ? `Lancer ${waiting} demande${waitingPlural ? "s" : ""}`
-          : plural
-            ? "Réactiver les sessions"
-            : "Réactiver la session"}
-        <ArrowRight className="w-3 h-3" />
-      </Link>
     </div>
   );
 }
