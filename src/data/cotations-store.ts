@@ -100,6 +100,19 @@ export function getPendingDemandesForInsurer(
 }
 
 /**
+ * Insurers whose configured session is down and so block a pending request. EDI-
+ * covered insurers are excluded — EDIconnexion manages their session globally, so
+ * there's no per-insurer session to reactivate.
+ */
+function downInsurerSet(extranets: ExtranetConfig[]): Set<string> {
+  return new Set(
+    extranets
+      .filter((e) => e.sessionState.status !== "active" && !e.useEdi)
+      .map((e) => e.insurerId)
+  );
+}
+
+/**
  * The insurers on a cotation whose request is pending AND whose session is
  * down — i.e. the ones literally waiting for a reactivation to go out. Unconfigured
  * insurers are excluded: they're a different problem (no extranet at all).
@@ -108,11 +121,7 @@ export function getBlockedInsurerIds(
   cotation: Cotation,
   extranets: ExtranetConfig[]
 ): Set<string> {
-  const downInsurerIds = new Set(
-    extranets
-      .filter((e) => e.sessionState.status !== "active")
-      .map((e) => e.insurerId)
-  );
+  const downInsurerIds = downInsurerSet(extranets);
   return new Set(
     cotation.insurers
       .filter((i) => i.status === "pending" && downInsurerIds.has(i.id))
@@ -129,11 +138,7 @@ export function getWaitingDemandeCount(
   cotations: Cotation[],
   extranets: ExtranetConfig[]
 ): number {
-  const downInsurerIds = new Set(
-    extranets
-      .filter((e) => e.sessionState.status !== "active")
-      .map((e) => e.insurerId)
-  );
+  const downInsurerIds = downInsurerSet(extranets);
   let count = 0;
   for (const c of cotations) {
     for (const i of c.insurers) {

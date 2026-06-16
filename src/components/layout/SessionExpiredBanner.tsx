@@ -21,7 +21,8 @@ export function SessionExpiredBanner() {
   const expired = extranets.filter(
     (c) =>
       c.connectionStatus === "connected" &&
-      c.sessionState.status !== "active"
+      c.sessionState.status !== "active" &&
+      !c.useEdi
   );
 
   if (expired.length === 0) return null;

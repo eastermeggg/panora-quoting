@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check } from "lucide-react";
 import { TopBar, ViewMode } from "@/components/layout/TopBar";
 import { KanbanBoard } from "@/components/quoting/KanbanBoard";
 import { useCotations } from "@/data/cotations-store";
+import {
+  getConfiguredExtranets,
+  seedConfiguredExtranets,
+} from "@/data/settings-mock";
 
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [copied, setCopied] = useState(false);
+
+  // Demo: populate realistic extranets (some with closed sessions) on first
+  // load so the board shows the full lifecycle — Action requise included — and
+  // the reactivation flow is reachable. Skipped once the broker has any of their
+  // own configured, so it never clobbers real data.
+  useEffect(() => {
+    if (getConfiguredExtranets().length === 0) seedConfiguredExtranets();
+  }, []);
 
   const cotations = useCotations();
 
