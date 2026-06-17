@@ -91,6 +91,8 @@ export type ChatContext = {
   /** Whole synthèse document content — chat edits replace this in full */
   currentContent: string;
   recommendedInsurerId: string | null;
+  /** Standalone Chat tab: a "generate document" message produces a draft in one shot. */
+  oneShotDoc?: boolean;
 };
 
 // ── In-memory store keyed by cotParamId ───────────────────────────
@@ -557,6 +559,40 @@ function handleDocTemplateStep(
   };
 }
 
+// ─── One-shot doc generation (standalone Chat tab) ────────────────────
+// Unlike the board's multi-step qualification, a "generate document" message
+// here produces a draft immediately so the artefact opens on the left.
+
+const DOC_GEN_TRIGGERS = [
+  "génère", "genere", "générer", "generer", "génере",
+  "rédige", "redige", "rédiger", "rediger",
+  "document", "courrier", "lettre", "e-mail", "email", "mail",
+  "fiche", "synthèse", "synthese", "note", "présentation", "presentation",
+  "compte rendu", "compte-rendu", "résume", "resume",
+];
+
+function isDocGenIntent(p: string): boolean {
+  return DOC_GEN_TRIGGERS.some((t) => p.includes(t));
+}
+
+function buildOneShotDoc(prompt: string, ctx: ChatContext): ChatMessage {
+  const docType = inferDocType(prompt);
+  const draft = buildDocDraft(docType, null, ctx);
+  const saved = addGeneratedDoc(ctx.cotParamId, {
+    docType: docType as GeneratedDocType,
+    title: draft.title,
+    body: draft.body,
+  });
+  const fileName = suggestFileName(docType as GeneratedDocType, recommendedClientName(ctx));
+  return {
+    id: `msg-${Date.now()}-doc`,
+    role: "assistant",
+    content: `Voici un brouillon de **${docTypeLabel(docType)}** — ouvert en aperçu sur la gauche. Dites-moi ce que vous souhaitez ajuster.`,
+    proposedDocDraft: { ...draft, docId: saved.id, fileName },
+    createdAt: new Date().toISOString(),
+  };
+}
+
 function recommendedClientName(ctx: ChatContext): string {
   // We don't get the client name directly in ChatContext, but the synthese
   // content usually starts with "Synthèse pour CLIENT". Fallback to a generic.
@@ -694,6 +730,11 @@ export function respondToPrompt(prompt: string, ctx: ChatContext): ChatMessage {
     if (followup.kind === "doc_template") {
       return handleDocTemplateStep(prompt, followup.docType, ctx);
     }
+  }
+
+  // Standalone Chat tab — generate a document in one shot (no qualification).
+  if (ctx.oneShotDoc && isDocGenIntent(lower(prompt))) {
+    return buildOneShotDoc(prompt, ctx);
   }
 
   const guard = isFabricationGuardRail(prompt, ctx);

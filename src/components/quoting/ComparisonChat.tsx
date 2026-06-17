@@ -74,6 +74,8 @@ interface ComparisonChatProps {
   variant?: "panel" | "centered";
   /** Optional: override the empty-state quick suggestions (general Chat tab lists broad use cases). */
   emptySuggestions?: string[];
+  /** Optional: generate a document in one shot on a doc-intent message (standalone Chat tab). */
+  oneShotDoc?: boolean;
 }
 
 export function ComparisonChat({
@@ -98,6 +100,7 @@ export function ComparisonChat({
   hideHeader,
   variant = "panel",
   emptySuggestions,
+  oneShotDoc,
 }: ComparisonChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatSession(cotParamId).messages);
   const [draft, setDraft] = useState("");
@@ -239,6 +242,7 @@ export function ComparisonChat({
       insurers,
       currentContent: syntheseContent,
       recommendedInsurerId,
+      oneShotDoc,
     };
     setTimeout(() => {
       const response = respondToPrompt(text, ctx);

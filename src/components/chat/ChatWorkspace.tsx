@@ -103,6 +103,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       variant={variant}
       hideHeader
       emptySuggestions={GENERAL_CHAT_SUGGESTIONS}
+      oneShotDoc
       cotParamId={conv.id}
       insurers={[]}
       productLabel=""
