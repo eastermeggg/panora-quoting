@@ -230,6 +230,18 @@ body {
   }
 }
 
+/* Artefact reveal — the chat → split transition in the standalone Chat tab */
+@keyframes chat-artefact-in {
+  from {
+    transform: translateX(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* ── Synthèse doc — WYSIWYG markdown editor ─────────────────────── */
 
 .synthese-doc {

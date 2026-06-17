@@ -4942,6 +4942,8 @@ export const PRODUCT_PRIORITY: Record<string, number> = {
 
 export type ComparisonTaskStatus = "in_progress" | "done";
 
+export type TaskKind = "compare" | "besoin" | "explore" | "generate";
+
 export type ComparisonTask = {
   id: string;
   cotationId: string;
@@ -4954,9 +4956,80 @@ export type ComparisonTask = {
   status: ComparisonTaskStatus;
   /** True when the comparison just finished and the user hasn't opened it yet. */
   isUnread?: boolean;
+  /** Analysis type — drives the row icon + title. Defaults to "compare". */
+  kind?: TaskKind;
+  /** Display title (conversation name or type); falls back to a type label. */
+  title?: string;
+  /** For non-compare analyses: payload to reopen the workspace. */
+  analysisPayload?: {
+    kind: "besoin" | "explore" | "generate";
+    clientName: string;
+    intent: string;
+    files: { name: string; badges: string[]; insurerName?: string }[];
+    product?: string;
+  };
 };
 
 export const comparisonTasks: ComparisonTask[] = [
+  {
+    id: "an-besoin-1",
+    cotationId: "",
+    client: "Atelier Membré",
+    products: ["Multirisque"],
+    principalProduct: "Multirisque",
+    insurerIds: [],
+    createdBy: "Delphine",
+    date: "16/03/2026",
+    status: "done",
+    kind: "besoin",
+    analysisPayload: {
+      kind: "besoin",
+      clientName: "Atelier Membré",
+      intent: "Vérifier la couverture du contrat multirisque actuel",
+      files: [{ name: "Contrat_Multirisque_Actuel.pdf", badges: ["Contrat", "Multirisque"] }],
+      product: "Multirisque",
+    },
+  },
+  {
+    id: "an-explore-1",
+    cotationId: "",
+    client: "Transports Veolet",
+    products: [],
+    principalProduct: null,
+    insurerIds: [],
+    createdBy: "Karim",
+    date: "16/03/2026",
+    status: "done",
+    kind: "explore",
+    analysisPayload: {
+      kind: "explore",
+      clientName: "Transports Veolet",
+      intent: "Quelles sont les exclusions et la franchise vol ?",
+      files: [
+        { name: "CG_Axa_Flotte.pdf", badges: ["Conditions générales", "AXA"] },
+        { name: "Contrat_Flotte_2024.pdf", badges: ["Contrat", "Flotte"] },
+      ],
+    },
+  },
+  {
+    id: "an-generate-1",
+    cotationId: "",
+    client: "Boulangerie Lévêque",
+    products: ["RC Pro"],
+    principalProduct: "RC Pro",
+    insurerIds: [],
+    createdBy: "Delphine",
+    date: "15/03/2026",
+    status: "done",
+    kind: "generate",
+    analysisPayload: {
+      kind: "generate",
+      clientName: "Boulangerie Lévêque",
+      intent: "Rédiger une fiche produit pour le client",
+      files: [{ name: "Devis_Axa_Flotte.pdf", badges: ["Devis", "Flotte", "AXA"] }],
+      product: "RC Pro",
+    },
+  },
   {
     id: "cmp-1",
     cotationId: "cot-1",

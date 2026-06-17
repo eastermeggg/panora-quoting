@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
   MessageCircle,
+  MessageSquare,
   ChevronDown,
   MoreVertical,
   PanelLeftClose,
@@ -13,15 +14,21 @@ import {
   Settings,
   LogOut,
   FileText,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
+import {
+  useChatState,
+  createConversation,
+  setActiveConversation,
+} from "@/data/chatStore";
 
 const STORAGE_KEY = "panora-sidebar-collapsed";
 
 const navItems = [
   {
-    label: "Assistant comparateur",
+    label: "Assistant analyse",
     href: "/quoting/comparison",
     icon: Search,
     type: "item" as const,
@@ -36,6 +43,8 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { conversations, activeId } = useChatState();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -254,6 +263,76 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Chat conversations — the chat lives here (no separate nav item) */}
+        {collapsed ? (
+          <button
+            onClick={() => {
+              createConversation();
+              router.push("/chat");
+            }}
+            title="Nouveau chat"
+            aria-label="Nouveau chat"
+            className="flex items-center justify-center py-0.5"
+          >
+            <span className="flex items-center justify-center w-9 h-9 rounded-[8px] text-panora-text-secondary hover:bg-panora-secondary hover:text-panora-text transition-colors">
+              <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
+            </span>
+          </button>
+        ) : (
+          <div className="flex flex-col gap-px">
+            <div className="flex items-center justify-between px-2 py-1">
+              <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
+                Conversations
+              </span>
+              <button
+                onClick={() => {
+                  createConversation();
+                  router.push("/chat");
+                }}
+                title="Nouveau chat"
+                aria-label="Nouveau chat"
+                className="flex items-center justify-center w-5 h-5 rounded text-panora-text-muted hover:text-panora-text hover:bg-panora-border/30 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {conversations.length === 0 ? (
+              <span className="px-2 py-1 text-[12px] text-panora-text-muted">
+                Aucune conversation
+              </span>
+            ) : (
+              conversations.map((c) => {
+                const active = pathname.startsWith("/chat") && c.id === activeId;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setActiveConversation(c.id);
+                      router.push("/chat");
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 h-8 px-2 py-1.5 rounded-md text-left transition-colors",
+                      active ? "bg-panora-secondary" : "hover:bg-panora-border/30"
+                    )}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-panora-text-muted" />
+                    <span
+                      className={cn(
+                        "text-[13px] leading-5 truncate flex-1",
+                        active
+                          ? "text-panora-text font-medium"
+                          : "text-panora-text-secondary"
+                      )}
+                    >
+                      {c.title}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer: Nous contacter / support */}

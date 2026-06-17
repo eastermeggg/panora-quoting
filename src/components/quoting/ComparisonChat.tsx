@@ -66,6 +66,14 @@ interface ComparisonChatProps {
   contextScope?: import("./CellActionBar").SelectedObject | null;
   /** Called when broker clears the context pill (X). */
   onClearContextScope?: () => void;
+  /** Optional: notified with each user message (standalone Chat tab uses it to title conversations). */
+  onUserMessage?: (text: string) => void;
+  /** Optional: hide the whole header (standalone Chat tab provides its own). */
+  hideHeader?: boolean;
+  /** Presentation: "panel" = 380px docked side panel (default); "centered" = full-width centered column. */
+  variant?: "panel" | "centered";
+  /** Optional: override the empty-state quick suggestions (general Chat tab lists broad use cases). */
+  emptySuggestions?: string[];
 }
 
 export function ComparisonChat({
@@ -86,6 +94,10 @@ export function ComparisonChat({
   clientName,
   contextScope,
   onClearContextScope,
+  onUserMessage,
+  hideHeader,
+  variant = "panel",
+  emptySuggestions,
 }: ComparisonChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => getChatSession(cotParamId).messages);
   const [draft, setDraft] = useState("");
@@ -213,6 +225,7 @@ export function ComparisonChat({
     };
     appendChatMessage(cotParamId, userMsg);
     setMessages((prev) => [...prev, userMsg]);
+    onUserMessage?.(userMsg.content);
     setDraft("");
     setAttachments([]);
     if (composerRef.current) {
@@ -273,33 +286,44 @@ export function ComparisonChat({
 
   return (
     <aside
-      className="w-[380px] shrink-0 h-full border-l border-panora-border bg-[#faf8f5] flex flex-col relative"
+      className={cn(
+        "h-full flex flex-col relative",
+        variant === "centered"
+          ? "w-full max-w-[760px] mx-auto bg-white"
+          : "w-[380px] shrink-0 border-l border-panora-border bg-[#faf8f5]",
+      )}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="h-[52px] shrink-0 border-b border-panora-border px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-panora-green" />
-          <span className="text-[13px] font-semibold text-panora-text leading-5">
-            Co-pilote Panora
-          </span>
+      {!hideHeader && (
+        <div className="h-[52px] shrink-0 border-b border-panora-border px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-panora-green" />
+            <span className="text-[13px] font-semibold text-panora-text leading-5">
+              Co-pilote Panora
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-panora-bg transition-colors text-panora-text-muted"
+            title="Fermer le copilote"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-panora-bg transition-colors text-panora-text-muted"
-          title="Fermer le copilote"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
         {messages.length === 0 ? (
-          <EmptyState insurers={insurers} onSuggestion={(s) => setDraft(s)} />
+          <EmptyState
+            insurers={insurers}
+            onSuggestion={(s) => setDraft(s)}
+            customSuggestions={emptySuggestions}
+          />
         ) : (
           messages.map((msg) => (
             <MessageBubble
@@ -524,10 +548,32 @@ function PromptIdeasPopover({
 
 function EmptyState({
   onSuggestion,
+  customSuggestions,
 }: {
   insurers: InsurerData[];
   onSuggestion: (s: string) => void;
+  customSuggestions?: string[];
 }) {
+  // General Chat tab: a single list of broad use cases instead of the
+  // comparison-specific capability groups.
+  if (customSuggestions && customSuggestions.length > 0) {
+    return (
+      <div className="flex-1 flex flex-col justify-center gap-5 pt-4">
+        <h3 className="text-[30px] font-serif text-panora-text leading-[36px] tracking-[-0.01em] m-0">
+          Votre copilote,
+          <br />
+          à vos côtés.
+        </h3>
+        <CapabilityGroup
+          Icon={Sparkles}
+          label="Par où commencer ?"
+          suggestions={customSuggestions}
+          onSuggestion={onSuggestion}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col justify-center gap-5 pt-4">
       <h3 className="text-[30px] font-serif text-panora-text leading-[36px] tracking-[-0.01em] m-0">
