@@ -1,5 +1,8 @@
 "use client";
 
+// NOTE: superseded by NewAnalysisFlow.tsx (PAN-67 "Version 1" typed entry door).
+// No longer mounted anywhere — kept for reference / mode-3 payload parity.
+
 import { useState, useEffect } from "react";
 import {
   X,

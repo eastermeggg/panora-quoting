@@ -13,8 +13,9 @@ import {
   comparisonTasks,
   currentUser,
 } from "@/data/mock";
-import type { ComparisonData, ComparisonTask, CellIdentifier, CellDetail, InsurerData, ExclusionRow, AnalysisSyntheseItem, AnalysisData, ClientProfileData } from "@/data/mock";
-import { ComparisonWizard } from "@/components/quoting/ComparisonWizard";
+import type { ComparisonData, ComparisonTask, TaskKind, CellIdentifier, CellDetail, InsurerData, ExclusionRow, AnalysisSyntheseItem, AnalysisData, ClientProfileData } from "@/data/mock";
+import { NewAnalysisFlow, type AnalysisWorkspacePayload } from "@/components/quoting/NewAnalysisFlow";
+import { AnalysisWorkspace } from "@/components/quoting/AnalysisWorkspace";
 import { DetailPanel } from "@/components/quoting/DetailPanel";
 import { ClientProfilePanel } from "@/components/quoting/ClientProfilePanel";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
@@ -56,6 +57,8 @@ import {
   ArrowRight,
   Loader2,
   FileSearch,
+  FileText,
+  ClipboardList,
   CheckCircle2,
   Sparkles,
   ExternalLink,
@@ -81,7 +84,8 @@ function downloadMockFile(fileName: string, content: string) {
 // ─── List View ───────────────────────────────────────────────────────
 
 function ComparisonListView() {
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [flowOpen, setFlowOpen] = useState(false);
+  const [workspace, setWorkspace] = useState<AnalysisWorkspacePayload | null>(null);
   const [, setTick] = useState(0);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -109,6 +113,10 @@ function ComparisonListView() {
     }
   }, [rerender]);
 
+  const openAnalysis = useCallback((task: ComparisonTask) => {
+    if (task.analysisPayload) setWorkspace(task.analysisPayload);
+  }, []);
+
   const handleWizardSubmit = (data: { client: string; clientId: string | null; clientSiren: string | null; products: string[]; principalProduct: string | null; insurerIds: string[]; besoinsClient: { id: string; value: string; source: "ai" | "manual" }[] }) => {
     const cotationId = "cot-1";
     const taskId = `cmp-${Date.now()}`;
@@ -130,7 +138,7 @@ function ComparisonListView() {
       date: new Date().toLocaleDateString("fr-FR"),
       status: "in_progress",
     });
-    setWizardOpen(false);
+    setFlowOpen(false);
     rerender();
 
     // Simulate analysis completing — row jumps from "En cours" to "Terminé"
@@ -145,6 +153,32 @@ function ComparisonListView() {
     }, 5500);
   };
 
+  // besoin / explore / generate → create a typed list entry + open the workspace.
+  const handleOpenWorkspace = (payload: AnalysisWorkspacePayload) => {
+    comparisonTasks.unshift({
+      id: `an-${Date.now()}`,
+      cotationId: "",
+      client: payload.clientName,
+      products: payload.product ? [payload.product] : [],
+      principalProduct: payload.product ?? null,
+      insurerIds: [],
+      createdBy: currentUser.name,
+      date: new Date().toLocaleDateString("fr-FR"),
+      status: "done",
+      kind: payload.kind,
+      analysisPayload: payload,
+    });
+    setWorkspace(payload);
+    setFlowOpen(false);
+    rerender();
+  };
+
+  if (workspace) {
+    return (
+      <AnalysisWorkspace {...workspace} onBack={() => setWorkspace(null)} />
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0">
       {/* Header */}
@@ -152,12 +186,12 @@ function ComparisonListView() {
         <div className="flex items-center gap-2.5">
           <Search className="w-[17px] h-[17px] text-panora-text-muted" />
           <h1 className="text-[15px] font-medium text-panora-text font-serif">
-            Assistant comparaison
+            Assistant analyse
           </h1>
         </div>
-        <button onClick={() => setWizardOpen(true)} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
+        <button onClick={() => setFlowOpen(true)} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
           <Sparkles className="w-4 h-4" />
-          Nouvelle comparaison
+          Nouvelle analyse
         </button>
       </div>
 
@@ -165,8 +199,8 @@ function ComparisonListView() {
 
       {/* Column headers */}
       <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
+        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Analyse</div>
         <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Client</div>
-        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Produits</div>
         <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
         <div className="w-[140px] shrink-0 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
         <div className="w-[100px] shrink-0 px-4 text-[12px] text-panora-text-muted">Date</div>
@@ -181,7 +215,7 @@ function ComparisonListView() {
           <>
             <StatusGroupHeader label="En cours" color="bg-[#be93e4]" bgColor="bg-[#fbf7fe]" />
             {inProgress.map((task) => (
-              <TaskRow key={task.id} task={task} onOpen={markRead} />
+              <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
             ))}
             <div className="h-1.5 border-y border-panora-border" />
           </>
@@ -192,16 +226,17 @@ function ComparisonListView() {
           <>
             <StatusGroupHeader label="Terminé" color="bg-[#94ce9a]" bgColor="bg-[#f5fbf5]" />
             {done.map((task) => (
-              <TaskRow key={task.id} task={task} onOpen={markRead} />
+              <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
             ))}
           </>
         )}
       </div>
 
-      {wizardOpen && (
-        <ComparisonWizard
-          onClose={() => setWizardOpen(false)}
-          onSubmit={handleWizardSubmit}
+      {flowOpen && (
+        <NewAnalysisFlow
+          onClose={() => setFlowOpen(false)}
+          onLaunchComparison={handleWizardSubmit}
+          onOpenWorkspace={handleOpenWorkspace}
         />
       )}
     </div>
@@ -215,17 +250,19 @@ function parseFrDate(date: string): number {
   return new Date(y, m - 1, d).getTime();
 }
 
-const productLabelMap: Record<string, string> = {
-  "Flotte automobile": "Flotte Auto.",
-  "Flotte automobile (stock)": "Flotte Auto. (stock)",
-  "Auto": "Auto.",
-  "Prévoyance / AT": "Prev/AT",
-  "Accident du Travail": "AT",
+const KIND_ICON: Record<TaskKind, typeof Table2> = {
+  compare: Table2,
+  besoin: ClipboardList,
+  explore: FileSearch,
+  generate: FileText,
 };
 
-function shortProductLabel(product: string): string {
-  return productLabelMap[product] ?? product;
-}
+const KIND_LABEL: Record<TaskKind, string> = {
+  compare: "Comparaison de devis",
+  besoin: "Analyse de contrat",
+  explore: "Recherche documentaire",
+  generate: "Génération de document",
+};
 
 function StatusGroupHeader({ label, color, bgColor }: { label: string; color: string; bgColor: string }) {
   return (
@@ -238,7 +275,17 @@ function StatusGroupHeader({ label, color, bgColor }: { label: string; color: st
   );
 }
 
-function TaskRow({ task, onOpen }: { task: ComparisonTask; onOpen: (taskId: string) => void }) {
+function TaskRow({
+  task,
+  onOpen,
+  onOpenAnalysis,
+}: {
+  task: ComparisonTask;
+  onOpen: (taskId: string) => void;
+  onOpenAnalysis: (task: ComparisonTask) => void;
+}) {
+  const kind = task.kind ?? "compare";
+  const KindIcon = KIND_ICON[kind];
   const maxVisible = 2;
   const visibleInsurers = task.insurerIds.slice(0, maxVisible);
   const extraCount = task.insurerIds.length - maxVisible;
@@ -255,35 +302,32 @@ function TaskRow({ task, onOpen }: { task: ComparisonTask; onOpen: (taskId: stri
         isUnread ? "border-l-panora-green" : "border-l-transparent"
       )}
     >
+      {/* Analyse — type icon + title (conv name or type, not the product) */}
+      <div className="flex-1 min-w-0 px-4 py-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-[8px] bg-panora-green-light flex items-center justify-center shrink-0">
+            <KindIcon className="w-3.5 h-3.5 text-panora-green-dark" />
+          </div>
+          <div
+            className={cn(
+              "text-[13px] text-panora-text truncate min-w-0",
+              isUnread ? "font-semibold" : "font-medium"
+            )}
+          >
+            {task.title ?? KIND_LABEL[kind]}
+          </div>
+        </div>
+      </div>
+
       {/* Client */}
       <div className="flex-1 min-w-0 px-4 py-4">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-[6px] bg-panora-green/20 border border-black/10 flex items-center justify-center shrink-0">
             <span className="text-[9px] font-bold text-panora-green">{task.client.charAt(0)}</span>
           </div>
-          <span
-            className={cn(
-              "text-[13px] text-panora-text truncate",
-              isUnread ? "font-semibold" : "font-medium"
-            )}
-          >
+          <span className="text-[13px] text-panora-text-secondary truncate">
             {task.client}
           </span>
-        </div>
-      </div>
-
-      {/* Products */}
-      <div className="flex-1 min-w-0 px-4 py-4">
-        <div className="flex flex-wrap gap-1.5">
-          {task.products.map((p) => (
-            <span
-              key={p}
-              title={p}
-              className="inline-flex items-center h-5 px-2 rounded-full text-[11.5px] font-medium leading-4 bg-panora-secondary/70 text-panora-text-secondary"
-            >
-              {shortProductLabel(p)}
-            </span>
-          ))}
         </div>
       </div>
 
@@ -335,14 +379,24 @@ function TaskRow({ task, onOpen }: { task: ComparisonTask; onOpen: (taskId: stri
                 Nouveau
               </span>
             )}
-            <Link
-              href={`/quoting/comparison?id=${task.cotationId}`}
-              onClick={() => onOpen(task.id)}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity whitespace-nowrap"
-            >
-              Voir le comparatif
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            {kind === "compare" ? (
+              <Link
+                href={`/quoting/comparison?id=${task.cotationId}`}
+                onClick={() => onOpen(task.id)}
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity whitespace-nowrap"
+              >
+                Voir le comparatif
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => onOpenAnalysis(task)}
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-green opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity whitespace-nowrap"
+              >
+                Voir l’analyse
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>
