@@ -20,21 +20,21 @@ import { InsurerLogo } from "@/components/ui/InsurerLogo";
 export function EmptyStateShowcase() {
   return (
     <div className="relative h-full w-full overflow-hidden hidden lg:block bg-[#173c2d]">
-      {/* Painterly landscape pinned to the bottom of the panel */}
+      {/* Painterly sky filling the top of the panel (colorful → fades to green) */}
       <div
         aria-hidden
-        className="absolute bottom-0 left-0 right-0 h-[42%] bg-cover bg-bottom pointer-events-none"
+        className="absolute inset-x-0 top-0 h-[62%] bg-cover bg-top pointer-events-none"
         style={{
           backgroundImage: "url(/onboarding/empty-state-landscape.jpg)",
         }}
       />
-      {/* Thin gradient band above the landscape (the soft horizon glow) */}
+      {/* Blend the bottom of the painterly area into the dark green base */}
       <div
         aria-hidden
-        className="absolute left-0 right-0 h-[7%] bg-cover pointer-events-none"
+        className="absolute inset-x-0 top-0 h-[62%] pointer-events-none"
         style={{
-          bottom: "41%",
-          backgroundImage: "url(/onboarding/empty-state-gradient.jpg)",
+          background:
+            "linear-gradient(to bottom, transparent 55%, #173c2d 100%)",
         }}
       />
 

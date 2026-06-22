@@ -9,7 +9,7 @@ import { CardGrid } from "@/components/ui/CardGrid";
 import { InsurerCommandBar } from "@/components/onboarding/InsurerCommandBar";
 import { ProductsBlock } from "@/components/onboarding/ProductsBlock";
 import { StepNumber } from "@/components/onboarding/StepNumber";
-import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
+import { OnboardingHero } from "@/components/onboarding/OnboardingHero";
 import {
   addConfiguredExtranet,
   addEdiCoveredExtranet,
@@ -103,74 +103,83 @@ export function StepConnect({
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
+        eyebrow="Étape 2"
         title={
           <>
-            Connectez vos{" "}
-            <HeroAccent>portails de compagnies d&apos;assurance</HeroAccent>{" "}
-            une fois pour toutes.
+            Connectez vos portails de compagnies d&apos;assurance sur Panora.
+          </>
+        }
+        subtitle={
+          <>
+            Indiquez ce que vous cotez et chez qui. Panora s&apos;authentifie
+            ensuite à votre place sur chaque portail.
           </>
         }
       />
 
-      {/* Block 1 — Produits */}
-      <ProductsBlock step={1} />
+      <div className="flex flex-col gap-6">
+        {/* Block 1 — Produits */}
+        <BlockCard>
+          <ProductsBlock step={1} />
+        </BlockCard>
 
-      <div className="h-px bg-panora-border" />
+        {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
+        <BlockCard>
+          <EdiBlock step={2} />
+        </BlockCard>
 
-      {/* Block 2 — EDIconnexion (its own channel, not part of extranets) */}
-      <EdiBlock step={2} />
+        {/* Block 3 — Extranets */}
+        <BlockCard>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <StepNumber n={3} />
+                <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
+                  Ajoutez les compagnies auprès de qui vous cotez
+                </h2>
+                {configuredExtranets.length > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
+                    {configuredExtranets.length}
+                  </span>
+                )}
+              </div>
+              <p className="text-[13px] text-panora-text-secondary leading-[18px]">
+                L&apos;agent se connecte à leur portail à votre place, avec un
+                accès par compagnie.
+              </p>
+            </div>
 
-      <div className="h-px bg-panora-border" />
+            {/* Add bar */}
+            <div className="flex flex-col gap-2">
+              <InsurerCommandBar
+                configuredCatalogIds={configuredCatalogIds}
+                onSelect={handleSelect}
+              />
+            </div>
 
-      {/* Block 3 — Extranets */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <StepNumber n={3} />
-            <h2 className="text-[15px] font-semibold text-panora-text leading-5 font-display">
-              Extranets compagnie
-            </h2>
-            {configuredExtranets.length > 0 && (
-              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
-                {configuredExtranets.length}
-              </span>
+            {/* Configured cards / empty state */}
+            {configuredExtranets.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-panora-text-muted">
+                  Vos extranets
+                </span>
+                <CardGrid minCardWidth={320}>
+                  {configuredExtranets.map((config) => (
+                    <ExtranetCard
+                      key={config.id}
+                      config={config}
+                      hideSessionActivation
+                      onEdit={() => setModal({ type: "edit", extranet: config })}
+                      onDelete={() => removeConfiguredExtranet(config.id)}
+                    />
+                  ))}
+                </CardGrid>
+              </div>
             )}
           </div>
-          <p className="text-[13px] text-panora-text-secondary leading-[18px]">
-            Ajoutez les compagnies auprès de qui vous cotez. L&apos;agent se
-            connecte à leur portail à votre place, avec un accès par compagnie.
-          </p>
-        </div>
-
-        {/* Add bar */}
-        <div className="flex flex-col gap-2">
-          <InsurerCommandBar
-            configuredCatalogIds={configuredCatalogIds}
-            onSelect={handleSelect}
-          />
-        </div>
-
-        {/* Configured cards / empty state */}
-        {configuredExtranets.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-panora-text-muted">
-              Vos extranets
-            </span>
-            <CardGrid minCardWidth={320}>
-              {configuredExtranets.map((config) => (
-                <ExtranetCard
-                  key={config.id}
-                  config={config}
-                  hideSessionActivation
-                  onEdit={() => setModal({ type: "edit", extranet: config })}
-                  onDelete={() => removeConfiguredExtranet(config.id)}
-                />
-              ))}
-            </CardGrid>
-          </div>
-        )}
+        </BlockCard>
       </div>
 
       {/* Setup modal */}
@@ -190,6 +199,15 @@ export function StepConnect({
           }
         />
       )}
+    </div>
+  );
+}
+
+/** White bordered card wrapping each numbered sub-section of the Portails step. */
+function BlockCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-panora-border bg-white p-5 lg:p-6 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+      {children}
     </div>
   );
 }

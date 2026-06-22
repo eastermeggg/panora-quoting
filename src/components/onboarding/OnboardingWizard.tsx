@@ -21,18 +21,15 @@ const STEPS: (WizardStepMeta & { id: StepId })[] = [
   { id: "ready", label: "Prêt" },
 ];
 
-const FORWARD_SUB_TOTAL = 3;
+const FORWARD_SUB_TOTAL = 2;
 
 export function OnboardingWizard() {
   const router = useRouter();
   const extranets = useConfiguredExtranets();
   const [stepIndex, setStepIndex] = useState(0);
-  const [forwardSubStep, setForwardSubStep] = useState<0 | 1 | 2>(0);
-  const [forwardMethod, setForwardMethod] = useState<"mailbox" | "forward">(
-    "mailbox"
-  );
+  const [forwardSubStep, setForwardSubStep] = useState<0 | 1>(0);
   // Soft acknowledgements that gate the wizard footer Continue on the
-  // PortalList sub-step (1) and the forward-rule sub-step (2 with forward method).
+  // PortalList sub-step (0) and the forward-rule sub-step (1).
   const [portalListAcknowledged, setPortalListAcknowledged] = useState(false);
   const [forwardRuleAcknowledged, setForwardRuleAcknowledged] = useState(false);
 
@@ -60,37 +57,30 @@ export function OnboardingWizard() {
   const currentStep = STEPS[stepIndex];
 
   const hasConnectedExtranet = extranets.length > 0;
-  const hasEmailPortal = extranets.some(
-    (c) => c.otpDelivery?.channel === "email"
-  );
 
   function goBack() {
     // Inside Gestion 2FA, walk through sub-steps before crossing back into Portails.
     if (currentStep.id === "forward" && forwardSubStep > 0) {
-      setForwardSubStep((s) => (s - 1) as 0 | 1 | 2);
+      setForwardSubStep((s) => (s - 1) as 0 | 1);
       return;
     }
     if (stepIndex > 0) {
       const target = stepIndex - 1;
       // Returning to Gestion 2FA from Ready should land on its last sub-step.
-      if (STEPS[target].id === "forward") setForwardSubStep(2);
+      if (STEPS[target].id === "forward") setForwardSubStep(1);
       setStepIndex(target);
     }
   }
 
   function goNext() {
     // Inside Gestion 2FA, walk through sub-steps before crossing into Ready.
-    if (currentStep.id === "forward" && forwardSubStep < 2) {
-      setForwardSubStep((s) => (s + 1) as 0 | 1 | 2);
+    if (currentStep.id === "forward" && forwardSubStep < 1) {
+      setForwardSubStep((s) => (s + 1) as 0 | 1);
       return;
     }
-    // Leaving Gestion 2FA with the manual-forward method auto-marks email
-    // portals as configured — there's no explicit "I did it" button anymore.
-    if (
-      currentStep.id === "forward" &&
-      forwardSubStep === 2 &&
-      forwardMethod === "forward"
-    ) {
+    // Leaving Gestion 2FA auto-marks email portals as configured — the broker
+    // confirms the forward rule via the footer acknowledgement, not a button.
+    if (currentStep.id === "forward" && forwardSubStep === 1) {
       extranets
         .filter((c) => c.otpDelivery?.channel === "email")
         .forEach((c) =>
@@ -128,22 +118,20 @@ export function OnboardingWizard() {
           canContinue: hasConnectedExtranet,
         };
       case "forward": {
-        // Sub 0 (Comprendre): always continuable.
-        // Sub 1 (Vos compagnies + PortalList): require the "I activated email
+        // Sub 0 (Vos compagnies + PortalList): require the "I activated email
         //   2FA where possible" acknowledgement (in the footer).
-        // Sub 2 (Set up automation):
-        //   – mailbox: hideContinue (OAuth auto-advances)
-        //   – forward: require the "I set up the forward rule" acknowledgement
+        // Sub 1 (Set up the forward rule): require the "I set up the forward
+        //   rule" acknowledgement.
         let canContinue = true;
         let acknowledgement: Acknowledgement | undefined;
-        if (forwardSubStep === 1) {
+        if (forwardSubStep === 0) {
           canContinue = portalListAcknowledged;
           acknowledgement = {
             checked: portalListAcknowledged,
             onChange: setPortalListAcknowledged,
             label: "J'ai activé l'e-mail 2FA là où c'était possible",
           };
-        } else if (forwardSubStep === 2 && forwardMethod === "forward") {
+        } else if (forwardSubStep === 1) {
           canContinue = forwardRuleAcknowledged;
           acknowledgement = {
             checked: forwardRuleAcknowledged,
@@ -154,11 +142,7 @@ export function OnboardingWizard() {
         return {
           canContinue,
           continueLabel:
-            forwardSubStep < 2 ? "Continuer" : "Étape suivante",
-          hideContinue:
-            forwardSubStep === 2 &&
-            hasEmailPortal &&
-            forwardMethod === "mailbox",
+            forwardSubStep < 1 ? "Continuer" : "Étape suivante",
           acknowledgement,
         };
       }
@@ -172,9 +156,6 @@ export function OnboardingWizard() {
       steps={STEPS}
       currentStepIndex={stepIndex}
       canContinue={stepConfig.canContinue}
-      hideContinue={
-        "hideContinue" in stepConfig ? stepConfig.hideContinue : undefined
-      }
       continueLabel={stepConfig.continueLabel}
       onBack={goBack}
       onContinue={() => {
@@ -213,14 +194,6 @@ export function OnboardingWizard() {
       {currentStep.id === "forward" && (
         <StepForward
           configuredExtranets={extranets}
-          method={forwardMethod}
-          onMethodChange={setForwardMethod}
-          onComplete={goNext}
-          onToggleForward={(id, configured) =>
-            updateConfiguredExtranet(id, {
-              emailForwardConfigured: configured,
-            })
-          }
           subStep={forwardSubStep}
         />
       )}

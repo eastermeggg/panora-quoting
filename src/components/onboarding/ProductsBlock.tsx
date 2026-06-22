@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Plus, Sparkles, Clock, Send, Check } from "lucide-react";
+import { Search, X, Plus, Clock, Send, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { masterProducts, type InsuranceProduct } from "@/data/settings-mock";
+import { ProductBadge } from "@/components/settings/ProductBadge";
 import { StepNumber } from "@/components/onboarding/StepNumber";
 import {
   useQuotedProducts,
@@ -100,7 +101,7 @@ export function ProductsBlock({ step }: { step?: number }) {
       <div className="relative" ref={wrapRef}>
         <div
           className={cn(
-            "flex items-center gap-2.5 h-[42px] px-3.5 rounded-lg bg-white border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors",
+            "flex items-center gap-3 h-14 px-4 rounded-xl bg-white border shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors",
             open ? "border-panora-green-border" : "border-panora-border"
           )}
         >
@@ -124,7 +125,7 @@ export function ProductsBlock({ step }: { step?: number }) {
                 {available.map((p) => (
                   <ProductRow key={p.id} onClick={() => add(p.id)}>
                     <span className="text-[13px] text-panora-text">{p.id}</span>
-                    {p.isNew ? <Tag tone="new">Nouveau</Tag> : <Tag tone="ok">Disponible</Tag>}
+                    <Tag tone="ok">Disponible</Tag>
                   </ProductRow>
                 ))}
               </Group>
@@ -180,35 +181,27 @@ export function ProductsBlock({ step }: { step?: number }) {
 
       {/* Selected + requested pills */}
       {selected.length > 0 || requested.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {selected.map((product) => {
             const isAvailable = availabilityById.get(product) !== false;
             return (
-              <Pill
+              <ProductBadge
                 key={product}
-                tone={isAvailable ? "ok" : "soon"}
+                product={isAvailable ? product : `${product} · bientôt`}
+                variant={isAvailable ? "modelized" : "inactive"}
                 onRemove={() => removeQuotedProduct(product)}
                 removeLabel={`Retirer ${product}`}
-              >
-                {product}
-                {!isAvailable && (
-                  <span className="text-[10px] font-normal opacity-80">
-                    · bientôt
-                  </span>
-                )}
-              </Pill>
+              />
             );
           })}
           {requested.map((r) => (
-            <Pill
+            <ProductBadge
               key={`req-${r.name}`}
-              tone="requested"
+              product={r.name}
+              variant="requested"
               onRemove={() => removeRequestedProduct(r.name)}
               removeLabel={`Retirer la demande ${r.name}`}
-            >
-              {r.name}
-              <span className="text-[10px] font-normal opacity-80">· demandé</span>
-            </Pill>
+            />
           ))}
         </div>
       ) : (
@@ -412,7 +405,7 @@ function Tag({
   tone,
   children,
 }: {
-  tone: "ok" | "new" | "soon";
+  tone: "ok" | "soon";
   children: React.ReactNode;
 }) {
   return (
@@ -420,48 +413,12 @@ function Tag({
       className={cn(
         "inline-flex items-center gap-1 px-1.5 h-[18px] rounded-full text-[10px] font-semibold",
         tone === "ok" && "bg-panora-green-light text-panora-green-dark",
-        tone === "new" && "bg-purple-100 text-purple-700",
         tone === "soon" && "bg-panora-warning-bg text-panora-warning-text"
       )}
     >
-      {tone === "new" && <Sparkles className="w-2.5 h-2.5" />}
       {tone === "soon" && <Clock className="w-2.5 h-2.5" />}
       {children}
     </span>
   );
 }
 
-function Pill({
-  tone,
-  onRemove,
-  removeLabel,
-  children,
-}: {
-  tone: "ok" | "soon" | "requested";
-  onRemove: () => void;
-  removeLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 pl-2.5 pr-1.5 h-7 rounded-full text-[12px] font-medium",
-        tone === "ok" && "bg-panora-green-light text-panora-green-dark",
-        tone === "soon" &&
-          "bg-panora-warning-bg text-panora-warning-text",
-        tone === "requested" &&
-          "border border-dashed border-panora-text-muted/40 text-panora-text-muted"
-      )}
-    >
-      <span className="inline-flex items-center gap-1">{children}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={removeLabel}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-black/5 transition-colors"
-      >
-        <X className="w-3 h-3" />
-      </button>
-    </span>
-  );
-}

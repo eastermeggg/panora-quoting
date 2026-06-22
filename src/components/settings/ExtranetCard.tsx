@@ -54,9 +54,6 @@ export function ExtranetCard({
   const activeProducts = getActiveProducts(config);
   const requestedProducts = getRequestedProducts(config);
   const selectedSet = new Set(config.selectedProducts);
-  const modelizedNewSet = new Set(
-    config.modelizedProducts.filter((p) => p.isNew).map((p) => p.product)
-  );
   const inactiveProducts = config.modelizedProducts
     .filter((p) => !selectedSet.has(p.product))
     .map((p) => p.product);
@@ -134,7 +131,7 @@ export function ExtranetCard({
               <ProductBadge
                 key={p}
                 product={p}
-                variant={modelizedNewSet.has(p) ? "new" : "modelized"}
+                variant="modelized"
               />
             ))}
             {requestedProducts.map((p) => (
