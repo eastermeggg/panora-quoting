@@ -22,14 +22,12 @@ export type InsuranceProduct =
 
 export type MasterProduct = {
   id: InsuranceProduct;
-  isNew: boolean; // recently modelized (30-day window)
-  available: boolean; // Panora can quote it today (false = modelization planned)
+  available: boolean; // Panora can quote it today (false = modelization planned, in DB but not live)
 };
 
 // Per insurer: which products from the master list are modelized
 export type InsurerProduct = {
   product: InsuranceProduct;
-  isNew: boolean; // mirrors master but can differ per insurer timing
 };
 
 export type ConnectionStatus = "connected" | "needs_reauth" | "unchecked";
@@ -107,21 +105,21 @@ export type AvailableExtranet = {
 // All ~60 product types known to the platform (showing 15 for mock)
 
 export const masterProducts: MasterProduct[] = [
-  { id: "Auto", isNew: false, available: true },
-  { id: "MRI", isNew: false, available: true },
-  { id: "MRP", isNew: false, available: true },
-  { id: "Santé", isNew: false, available: true },
-  { id: "RC Pro", isNew: false, available: true },
-  { id: "Cyber", isNew: true, available: true },
-  { id: "Flotte", isNew: false, available: true },
-  { id: "Décennale", isNew: true, available: false },
-  { id: "D&O", isNew: true, available: true },
-  { id: "PJ", isNew: false, available: true },
-  { id: "Homme clé", isNew: true, available: false },
-  { id: "Marchandises transportées", isNew: false, available: true },
-  { id: "Bris de machine", isNew: false, available: true },
-  { id: "Perte d'exploitation", isNew: false, available: true },
-  { id: "Construction", isNew: true, available: false },
+  { id: "Auto", available: true },
+  { id: "MRI", available: true },
+  { id: "MRP", available: true },
+  { id: "Santé", available: true },
+  { id: "RC Pro", available: true },
+  { id: "Cyber", available: true },
+  { id: "Flotte", available: true },
+  { id: "Décennale", available: false },
+  { id: "D&O", available: true },
+  { id: "PJ", available: true },
+  { id: "Homme clé", available: false },
+  { id: "Marchandises transportées", available: true },
+  { id: "Bris de machine", available: true },
+  { id: "Perte d'exploitation", available: true },
+  { id: "Construction", available: false },
 ];
 
 // ── External resources ──
@@ -169,9 +167,9 @@ export const seededConfiguredExtranets: ExtranetConfig[] = [
     portalUrl: "portail.generali.fr",
     username: "dhowden_auto",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
     ],
     selectedProducts: ["Auto", "MRI", "MRP", "Flotte"], // Flotte = requested (not modelized)
     catalogEntryId: "avail-generali-auto",
@@ -188,8 +186,8 @@ export const seededConfiguredExtranets: ExtranetConfig[] = [
     portalUrl: "portail.generali.fr",
     username: "dhowden_sante",
     modelizedProducts: [
-      { product: "Santé", isNew: false },
-      { product: "RC Pro", isNew: false },
+      { product: "Santé" },
+      { product: "RC Pro" },
     ],
     selectedProducts: ["Santé", "RC Pro", "Cyber", "D&O"], // Cyber + D&O = requested
     catalogEntryId: "avail-generali-sante",
@@ -205,13 +203,13 @@ export const seededConfiguredExtranets: ExtranetConfig[] = [
     portalUrl: "portail.axa.fr",
     username: "dhowden_courtier",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
-      { product: "Santé", isNew: false },
-      { product: "RC Pro", isNew: false },
-      { product: "Cyber", isNew: true },
-      { product: "Flotte", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
+      { product: "Santé" },
+      { product: "RC Pro" },
+      { product: "Cyber" },
+      { product: "Flotte" },
     ],
     selectedProducts: ["Auto", "MRI", "MRP", "Santé", "RC Pro", "Cyber", "Flotte", "Décennale"], // Décennale = requested
     configuredAt: "2026-03-10",
@@ -226,10 +224,10 @@ export const seededConfiguredExtranets: ExtranetConfig[] = [
     portalUrl: "portail.allianz.fr",
     username: "dhowden_courtier",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
-      { product: "RC Pro", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
+      { product: "RC Pro" },
     ],
     selectedProducts: ["Auto", "MRI", "MRP", "RC Pro"],
     configuredAt: "2026-03-12",
@@ -244,8 +242,8 @@ export const seededConfiguredExtranets: ExtranetConfig[] = [
     portalUrl: "portail.groupama.fr",
     username: "dhowden_courtier",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
     ],
     selectedProducts: ["Auto", "MRI"],
     catalogEntryId: "avail-groupama",
@@ -386,13 +384,13 @@ export const availableExtranets: AvailableExtranet[] = [
     insurerName: "Axa",
     portalUrl: "portail.axa.fr",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
-      { product: "Santé", isNew: false },
-      { product: "RC Pro", isNew: false },
-      { product: "Cyber", isNew: true },
-      { product: "Flotte", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
+      { product: "Santé" },
+      { product: "RC Pro" },
+      { product: "Cyber" },
+      { product: "Flotte" },
     ],
     requires2FA: true,
     otpDelivery: {
@@ -411,9 +409,9 @@ export const availableExtranets: AvailableExtranet[] = [
     portalLabel: "Auto / MRI",
     portalUrl: "portail.generali.fr",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
     ],
     requires2FA: true,
     otpDelivery: {
@@ -431,8 +429,8 @@ export const availableExtranets: AvailableExtranet[] = [
     portalLabel: "Santé / Prévoyance",
     portalUrl: "portail.generali.fr",
     modelizedProducts: [
-      { product: "Santé", isNew: false },
-      { product: "RC Pro", isNew: false },
+      { product: "Santé" },
+      { product: "RC Pro" },
     ],
     requires2FA: true,
     otpDelivery: {
@@ -451,10 +449,10 @@ export const availableExtranets: AvailableExtranet[] = [
     portalLabel: "Produits standards",
     portalUrl: "portail.maif.fr",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
-      { product: "MRP", isNew: false },
-      { product: "Santé", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
+      { product: "MRP" },
+      { product: "Santé" },
     ],
   },
   {
@@ -464,7 +462,7 @@ export const availableExtranets: AvailableExtranet[] = [
     portalLabel: "RC Pro",
     portalUrl: "portail-rcpro.maif.fr",
     modelizedProducts: [
-      { product: "RC Pro", isNew: false },
+      { product: "RC Pro" },
     ],
   },
   {
@@ -473,8 +471,8 @@ export const availableExtranets: AvailableExtranet[] = [
     insurerName: "Groupama",
     portalUrl: "portail.groupama.fr",
     modelizedProducts: [
-      { product: "Auto", isNew: false },
-      { product: "MRI", isNew: false },
+      { product: "Auto" },
+      { product: "MRI" },
     ],
     requires2FA: false,
   },
@@ -484,9 +482,9 @@ export const availableExtranets: AvailableExtranet[] = [
     insurerName: "Chubb",
     portalUrl: "portail.chubb.fr",
     modelizedProducts: [
-      { product: "RC Pro", isNew: false },
-      { product: "Cyber", isNew: true },
-      { product: "D&O", isNew: true },
+      { product: "RC Pro" },
+      { product: "Cyber" },
+      { product: "D&O" },
     ],
     requires2FA: true,
     otpDelivery: { channel: "sms", hint: "•• •• •• 42" },
@@ -498,8 +496,8 @@ export const availableExtranets: AvailableExtranet[] = [
     insurerName: "Hiscox",
     portalUrl: "portail.hiscox.fr",
     modelizedProducts: [
-      { product: "RC Pro", isNew: false },
-      { product: "Cyber", isNew: true },
+      { product: "RC Pro" },
+      { product: "Cyber" },
     ],
     requires2FA: true,
     otpDelivery: { channel: "app", hint: "Hiscox Authenticator" },

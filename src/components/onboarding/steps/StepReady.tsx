@@ -1,29 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Send,
-  Copy,
-  Check,
-  ExternalLink,
-  FolderInput,
-  Forward,
-  Sparkles,
-  Globe,
-  GitCompare,
-  Mail,
-  Rocket,
-} from "lucide-react";
+import { useState } from "react";
+import { Send, Copy, Check, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExtranetConfig } from "@/data/settings-mock";
-import { OnboardingHero, HeroAccent } from "@/components/onboarding/OnboardingHero";
+import { OnboardingHero } from "@/components/onboarding/OnboardingHero";
 
 const COTATION_EMAIL = "cotation+a7f3b2@panora.co";
-const REVEAL_PREFIX = "cotation+";
-const REVEAL_HIDDEN_CHARS = "a7f3b2";
-const REVEAL_SUFFIX = "@panora.co";
-const COTATION_EMAIL_LOCKED = `${REVEAL_PREFIX}${"•".repeat(REVEAL_HIDDEN_CHARS.length)}${REVEAL_SUFFIX}`;
-const DOCS_URL = "https://panora.notion.site/";
 
 const PLACEHOLDER_CLIENT = "[Nom du client / raison sociale]";
 const PLACEHOLDER_DOCS = "[Kbis, bilan N-1, questionnaire rempli]";
@@ -52,32 +35,18 @@ export function StepReady({ configuredExtranets }: StepReadyProps) {
   return (
     <div className="mx-auto w-full max-w-[1040px] flex flex-col gap-10 py-6 lg:py-10">
       <OnboardingHero
-        title={
-          <>
-            Votre assistant cotation{" "}
-            <HeroAccent>est prêt à coter</HeroAccent>.
-          </>
-        }
+        eyebrow="Étape 4"
+        title={<>Votre assistant cotation est prêt à coter.</>}
       />
 
-      {/* Left: how-it-works timeline · Right: address + email example */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-5 items-start">
+      {/* Left: how-it-works steps · Right: address + email example */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.45fr] gap-6 lg:gap-8 items-start">
         <FlowTimeline />
         <div className="flex flex-col gap-5">
           <AddressPanel />
           <ForwardExample assureurs={assureurs} produit={produit} />
         </div>
       </div>
-
-      <a
-        href={DOCS_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="self-start inline-flex items-center gap-1.5 text-[12px] font-medium text-panora-text-secondary hover:text-panora-text leading-4"
-      >
-        Consulter la documentation
-        <ExternalLink className="w-3 h-3" />
-      </a>
     </div>
   );
 }
@@ -106,7 +75,34 @@ function AddressPanel() {
           automatiquement.
         </p>
       </div>
-      <EmailReveal copied={copied} onCopy={handleCopy} />
+      <div
+        className="flex items-center gap-3 h-[52px] pl-4 pr-1.5 rounded-xl border border-panora-border shadow-[0px_2px_6px_-3px_rgba(0,0,0,0.08)]"
+        style={{
+          background:
+            "radial-gradient(130% 180% at 100% 50%, rgba(0,162,114,0.18) 0%, rgba(0,162,114,0) 46%), #ffffff",
+        }}
+      >
+        <span className="flex-1 truncate font-mono text-[14px] font-medium text-panora-text">
+          {COTATION_EMAIL}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 h-9 rounded-md bg-[#173c2d] text-[13px] font-semibold text-white hover:bg-[#10301f] transition-colors"
+          aria-label="Copier l'adresse"
+        >
+          {copied ? (
+            <>
+              <Check className="w-4 h-4" strokeWidth={3} />
+              Copié
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              Copier
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -133,62 +129,55 @@ function buildTemplate(assureurs: string, produit: string): string {
 
 // ── How it works — compact digest ──
 
-const FLOW_STEPS = [
+const FLOW_STEPS: { label: string; sub?: string }[] = [
   {
-    icon: FolderInput,
-    label: "Rassemblez les documents",
+    label: "Rassemblez les documents de votre client",
     sub: "Réunissez les pièces envoyées par le client.",
   },
   {
-    icon: Forward,
-    label: "Transférez à Panora",
-    sub: "Un simple email crée le dossier.",
+    label: "Transférez le tout dans un email à Panora",
+    sub: "Un simple email (voir le modèle) crée la demande de cotation.",
   },
   {
-    icon: Sparkles,
-    label: "Notre agent constitue le dossier",
-    sub: "Il rassemble les pièces, repère ce qui manque et vous le signale.",
-  },
-  {
-    icon: Globe,
     label: "Validez et lancez la cotation",
-    sub: "Notre agent va chercher les devis pour vous auprès des compagnies.",
+    sub: "Vérifiez les informations extraites, puis lancez.",
   },
   {
-    icon: GitCompare,
-    label: "Comparez les offres",
-    sub: "Analysez les devis côte à côte dans Panora.",
+    label: "Notre agent va chercher les devis",
+    sub: "Il les récupère pour vous auprès des compagnies.",
   },
-] as const;
+  {
+    label: "Vos cotations et devis sont prêts",
+  },
+];
 
 function FlowTimeline() {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-panora-border bg-panora-bg p-5 lg:p-6">
-      <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5 flex items-center gap-2">
-        <Rocket className="w-4 h-4 text-panora-green-dark shrink-0" />
+    <div className="flex flex-col gap-5 rounded-2xl border border-panora-border bg-white p-5 lg:p-6 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+      <h2 className="text-[16px] font-semibold text-panora-text font-display leading-5">
         Comment lancer votre première cotation
       </h2>
       <ol className="flex flex-col">
-        {FLOW_STEPS.map(({ icon: Icon, label, sub }, i) => {
+        {FLOW_STEPS.map(({ label, sub }, i) => {
           const isLast = i === FLOW_STEPS.length - 1;
           return (
             <li key={i} className="flex gap-3 relative">
-              {/* Connecting line */}
+              {/* Connecting line between numbered steps */}
               {!isLast && (
-                <div className="absolute left-[13px] top-7 bottom-0 w-px bg-panora-border" />
+                <div className="absolute left-[9.5px] top-6 bottom-0 w-px bg-panora-border" />
               )}
-              {/* Icon marker */}
-              <div className="relative z-10 shrink-0 inline-flex items-center justify-center w-[27px] h-[27px] rounded-full bg-panora-green-light border border-panora-green-border">
-                <Icon className="w-3.5 h-3.5 text-panora-green-dark" />
-              </div>
-              {/* Content */}
-              <div className={cn("min-w-0 pt-[3px]", !isLast && "pb-4")}>
-                <p className="text-[13px] font-semibold text-panora-text leading-4">
+              <span className="relative z-10 shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-panora-secondary text-[11px] font-semibold text-panora-text-secondary tabular-nums">
+                {i + 1}
+              </span>
+              <div className={cn("flex flex-col gap-0.5 min-w-0", !isLast && "pb-4")}>
+                <p className="text-[13px] font-semibold text-panora-text leading-5">
                   {label}
                 </p>
-                <p className="text-[12px] text-panora-text-secondary leading-[17px] mt-1">
-                  {sub}
-                </p>
+                {sub && (
+                  <p className="text-[12px] text-panora-text-secondary leading-[18px]">
+                    {sub}
+                  </p>
+                )}
               </div>
             </li>
           );
@@ -356,70 +345,3 @@ function FieldLine({
   );
 }
 
-// ── Email address reveal (typewriter) ──
-
-function EmailReveal({
-  copied,
-  onCopy,
-}: {
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  const [displayed, setDisplayed] = useState(COTATION_EMAIL_LOCKED);
-  const [pulse, setPulse] = useState(false);
-
-  useEffect(() => {
-    let step = 0;
-    const total = REVEAL_HIDDEN_CHARS.length;
-
-    const interval = setInterval(() => {
-      step += 1;
-      const revealed = REVEAL_HIDDEN_CHARS.slice(0, step);
-      const remainingDots = "•".repeat(Math.max(0, total - step));
-      setDisplayed(
-        `${REVEAL_PREFIX}${revealed}${remainingDots}${REVEAL_SUFFIX}`
-      );
-      if (step >= total) {
-        clearInterval(interval);
-        setDisplayed(COTATION_EMAIL);
-        setPulse(true);
-        window.setTimeout(() => setPulse(false), 600);
-      }
-    }, 140);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-3 border rounded-xl px-4 bg-white transition-all duration-300",
-        pulse
-          ? "border-panora-green-dark shadow-[0px_8px_24px_-8px_rgba(0,162,114,0.28)]"
-          : "border-panora-green-border shadow-[0px_3px_14px_-6px_rgba(0,162,114,0.15)]"
-      )}
-      style={{ height: "52px" }}
-    >
-      <span className="text-[14px] lg:text-[15px] text-panora-text font-medium flex-1 truncate font-mono tracking-tight">
-        {displayed}
-      </span>
-      <button
-        onClick={onCopy}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-panora-green-light text-[13px] font-semibold text-panora-green-dark hover:bg-panora-green/15 transition-colors"
-        aria-label="Copier l'adresse"
-      >
-        {copied ? (
-          <>
-            <Check className="w-4 h-4" strokeWidth={3} />
-            Copié
-          </>
-        ) : (
-          <>
-            <Copy className="w-4 h-4" />
-            Copier
-          </>
-        )}
-      </button>
-    </div>
-  );
-}

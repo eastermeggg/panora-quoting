@@ -250,7 +250,7 @@ function CommandPalette({
                           <ProductBadge
                             key={p.product}
                             product={p.product}
-                            variant={p.isNew ? "new" : "modelized"}
+                            variant="modelized"
                           />
                         ))}
                       </div>

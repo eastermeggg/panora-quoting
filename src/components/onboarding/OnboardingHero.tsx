@@ -1,12 +1,15 @@
 import { cn } from "@/lib/utils";
 
 interface OnboardingHeroProps {
+  /** Small uppercase label above the title, e.g. "ÉTAPE 1". */
+  eyebrow?: React.ReactNode;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   align?: "start" | "center";
 }
 
 export function OnboardingHero({
+  eyebrow,
   title,
   subtitle,
   align = "start",
@@ -18,6 +21,11 @@ export function OnboardingHero({
         align === "center" && "items-center text-center mx-auto"
       )}
     >
+      {eyebrow && (
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-panora-green leading-none">
+          {eyebrow}
+        </span>
+      )}
       <h1 className="text-[28px] lg:text-[38px] font-serif text-panora-text leading-[1.08] tracking-[-0.025em] text-balance">
         {title}
       </h1>
