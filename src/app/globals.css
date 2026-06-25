@@ -1,36 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter+Display:wght@600&display=swap");
 @import "tailwindcss";
+/* Design tokens (@theme) now live in the design-system package. */
+@import "../../packages/design-system/src/tokens.css";
 
-@theme inline {
-  --color-panora-green: #00a272;
-  --color-panora-green-light: #ebf3ef;
-  --color-panora-green-dark: #00784f;
-  --color-panora-green-border: #c9e8d9;
-  --color-panora-bg: #faf8f5;
-  --color-panora-card: #FFFFFF;
-  --color-panora-sidebar: #faf8f5;
-  --color-panora-error: #952617;
-  --color-panora-warning: #cb8052;
-  --color-panora-warning-text: #80452b;
-  --color-panora-warning-bg: #FFF3E8;
-  --color-panora-error-bg: #FFECEC;
-  --color-panora-border: #eae7e0;
-  --color-panora-secondary: #eae7e0;
-  --color-panora-tag: #F0ECE5;
-  --color-panora-drop: #F8F6F2;
-  --color-panora-text: #22201a;
-  --color-panora-text-primary: #162416;
-  --color-panora-text-secondary: #5c5953;
-  --color-panora-text-muted: #85827b;
-  --color-panora-btn-primary: #1A3C34;
-  --color-panora-btn-primary-hover: #243D36;
-  --color-panora-btn-primary-end: #2D5A4E;
-  --color-panora-btn-secondary: #F0ECE5;
-  --color-panora-btn-secondary-hover: #E8E3DA;
-
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-serif: "Georgia", "Times New Roman", serif;
-}
+/* Scan the design-system package so Tailwind generates the classes its
+   primitives use (it lives outside the app's default content roots). */
+@source "../../packages/design-system/src";
 
 body {
   background: var(--color-panora-bg);

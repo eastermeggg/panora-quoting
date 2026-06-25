@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { InsurerSelector } from "@/components/quoting/InsurerSelector";
 import { ClientSelector } from "@/components/quoting/ClientSelector";
+import { DetectionNotice, FieldFlag } from "@/components/quoting/DetectionNotice";
 import { EtudeSelector } from "@/components/quoting/EtudeSelector";
 import { CreateEtudeModal } from "@/components/quoting/CreateEtudeModal";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
@@ -43,6 +44,33 @@ const mockProducts = [
   { id: "auto", name: "Auto", icon: "car" },
 ];
 
+type DetectLevel = "ok" | "doubt" | "missing";
+
+/** Test hook: `?hitl=client-doubt,assureurs-missing` (or `all`) simulates the
+ *  agent being unsure of, or unable to detect, a left-rail entity — so the broker
+ *  is prompted to confirm or fix the choice before launch. */
+function parseHitl(param: string | null): {
+  client: DetectLevel;
+  assureurs: DetectLevel;
+} {
+  const out: { client: DetectLevel; assureurs: DetectLevel } = {
+    client: "ok",
+    assureurs: "ok",
+  };
+  if (!param) return out;
+  for (const raw of param.split(",")) {
+    const t = raw.trim();
+    if (t === "all") {
+      out.client = "doubt";
+      out.assureurs = "missing";
+    } else if (t === "client-doubt") out.client = "doubt";
+    else if (t === "client-missing") out.client = "missing";
+    else if (t === "assureurs-doubt") out.assureurs = "doubt";
+    else if (t === "assureurs-missing") out.assureurs = "missing";
+  }
+  return out;
+}
+
 /** Best-effort: map a scenario.client name to a VEOS client id. */
 function resolveScenarioClientId(name: string | undefined): string {
   if (!name) return "marble";
@@ -67,13 +95,19 @@ function PreparationContent() {
   const scenarioId = searchParams.get("scenario") || "rc-pro";
   const scenario = getScenario(scenarioId) || scenarios["rc-pro"];
 
+  const hitl = useMemo(() => parseHitl(searchParams.get("hitl")), [searchParams]);
+
   const [projectName, setProjectName] = useState(scenario.defaultProjectName);
   const [selectedClient, setSelectedClient] = useState<string | null>(
-    resolveScenarioClientId(scenario.client)
+    hitl.client === "missing" ? null : resolveScenarioClientId(scenario.client)
   );
+  const [clientDetect, setClientDetect] = useState<DetectLevel>(hitl.client);
   const [selectedProduct, setSelectedProduct] = useState(scenarioId);
   const [selectedInsurers, setSelectedInsurers] = useState<string[]>(
-    scenario.defaultSelectedInsurers
+    hitl.assureurs === "missing" ? [] : scenario.defaultSelectedInsurers
+  );
+  const [assureursDetect, setAssureursDetect] = useState<DetectLevel>(
+    hitl.assureurs
   );
   const [instructions, setInstructions] = useState("");
   const [sections, setSections] = useState<ExtractedSection[]>(() =>
@@ -135,16 +169,21 @@ function PreparationContent() {
   const stats = useMemo(() => getValidationStats(sections), [sections]);
   const noInsurers = selectedInsurers.length === 0;
   const creatingEtude = etudeChoice === "new";
+  // A doubt is advisory (the field is flagged, but it has a value); only a truly
+  // empty entity blocks launch — no client, or no insurers.
   const allChecksPass =
     stats.missingFields === 0 &&
     stats.invalidFields === 0 &&
     stats.unverifiedSections === 0 &&
-    !noInsurers;
+    !noInsurers &&
+    !!selectedClient;
 
   const handleToggleInsurer = (id: string) => {
     setSelectedInsurers((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+    // Any deliberate change resolves the agent's uncertainty on this entity.
+    setAssureursDetect("ok");
   };
 
   const handleLaunchClick = () => {
@@ -259,13 +298,23 @@ function PreparationContent() {
 
                 {/* Client - full width */}
                 <div>
-                  <label className="text-[13px] font-medium text-panora-text-primary block mb-1.5">
+                  <label className="text-[13px] font-medium text-panora-text-primary mb-1.5 flex items-center gap-2">
                     Client
+                    {clientDetect !== "ok" && <FieldFlag level={clientDetect} />}
                   </label>
                   <ClientSelector
                     value={selectedClient}
-                    onChange={setSelectedClient}
+                    onChange={(v) => {
+                      setSelectedClient(v);
+                      setClientDetect("ok");
+                    }}
                   />
+                  {clientDetect === "doubt" && (
+                    <DetectionNotice message="L'agent n'est pas certain d'avoir identifié le bon client. Vérifiez ou choisissez le bon." />
+                  )}
+                  {clientDetect === "missing" && (
+                    <DetectionNotice message="L'agent n'a pas pu identifier le client. Sélectionnez-le ci-dessus." />
+                  )}
                 </div>
 
                 {/* Étude — picked at launch so the cotation lands in the right VEOS container */}
@@ -321,8 +370,11 @@ function PreparationContent() {
 
                 {/* Assureurs - full width */}
                 <div>
-                  <label className="text-[13px] font-medium text-panora-text-primary block mb-2">
+                  <label className="text-[13px] font-medium text-panora-text-primary mb-2 flex items-center gap-2">
                     Assureurs à solliciter
+                    {assureursDetect !== "ok" && (
+                      <FieldFlag level={assureursDetect} />
+                    )}
                   </label>
                   <InsurerSelector
                     selectedIds={selectedInsurers}
@@ -330,6 +382,12 @@ function PreparationContent() {
                     product={currentProduct?.name || scenario.product}
                     insurers={scenario.availableInsurers}
                   />
+                  {assureursDetect === "doubt" && (
+                    <DetectionNotice message="L'agent a proposé ces assureurs sans certitude. Vérifiez ou ajustez la sélection." />
+                  )}
+                  {assureursDetect === "missing" && (
+                    <DetectionNotice message="L'agent n'a pas pu déterminer les assureurs. Sélectionnez-les ci-dessus." />
+                  )}
                 </div>
               </div>
             </div>
@@ -440,6 +498,7 @@ function PreparationContent() {
             allChecksPass={allChecksPass}
             stats={stats}
             noInsurers={noInsurers}
+            hasClient={!!selectedClient}
           />
           <button
             onClick={handleLaunchClick}
@@ -541,10 +600,12 @@ function FooterStatus({
   allChecksPass,
   stats,
   noInsurers,
+  hasClient,
 }: {
   allChecksPass: boolean;
   stats: ReturnType<typeof getValidationStats>;
   noInsurers: boolean;
+  hasClient: boolean;
 }) {
   if (allChecksPass) {
     return (
@@ -556,6 +617,9 @@ function FooterStatus({
   }
   type ReasonVariant = "error" | "warning" | "pending";
   const reasons: { label: string; variant: ReasonVariant }[] = [];
+  // A missing client blocks launch (a doubt is advisory and stays on the field).
+  if (!hasClient)
+    reasons.push({ label: "client à sélectionner", variant: "error" });
   if (stats.invalidFields > 0)
     reasons.push({
       label: `${stats.invalidFields} champ${stats.invalidFields > 1 ? "s" : ""} invalide${stats.invalidFields > 1 ? "s" : ""}`,
