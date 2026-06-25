@@ -1,9 +1,6 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// cn now lives in the design-system package; re-exported here so existing
+// `@/lib/utils` imports across the app keep working unchanged.
+export { cn } from "@panora/design-system";
 
 /** Parse a French-formatted price string like "3 540,00 €/an" → 3540 */
 export function parsePriceEuros(s: string): number {

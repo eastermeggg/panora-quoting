@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import Link from "next/link";
 import type { Cotation, CotationInsurer } from "@/data/mock";
-import { getCotationStatus } from "@/data/mock";
+import { getCotationStatus, getFollowupData } from "@/data/mock";
 import { useConfiguredExtranets, type ExtranetConfig } from "@/data/settings-mock";
 import { getBlockedInsurerIds } from "@/data/cotations-store";
 import { ActivateSessionModal } from "@/components/settings/ActivateSessionModal";
@@ -143,6 +143,28 @@ function getDisplayStatus(
   return getCotationStatus(cotation); // "preparation" | "en_cours"
 }
 
+/** Concrete "what to do" labels for an action-requise cotation, derived from the
+ *  detailed followup insurers (the board list only carries a status). */
+function hitlActionLabels(cotation: Cotation): string[] {
+  const fu = getFollowupData(cotation.id);
+  if (!fu) return [];
+  const labels: string[] = [];
+  for (const ins of fu.insurers) {
+    if (ins.status !== "action_required") continue;
+    const a = ins.twoFaAction;
+    if (a?.type === "reprise_manuelle") {
+      labels.push(
+        a.repriseKind === "compte"
+          ? `Choisir un compte · ${ins.name}`
+          : `Reprise manuelle · ${ins.name}`
+      );
+    } else {
+      labels.push(`Intervention requise · ${ins.name}`);
+    }
+  }
+  return labels;
+}
+
 /* ── Card footer per status ── */
 function CardFooter({
   cotation,
@@ -175,9 +197,34 @@ function CardFooter({
   // Session → fast-forward to reactivation; HITL → open the cotation to handle it.
   // Rendered as a prominent full-width button so the next step is unmissable.
   if (status === "action_requise") {
+    const isSession = reason === "session";
+    // State the concrete action(s) the broker must take (from the detailed followup
+    // insurers); session-blocked cards just show the date + reactivation CTA.
+    const labels = isSession ? [] : hitlActionLabels(cotation);
     return (
       <div className="flex flex-col gap-2">
-        <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
+        {labels.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            {labels.map((l) => (
+              <span
+                key={l}
+                className="text-[12px] font-medium text-panora-warning-text leading-4"
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12px] text-[#85827b]">
+            {completed > 0
+              ? `${completed} devis reçu${completed > 1 ? "s" : ""}`
+              : cotation.createdAt}
+          </span>
+          {completed > 0 && (
+            <span className="text-[12px] text-[#85827b]">{cotation.createdAt}</span>
+          )}
+        </div>
         <span className="inline-flex items-center justify-center gap-1.5 w-full h-8 rounded-md bg-panora-warning-bg border border-panora-warning/40 text-panora-warning-text text-[12px] font-semibold group-hover:bg-panora-warning/15 transition-colors">
           {reason === "session" ? (
             <>
@@ -321,6 +368,58 @@ function FleetPreparationCard({
   );
 }
 
+/* ── Detection card (pre-launch HITL: agent couldn't identify client / insurer) ── */
+function DetectionPreparationCard({ cotation }: { cotation: Cotation }) {
+  const pd = cotation.prepDetection!;
+  const needs: string[] = [];
+  if (pd.client) needs.push("Choisir le client");
+  if (pd.assureurs) needs.push("Choisir l'assureur");
+  const hitl = [
+    pd.client ? "client-missing" : null,
+    pd.assureurs ? "assureurs-missing" : null,
+  ]
+    .filter(Boolean)
+    .join(",");
+  const href = `/quoting/preparation?scenario=${pd.scenario}&hitl=${hitl}`;
+
+  return (
+    <Link href={href}>
+      <div className="group bg-[#fdfdfc] border border-panora-border rounded-[12px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] p-4 flex flex-col gap-3 hover:border-panora-text-muted/30 transition-all cursor-pointer">
+        {/* Title */}
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-[14px] font-medium text-[#21201c] leading-5">
+            {cotation.product} · Nouvelle demande
+          </h3>
+          <span className="text-[13px] text-panora-text-muted leading-5">
+            Reçu par e-mail · {cotation.createdAt}
+          </span>
+        </div>
+
+        {/* What the broker must do before launch — plain text, no box */}
+        <div className="flex flex-col gap-0.5">
+          {needs.map((n) => (
+            <span
+              key={n}
+              className="text-[12px] font-medium text-panora-warning-text leading-4"
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+
+        {/* Separator + CTA */}
+        <div className="h-px bg-[#d9d9d9]" />
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] text-[#85827b]">{cotation.cotationId}</span>
+          <span className="text-[13px] font-medium text-panora-green">
+            Compléter la cotation →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 /* ── Cotation card ── */
 function CotationCard({
   cotation,
@@ -337,6 +436,12 @@ function CotationCard({
    *  activation modal in place, over the board. */
   onReactivate?: (insurerId: string) => void;
 }) {
+  // Pre-launch detection HITL (agent couldn't identify client / insurer) gets its
+  // own card stating what to choose, linking to prep with the matching ?hitl= flags.
+  if (cotation.prepDetection) {
+    return <DetectionPreparationCard cotation={cotation} />;
+  }
+
   // Use specialized cards for automobile products in preparation
   if (status === "preparation" && cotation.productIcon === "car") {
     if (cotation.autoMeta) {

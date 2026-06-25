@@ -15,7 +15,7 @@ import { LiveAgentTimeline } from "@/components/ui/LiveAgentTimeline";
 import { InsurerLogo } from "@/components/ui/InsurerLogo";
 import { VideoPlaceholder } from "@/components/ui/VideoPlaceholder";
 import { AgentLivePanel } from "@/components/ui/AgentLivePanel";
-import { TwoFaActionBox } from "@/components/quoting/TwoFaActionBox";
+import { RepriseManuelleBox } from "@/components/quoting/RepriseManuelleBox";
 import type { InsurerData } from "@/data/mock";
 
 type InsurerStatus = "completed" | "action_required" | "in_progress";
@@ -348,8 +348,11 @@ function ActionRequiredContent({
   insurer: InsurerData;
   onValidate: () => void;
 }) {
+  // 2FA is no longer resolved inline here — it's handled at the kanban/dashboard
+  // level via the session-activation modal (ActivateSessionModal). The card only
+  // hosts reprise manuelle and the manual fallback.
   const actionType = insurer.twoFaAction?.type ?? "manual";
-  const is2fa = actionType !== "manual";
+  const isReprise = actionType === "reprise_manuelle";
 
   const [validating, setValidating] = useState(false);
 
@@ -372,11 +375,12 @@ function ActionRequiredContent({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 2FA action box — replaces the manual alert banner */}
-      {is2fa && insurer.twoFaAction ? (
-        <TwoFaActionBox
+      {/* Action box — reprise manuelle / 2FA both replace the manual banner */}
+      {isReprise && insurer.twoFaAction ? (
+        <RepriseManuelleBox
           action={insurer.twoFaAction}
           insurerName={insurer.name}
+          insurerId={insurer.id}
           onResolved={onValidate}
         />
       ) : (
@@ -423,13 +427,18 @@ function ActionRequiredContent({
         </div>
       )}
 
-      {/* Video + Timeline side by side */}
-      <div className="grid grid-cols-2 gap-4">
-        <VideoPlaceholder />
-        <div>
-          <LiveAgentTimeline allSteps={tailSteps} isCompleted />
+      {/* Timeline (+ agent video, except during a broker-driven takeover where
+          an agent feed would contradict the broker holding the controls). */}
+      {isReprise ? (
+        <LiveAgentTimeline allSteps={tailSteps} isCompleted />
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <VideoPlaceholder />
+          <div>
+            <LiveAgentTimeline allSteps={tailSteps} isCompleted />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Next action info */}
       {insurer.nextAction && (

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Transpile the local design-system workspace package (it ships TS/JSX source).
+  transpilePackages: ["@panora/design-system"],
 };
 
 export default nextConfig;

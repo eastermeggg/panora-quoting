@@ -55,7 +55,12 @@ export type InsurerAction = {
   status: "success" | "error" | "in_progress" | "pending";
 };
 
-export type ActionType = "manual" | "2fa_otp" | "2fa_push" | "2fa_expired";
+export type ActionType =
+  | "manual"
+  | "2fa_otp"
+  | "2fa_push"
+  | "2fa_expired"
+  | "reprise_manuelle";
 
 export type TwoFaAction = {
   type: ActionType;
@@ -69,6 +74,15 @@ export type TwoFaAction = {
   /** ISO timestamp for expiration (OTP & push) */
   expiresAt?: string;
   interruptId?: string;
+  /** reprise_manuelle: what the broker takes the controls to do.
+   *  "compte" = pick the broker account on the extranet (we can't read the
+   *  values, so the broker selects it directly); "ecran" = an unrecognized
+   *  screen (captcha / non-scripted step) the agent can't pass on its own. */
+  repriseKind?: "compte" | "ecran";
+  /** Short label of the blocking screen, e.g. "Sélection du compte courtier". */
+  screenLabel?: string;
+  /** One-sentence instruction for the broker during the takeover. */
+  gesture?: string;
 };
 
 export type InsurerData = {
@@ -308,6 +322,10 @@ export type Cotation = {
   insurers: CotationInsurer[];
   fleetMeta?: FleetMeta;
   autoMeta?: AutoMeta;
+  /** Pré-lancement : l'agent n'a pas pu détecter ces entités du rail gauche
+   *  (client, assureurs). Surfacé en carte « action requise » sur le board →
+   *  page de préparation avec les flags ?hitl= correspondants. */
+  prepDetection?: { scenario: string; client?: boolean; assureurs?: boolean };
 };
 
 export function getCotationStatus(cotation: Cotation): CotationStatus {
@@ -360,8 +378,8 @@ export const cotationsList: Cotation[] = [
     ],
   },
   {
-    id: "cot-12",
-    cotationId: "COT-2026-0175",
+    id: "cot-14",
+    cotationId: "COT-2026-0177",
     client: "Transports Leroy SAS",
     product: "Flotte automobile",
     productIcon: "car",
@@ -412,7 +430,7 @@ export const cotationsList: Cotation[] = [
     createdAt: "10/03/2026",
     createdVia: "manual",
     insurers: [
-      { id: "axa", name: "Axa", status: "action_required", reference: "AXA-MR-0091" },
+      { id: "axa", name: "Axa", status: "completed", reference: "AXA-MR-0091", bestPrice: "1 710,00 €/an" },
       { id: "maif", name: "MAIF", status: "completed", reference: "MAIF-MR-4402", bestPrice: "1 850,00 €/an" },
       { id: "generali", name: "Generali", status: "action_required", reference: "GEN-MR-2201" },
     ],
@@ -528,6 +546,19 @@ export const cotationsList: Cotation[] = [
       { id: "chubb", name: "Chubb", status: "completed", reference: "CHB-DO-2204", bestPrice: "720 €/an" },
     ],
   },
+  {
+    // Pré-lancement : l'agent n'a pas pu identifier le client ni déterminer les
+    // assureurs à solliciter — la courtière doit compléter avant de lancer.
+    id: "cot-15",
+    cotationId: "COT-2026-0182",
+    client: "Client à identifier",
+    product: "RC Professionnelle",
+    productIcon: "shield",
+    createdAt: "24/06/2026",
+    createdVia: "email",
+    insurers: [],
+    prepDetection: { scenario: "rc-pro", client: true, assureurs: true },
+  },
   dupontDoCotation,
 ];
 
@@ -556,9 +587,15 @@ function makeSteps(insurerName: string, count: number): InsurerAction[] {
   return templates.slice(0, count);
 }
 
+// Resolve a cotation by id. The map previously keyed by positional index into
+// cotationsList, which silently drifted when the list was reordered; an id lookup
+// can't drift.
+const byId = (id: string): Cotation =>
+  cotationsList.find((c) => c.id === id)!;
+
 const cotationFollowupMap: Record<string, FollowupData> = {
   "cot-1": {
-    cotation: cotationsList[0],
+    cotation: byId("cot-1"),
     projectName: "RC Pro Marble Tech 2026",
     emailSubject: "Cotation Panora RC Pro - Marble Tech SAS",
     scenarioId: "rc-pro",
@@ -570,7 +607,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     insurers: initialInsurers,
   },
   "cot-2": {
-    cotation: cotationsList[1],
+    cotation: byId("cot-2"),
     projectName: "Flotte Auto ACME 2026",
     emailSubject: "Renouvellement flotte automobile 2026 - ACME Corp",
     scenarioId: "flotte-auto",
@@ -599,45 +636,52 @@ const cotationFollowupMap: Record<string, FollowupData> = {
         allSteps: makeSteps("Axa", 7),
       },
       {
+        // Reprise manuelle — un écran non reconnu (captcha) bloque l'agent.
         id: "allianz", name: "Allianz", logo: "🔵", logoColor: "#003781", hasCode: true,
-        status: "completed", reference: "ALZ-FL-8877",
-        documents: ["Devis_Allianz_Flotte_ACME.pdf", "Tableau_Garanties_Allianz.pdf"],
-        pricing: [
-          { formula: "Tiers étendu", details: [{ label: "Prime annuelle", value: "3 300,00 €/an" }, { label: "Prime mensuelle", value: "275,00 €" }] },
-          { formula: "Tous risques", details: [{ label: "Prime annuelle", value: "3 980,00 €/an" }, { label: "Prime mensuelle", value: "331,67 €" }] },
+        status: "action_required", reference: "ALZ-FL-8877",
+        nextAction: "Reprise du parcours à l'étape suivante de l'extranet Allianz",
+        twoFaAction: {
+          type: "reprise_manuelle",
+          repriseKind: "ecran",
+          title: "Écran non reconnu — reprise manuelle",
+          desc: "L'agent a rencontré une vérification anti-robot qu'il ne peut pas franchir seul.",
+          portalName: "Allianz",
+          screenLabel: "Vérification anti-robot (captcha)",
+          gesture:
+            "Validez le captcha affiché, puis rendez la main. L'agent repart de la page suivante.",
+          interruptId: "int-alz-ecran-001",
+        },
+        allSteps: [
+          { date: "17/06/26 - 09h33", title: "Connexion extranet Allianz", description: "Authentification réussie", status: "success" },
+          { date: "17/06/26 - 09h34", title: "Saisie du formulaire flotte", description: "44 véhicules renseignés automatiquement", status: "success" },
+          { date: "17/06/26 - 09h35", title: "Agent bloqué — Écran non reconnu", description: "Une vérification anti-robot est apparue. L'agent ne peut pas la franchir automatiquement.", status: "error" },
         ],
-        quoteInfo: [
-          { label: "Référence devis", value: "ALZ-FL-8877" },
-          { label: "Client", value: "ACME Corp SAS" },
-          { label: "Produit", value: "Flotte automobile" },
-          { label: "Date d'effet", value: "15/06/2026" },
-          { label: "Nb véhicules", value: "44" },
-          { label: "Franchise", value: "750 € / sinistre" },
-        ],
-        allSteps: makeSteps("Allianz", 7),
       },
       {
+        // Reprise manuelle — plusieurs comptes courtier, valeur non lisible par l'agent.
         id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
-        status: "completed", reference: "GEN-FL-1124",
-        documents: ["Devis_Generali_Flotte_ACME.pdf"],
-        pricing: [
-          { formula: "Standard", details: [{ label: "Prime annuelle", value: "3 840,00 €/an" }, { label: "Prime mensuelle", value: "320,00 €" }] },
-          { formula: "Premium", details: [{ label: "Prime annuelle", value: "4 450,00 €/an" }, { label: "Prime mensuelle", value: "370,83 €" }] },
+        status: "action_required", reference: "GEN-FL-1124",
+        nextAction: "Dépôt de la demande flotte et récupération des tarifs Generali",
+        twoFaAction: {
+          type: "reprise_manuelle",
+          repriseKind: "compte",
+          title: "Compte courtier à sélectionner",
+          desc: "Plusieurs comptes courtier sont rattachés à cet identifiant Generali. L'agent ne peut pas choisir à votre place.",
+          portalName: "Generali",
+          screenLabel: "Sélection du compte courtier",
+          gesture:
+            "Choisissez le compte à utiliser pour cette cotation, puis rendez la main.",
+          interruptId: "int-gen-compte-001",
+        },
+        allSteps: [
+          { date: "17/06/26 - 09h41", title: "Connexion extranet Generali", description: "Authentification réussie", status: "success" },
+          { date: "17/06/26 - 09h42", title: "Agent en attente — Compte à sélectionner", description: "Plusieurs comptes courtier sont rattachés à cet identifiant. L'agent ne peut pas continuer sans votre choix.", status: "error" },
         ],
-        quoteInfo: [
-          { label: "Référence devis", value: "GEN-FL-1124" },
-          { label: "Client", value: "ACME Corp SAS" },
-          { label: "Produit", value: "Flotte automobile" },
-          { label: "Date d'effet", value: "15/06/2026" },
-          { label: "Nb véhicules", value: "44" },
-          { label: "Franchise", value: "500 € / sinistre" },
-        ],
-        allSteps: makeSteps("Generali", 7),
       },
     ],
   },
   "cot-7": {
-    cotation: cotationsList[6],
+    cotation: byId("cot-7"),
     projectName: "Santé Collective Dupont SA 2026",
     emailSubject: "Cotation Santé Collective - Dupont SA",
     scenarioId: "sante-collective",
@@ -704,7 +748,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-6": {
-    cotation: cotationsList[5],
+    cotation: byId("cot-6"),
     projectName: "Prévoyance AT LegalPlace 2026",
     emailSubject: "Cotation Prévoyance AT - LegalPlace SAS",
     scenarioId: "prevoyance-at",
@@ -765,7 +809,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-3": {
-    cotation: cotationsList[2],
+    cotation: byId("cot-3"),
     projectName: "RC Pro TechVision 2026",
     emailSubject: "Devis RC Pro urgence - TechVision SAS",
     scenarioId: "rc-pro",
@@ -813,7 +857,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-4": {
-    cotation: cotationsList[3],
+    cotation: byId("cot-4"),
     projectName: "Multirisque GreenWay 2026",
     emailSubject: "Demande de cotation multirisque bureaux - GreenWay",
     scenarioId: "rc-pro",
@@ -824,18 +868,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     insurers: [
       {
         id: "axa", name: "Axa", logo: "🔴", logoColor: "#FF1721", hasCode: true,
-        status: "action_required", reference: "AXA-MR-0091",
-        twoFaAction: {
-          type: "2fa_otp",
-          title: "Code de vérification requis",
-          desc: "AXA demande un code à 6 chiffres envoyé par e-mail à d••••e@howden.fr.",
-          portalName: "AXA",
-          channel: "email",
-          codeLength: 6,
-          canResend: true,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-          interruptId: "int-axa-otp-001",
-        },
+        status: "completed", reference: "AXA-MR-0091",
         documents: ["Devis_Axa_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Axa.pdf"],
         pricing: [
           { formula: "Essentielle", details: [{ label: "Prime annuelle", value: "1 710,00 €/an" }, { label: "Prime mensuelle", value: "142,50 €" }] },
@@ -843,10 +876,8 @@ const cotationFollowupMap: Record<string, FollowupData> = {
           { formula: "Étendue", details: [{ label: "Prime annuelle", value: "2 580,00 €/an" }, { label: "Prime mensuelle", value: "215,00 €" }] },
         ],
         allSteps: [
-          { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification en cours", status: "success" },
-          { date: "13/03/26 - 09h15", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
-          { date: "13/03/26 - 09h16", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par e-mail à d••••e@howden.fr. L'agent ne peut pas continuer sans ce code.", status: "error" },
-          { date: "13/03/26 - 09h17", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
+          { date: "13/03/26 - 09h15", title: "Connexion extranet AXA", description: "Authentification réussie", status: "success" },
+          { date: "13/03/26 - 09h16", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
           { date: "13/03/26 - 09h18", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
           { date: "13/03/26 - 09h20", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
           { date: "13/03/26 - 09h22", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
@@ -882,45 +913,28 @@ const cotationFollowupMap: Record<string, FollowupData> = {
       {
         id: "generali", name: "Generali", logo: "🦁", logoColor: "#C8102E", hasCode: true,
         status: "action_required", reference: "GEN-MR-2201",
+        nextAction: "Dépôt de la demande multirisque et récupération des tarifs Generali",
         twoFaAction: {
-          type: "2fa_otp",
-          title: "Code de vérification requis",
-          desc: "Generali demande un code à 6 chiffres envoyé par SMS au 06 •• •• 42.",
+          type: "reprise_manuelle",
+          repriseKind: "compte",
+          title: "Compte courtier à sélectionner",
+          desc: "Plusieurs comptes courtier sont rattachés à cet identifiant Generali. L'agent ne peut pas choisir à votre place.",
           portalName: "Generali",
-          channel: "sms",
-          codeLength: 6,
-          canResend: false,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-          interruptId: "int-gen-otp-001",
+          screenLabel: "Sélection du compte courtier",
+          gesture:
+            "Choisissez le compte à utiliser pour cette cotation, puis rendez la main.",
+          interruptId: "int-gen-compte-002",
         },
-        documents: ["Devis_Generali_Multirisque_GreenWay.pdf", "Conditions_Generales_MR_Generali.pdf"],
-        pricing: [
-          { formula: "Standard", details: [{ label: "Prime annuelle", value: "1 980,00 €/an" }, { label: "Prime mensuelle", value: "165,00 €" }] },
-          { formula: "Premium", details: [{ label: "Prime annuelle", value: "2 500,00 €/an" }, { label: "Prime mensuelle", value: "208,33 €" }] },
-        ],
         allSteps: [
-          { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification en cours", status: "success" },
-          { date: "13/03/26 - 09h12", title: "Identifiants acceptés", description: "Credentials validés par le portail", status: "success" },
-          { date: "13/03/26 - 09h13", title: "Agent en attente — Code 2FA requis", description: "Un code a été envoyé par SMS au 06 •• •• 42. L'agent ne peut pas continuer sans ce code.", status: "error" },
-          { date: "13/03/26 - 09h14", title: "Code 2FA validé", description: "Authentification complète", status: "success" },
-          { date: "13/03/26 - 09h15", title: "Création du dossier client", description: "Client GreenWay Industries créé", status: "success" },
-          { date: "13/03/26 - 09h17", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
-          { date: "13/03/26 - 09h19", title: "Upload des documents", description: "Bail commercial et plan des locaux transmis", status: "success" },
-          { date: "13/03/26 - 09h21", title: "Tarifs reçus — Devis récupéré", description: "2 formules disponibles — Documents téléchargés", status: "success" },
-        ],
-        quoteInfo: [
-          { label: "Référence devis", value: "GEN-MR-2201" },
-          { label: "Client", value: "GreenWay Industries" },
-          { label: "Produit", value: "Multirisque bureaux" },
-          { label: "Date d'effet", value: "01/05/2026" },
-          { label: "Surface assurée", value: "450 m²" },
-          { label: "Franchise", value: "400 €" },
+          { date: "13/03/26 - 09h12", title: "Connexion extranet Generali", description: "Authentification réussie", status: "success" },
+          { date: "13/03/26 - 09h13", title: "Saisie des informations", description: "Champs remplis automatiquement", status: "success" },
+          { date: "13/03/26 - 09h14", title: "Agent en attente — Compte à sélectionner", description: "Plusieurs comptes courtier sont rattachés à cet identifiant. L'agent ne peut pas continuer sans votre choix.", status: "error" },
         ],
       },
     ],
   },
   "cot-5": {
-    cotation: cotationsList[4],
+    cotation: byId("cot-5"),
     projectName: "RC Pro Digital Solutions 2026",
     emailSubject: "Cotation RC Pro - Digital Solutions SARL",
     scenarioId: "rc-pro",
@@ -968,7 +982,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-8": {
-    cotation: cotationsList[7],
+    cotation: byId("cot-8"),
     projectName: "Flotte Auto Transports Moreau 2026",
     emailSubject: "Renouvellement flotte automobile 2026 - Transports Moreau SAS",
     scenarioId: "flotte-auto",
@@ -1035,7 +1049,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-9": {
-    cotation: cotationsList[8],
+    cotation: byId("cot-9"),
     projectName: "MRI Fonciere Belleville 2026",
     emailSubject: "Cotation MRI patrimoine immobilier - Fonciere Belleville SCI",
     scenarioId: "mri",
@@ -1102,7 +1116,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-10": {
-    cotation: cotationsList[9],
+    cotation: byId("cot-10"),
     projectName: "Flotte stock Garage Dupont 2026",
     emailSubject: "Cotation flotte stock automobile - Garage Dupont & Fils",
     scenarioId: "fleet-stock",
@@ -1153,7 +1167,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-11": {
-    cotation: cotationsList[10],
+    cotation: byId("cot-11"),
     projectName: "Accident du Travail BTP Horizon 2026",
     emailSubject: "Cotation Accident du Travail - BTP Horizon SAS",
     scenarioId: "accident-travail",
@@ -1214,7 +1228,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-12": {
-    cotation: cotationsList[11],
+    cotation: byId("cot-12"),
     projectName: "D&O Valeas Groupe 2026",
     emailSubject: "Cotation D&O - Valeas Groupe SAS",
     scenarioId: "rcpro",
@@ -1278,7 +1292,7 @@ const cotationFollowupMap: Record<string, FollowupData> = {
     ],
   },
   "cot-13": {
-    cotation: cotationsList[4],
+    cotation: byId("cot-13"),
     projectName: "Auto Marchand — Peugeot 3008 GT",
     emailSubject: "Demande de devis auto - Peugeot 3008",
     scenarioId: "auto",
@@ -1308,28 +1322,14 @@ const cotationFollowupMap: Record<string, FollowupData> = {
           { label: "Date d'effet", value: "15/06/2026" },
           { label: "Bonus/malus", value: "0.50" },
         ],
-        alertMessage: "Code de vérification requis",
-        alertDescription: "AXA demande un code à 6 chiffres envoyé par SMS au 06 •• •• 17.",
-        twoFaAction: {
-          type: "2fa_otp",
-          title: "Code de vérification requis",
-          desc: "AXA demande un code à 6 chiffres envoyé par SMS au 06 •• •• 17.",
-          portalName: "AXA",
-          channel: "sms",
-          codeLength: 6,
-          canResend: true,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-          interruptId: "int-auto-axa-otp",
-        },
         allSteps: [
           { date: "23/04/26 - 09h50", title: "Lancement de la cotation", description: "Cotation auto pour Sophie Marchand — Peugeot 3008 GT", status: "success" },
           { date: "23/04/26 - 09h51", title: "Connexion à l'extranet Axa", description: "Authentification réussie", status: "success" },
           { date: "23/04/26 - 09h52", title: "Saisie des informations conducteur", description: "7 champs remplis — nom, date de naissance, permis, CRM…", status: "success" },
           { date: "23/04/26 - 09h53", title: "Saisie des informations véhicule", description: "Peugeot 3008 GT — FG-456-HJ", status: "success" },
           { date: "23/04/26 - 09h54", title: "Upload des documents", description: "Carte grise et relevé d'information transmis", status: "success" },
-          { date: "23/04/26 - 09h55", title: "Vérification de sécurité", description: "Code OTP requis — en attente de validation", status: "in_progress" },
+          { date: "23/04/26 - 09h56", title: "Tarifs reçus — Devis récupéré", description: "3 formules disponibles — Documents téléchargés", status: "success" },
         ],
-        initialVisibleSteps: 4,
       },
       {
         id: "maif", name: "MAIF", logo: "🟢", logoColor: "#00A651", hasCode: true,
