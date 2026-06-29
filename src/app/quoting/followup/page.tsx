@@ -63,10 +63,36 @@ function FollowupContent() {
   const scenarioId = followupData?.scenarioId ?? "rc-pro";
   const attachments = followupData?.attachments ?? quotingEmail.attachments;
 
+  // Insurers launched while their daily session was expired (passed from the
+  // launch flow as ?reconnect=). They ride along as "action requise — session
+  // expirée" and are reconnectable inline here, which fires their quote.
+  const reconnectSet = useMemo(() => {
+    const raw = searchParams.get("reconnect");
+    return new Set(
+      raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : []
+    );
+  }, [searchParams]);
+
+  const effectiveInsurers: InsurerData[] = useMemo(
+    () =>
+      insurersList.map((ins) =>
+        reconnectSet.has(ins.id)
+          ? {
+              ...ins,
+              status: "action_required" as const,
+              alertMessage: `Session ${ins.name} expirée`,
+              alertDescription: `Réactivez la session pour lancer la cotation ${ins.name} — 2FA requise toutes les 4-5 h.`,
+              twoFaAction: undefined,
+            }
+          : ins
+      ),
+    [insurersList, reconnectSet]
+  );
+
   const [statuses, setStatuses] = useState<Record<string, InsurerStatus>>(
     () => {
       const initial: Record<string, InsurerStatus> = {};
-      for (const ins of insurersList) {
+      for (const ins of effectiveInsurers) {
         // Map "pending" status to a valid followup status
         const s = ins.status;
         initial[ins.id] =
@@ -85,10 +111,9 @@ function FollowupContent() {
     []
   );
 
-  // Demo affordance: simulate the agent hitting an expired session mid-quote.
-  // In production this would be triggered by the agent runtime, not a button.
-  const [expiredModalOpen, setExpiredModalOpen] = useState(false);
-  const expiredCarrier = insurersList[0] ?? { id: "generali", name: "Generali" };
+  // The carrier whose session-reconnect modal is open — driven either by a
+  // card's "Reconnecter la session" CTA (action requise) or the demo button.
+  const [expiredFor, setExpiredFor] = useState<InsurerData | null>(null);
 
   // ── Bulk send to ERP ──
   const erpAdapter = getActiveErpAdapter();
@@ -282,7 +307,7 @@ function FollowupContent() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setExpiredModalOpen(true)}
+            onClick={() => setExpiredFor(effectiveInsurers[0] ?? null)}
             title="Démo : déclenche le modal de session expirée"
             className="flex items-center gap-1.5 px-2 h-[22px] rounded-md border border-dashed border-panora-border text-[11px] font-medium text-panora-text-muted hover:text-panora-text hover:border-panora-text-muted/40 transition-colors"
           >
@@ -434,12 +459,17 @@ function FollowupContent() {
 
           {/* Insurer cards */}
           <div className="space-y-3">
-            {insurersList.map((insurer) => (
+            {effectiveInsurers.map((insurer) => (
               <InsurerCard
                 key={insurer.id}
                 insurer={insurer}
                 currentStatus={statuses[insurer.id]}
                 defaultExpanded={false}
+                sessionExpired={
+                  reconnectSet.has(insurer.id) &&
+                  statuses[insurer.id] === "action_required"
+                }
+                onReconnectSession={() => setExpiredFor(insurer)}
                 onStatusChange={(newStatus) =>
                   handleStatusChange(insurer.id, newStatus)
                 }
@@ -459,11 +489,14 @@ function FollowupContent() {
       </div>
 
       <SessionExpiredModal
-        open={expiredModalOpen}
-        insurerId={expiredCarrier.id}
-        insurerName={expiredCarrier.name}
-        onResolved={() => setExpiredModalOpen(false)}
-        onDismiss={() => setExpiredModalOpen(false)}
+        open={!!expiredFor}
+        insurerId={expiredFor?.id ?? ""}
+        insurerName={expiredFor?.name ?? ""}
+        onResolved={() => {
+          if (expiredFor) handleStatusChange(expiredFor.id, "in_progress");
+          setExpiredFor(null);
+        }}
+        onDismiss={() => setExpiredFor(null)}
       />
 
       <BulkSendToVeosModal

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useMemo } from "react";
+import { Fragment, useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
@@ -22,7 +22,17 @@ import { EtudeSelector } from "@/components/quoting/EtudeSelector";
 import { CreateEtudeModal } from "@/components/quoting/CreateEtudeModal";
 import { ExtractedDataPanel } from "@/components/quoting/ExtractedDataPanel";
 import { AiVerificationBanner } from "@/components/quoting/AiVerificationBanner";
-import { LaunchConfirmModal } from "@/components/quoting/LaunchConfirmModal";
+import {
+  LaunchSessionModal,
+  splitInsurersForLaunch,
+  type LaunchReadyInsurer,
+} from "@/components/quoting/LaunchSessionModal";
+import {
+  getConfiguredExtranets,
+  seedConfiguredExtranets,
+  useConfiguredExtranets,
+  type ExtranetConfig,
+} from "@/data/settings-mock";
 import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
 import type { ExtractedSection } from "@/data/scenarios";
 import {
@@ -97,6 +107,14 @@ function PreparationContent() {
 
   const hitl = useMemo(() => parseHitl(searchParams.get("hitl")), [searchParams]);
 
+  // Demo: ensure the extranet store is populated even when the broker lands
+  // straight on preparation (the dashboard seeds it lazily otherwise), so the
+  // session pre-flight at launch can tell which insurers need connecting.
+  useEffect(() => {
+    if (getConfiguredExtranets().length === 0) seedConfiguredExtranets();
+  }, []);
+  const configs = useConfiguredExtranets();
+
   const [projectName, setProjectName] = useState(scenario.defaultProjectName);
   const [selectedClient, setSelectedClient] = useState<string | null>(
     hitl.client === "missing" ? null : resolveScenarioClientId(scenario.client)
@@ -113,8 +131,12 @@ function PreparationContent() {
   const [sections, setSections] = useState<ExtractedSection[]>(() =>
     scenario.extractedSections.map((s) => ({ ...s, verified: false }))
   );
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [etudeModalOpen, setEtudeModalOpen] = useState(false);
+  const [launchSheet, setLaunchSheet] = useState<{
+    ready: LaunchReadyInsurer[];
+    down: ExtranetConfig[];
+  } | null>(null);
+  const routedRef = useRef(false);
 
   // ── Étude picker ──
   const erp = getActiveErpAdapter();
@@ -186,12 +208,12 @@ function PreparationContent() {
     setAssureursDetect("ok");
   };
 
-  const handleLaunchClick = () => {
-    if (!allChecksPass) return;
-    setConfirmOpen(true);
-  };
-
-  const handleConfirmLaunch = () => {
+  // Persist the étude (if any) and route to the followup — the real launch.
+  // Guarded so the launch sheet's auto-route and its "Voir le suivi" button
+  // can't both fire it, and a doubled click can't create two études.
+  const persistAndRoute = (pendingInsurerIds: string[] = []) => {
+    if (routedRef.current) return;
+    routedRef.current = true;
     // Persist the étude to the shared mock so the followup page's bulk modal
     // picks it up by default.
     if (creatingEtude && selectedClient && newEtude.title.trim()) {
@@ -206,7 +228,27 @@ function PreparationContent() {
       addContract(created);
     }
     const followupId = scenarioId === "auto" ? "cot-13" : "cot-1";
-    router.push(`/quoting/followup?id=${followupId}`);
+    // Insurers whose session is still expired ride along as "action requise" —
+    // the followup flags them and offers an inline reconnect (no blocking).
+    const reconnect = pendingInsurerIds.length
+      ? `&reconnect=${pendingInsurerIds.join(",")}`
+      : "";
+    router.push(`/quoting/followup?id=${followupId}${reconnect}`);
+  };
+
+  // "Lancer la cotation" launches directly — no separate confirmation step.
+  // Pre-flight: any selected insurer whose daily session is absent gets
+  // connected inline, in the cotation's own context (instead of bouncing the
+  // broker to Paramètres and stranding it). Reachable insurers leave now; the
+  // launch completes (routes) once every required session is live.
+  const handleLaunchClick = () => {
+    if (!allChecksPass) return;
+    const { ready, down } = splitInsurersForLaunch(selectedInsurers, configs);
+    if (down.length > 0) {
+      setLaunchSheet({ ready, down });
+      return;
+    }
+    persistAndRoute();
   };
 
   const currentProduct = mockProducts.find((p) => p.id === selectedProduct);
@@ -513,11 +555,18 @@ function PreparationContent() {
           </button>
         </div>
 
-        <LaunchConfirmModal
-          open={confirmOpen}
-          onClose={() => setConfirmOpen(false)}
-          onConfirm={handleConfirmLaunch}
-        />
+        {launchSheet && (
+          <LaunchSessionModal
+            ready={launchSheet.ready}
+            down={launchSheet.down}
+            onComplete={persistAndRoute}
+            // ✕ — the reachable insurers are already launched; the expired ones
+            // land as action requise on the followup, reconnectable there.
+            onClose={() =>
+              persistAndRoute(launchSheet.down.map((c) => c.insurerId))
+            }
+          />
+        )}
 
         <CreateEtudeModal
           open={etudeModalOpen}
