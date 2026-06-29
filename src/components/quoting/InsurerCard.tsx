@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Paperclip,
   Eye,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -24,6 +25,11 @@ interface InsurerCardProps {
   insurer: InsurerData;
   currentStatus: InsurerStatus;
   defaultExpanded?: boolean;
+  /** This insurer was launched with an expired session — its action requise is
+   *  a session reconnect (2FA), not a manual takeover. */
+  sessionExpired?: boolean;
+  /** Open the session-reconnect (2FA) modal for this insurer. */
+  onReconnectSession?: () => void;
   onStatusChange?: (newStatus: InsurerStatus) => void;
 }
 
@@ -31,6 +37,8 @@ export function InsurerCard({
   insurer,
   currentStatus,
   defaultExpanded = false,
+  sessionExpired = false,
+  onReconnectSession,
   onStatusChange,
 }: InsurerCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -90,6 +98,8 @@ export function InsurerCard({
           {currentStatus === "action_required" && (
             <ActionRequiredContent
               insurer={insurer}
+              sessionExpired={sessionExpired}
+              onReconnectSession={onReconnectSession}
               onValidate={() => onStatusChange?.("in_progress")}
             />
           )}
@@ -343,9 +353,13 @@ function InProgressContent({
 /* ── Action required state ── */
 function ActionRequiredContent({
   insurer,
+  sessionExpired = false,
+  onReconnectSession,
   onValidate,
 }: {
   insurer: InsurerData;
+  sessionExpired?: boolean;
+  onReconnectSession?: () => void;
   onValidate: () => void;
 }) {
   // 2FA is no longer resolved inline here — it's handled at the kanban/dashboard
@@ -375,8 +389,31 @@ function ActionRequiredContent({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Action box — reprise manuelle / 2FA both replace the manual banner */}
-      {isReprise && insurer.twoFaAction ? (
+      {/* Action box — session reconnect / reprise manuelle / manual fallback */}
+      {sessionExpired ? (
+        <div className="relative bg-[rgba(242,221,193,0.4)] rounded-[10px] flex items-end gap-1.5 pl-[21px] pr-4 py-4">
+          {/* Left accent border */}
+          <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_4px_0px_0px_0px_#cb8052]" />
+
+          <div className="flex-1 flex flex-col gap-1.5 text-[#80452b]">
+            <h4 className="text-[15px] font-semibold leading-[21px] tracking-[-0.15px]">
+              ⚠ {insurer.alertMessage ?? "Session expirée"}
+            </h4>
+            <p className="text-[13px] font-normal leading-5">
+              {insurer.alertDescription ??
+                "Réactivez la session pour lancer la cotation."}
+            </p>
+          </div>
+
+          <button
+            onClick={onReconnectSession}
+            className="btn-primary flex items-center gap-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap shrink-0"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            Reconnecter la session
+          </button>
+        </div>
+      ) : isReprise && insurer.twoFaAction ? (
         <RepriseManuelleBox
           action={insurer.twoFaAction}
           insurerName={insurer.name}
@@ -427,9 +464,9 @@ function ActionRequiredContent({
         </div>
       )}
 
-      {/* Timeline (+ agent video, except during a broker-driven takeover where
-          an agent feed would contradict the broker holding the controls). */}
-      {isReprise ? (
+      {/* Timeline (+ agent video, except during a broker-driven takeover or an
+          expired session — an agent feed would contradict the paused agent). */}
+      {isReprise || sessionExpired ? (
         <LiveAgentTimeline allSteps={tailSteps} isCompleted />
       ) : (
         <div className="grid grid-cols-2 gap-4">
