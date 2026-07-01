@@ -24,6 +24,9 @@ interface ExtractedDataPanelProps {
    *  buttons, no "Non vérifié"/"Vérifié" labels, fields never lock). Used by
    *  variants that gate verification only at the launch modal. Default: true. */
   showVerification?: boolean;
+  /** When true, every section starts expanded. Otherwise only incomplete
+   *  sections open (the broker default). */
+  defaultExpanded?: boolean;
 }
 
 export function ExtractedDataPanel({
@@ -31,6 +34,7 @@ export function ExtractedDataPanel({
   onSectionsChange,
   showHeading = true,
   showVerification = true,
+  defaultExpanded,
 }: ExtractedDataPanelProps) {
   const [sections, setSections] = useState<ExtractedSection[]>(() =>
     initialSections.map((s) => ({ ...s, verified: false }))
@@ -141,6 +145,7 @@ export function ExtractedDataPanel({
             key={section.key}
             section={section}
             showVerification={showVerification}
+            defaultExpanded={defaultExpanded}
             onMarkVerified={() => handleSetVerified(section.key, true)}
             onUnverify={() => handleSetVerified(section.key, false)}
             onFieldChange={(fieldKey, value) =>
@@ -186,19 +191,23 @@ function PendingIcon() {
 function DataSection({
   section,
   showVerification,
+  defaultExpanded,
   onMarkVerified,
   onUnverify,
   onFieldChange,
 }: {
   section: ExtractedSection;
   showVerification: boolean;
+  defaultExpanded?: boolean;
   onMarkVerified: () => void;
   onUnverify: () => void;
   onFieldChange: (fieldKey: string, value: string) => void;
 }) {
-  // Default: everything collapsed. The only exception is sections with
-  // missing fields — broker needs to be drawn into them to fill values.
-  const [expanded, setExpanded] = useState(section.status === "incomplete");
+  // Default: only incomplete sections open (broker draws attention to gaps).
+  // When defaultExpanded is set, every section starts open.
+  const [expanded, setExpanded] = useState(
+    defaultExpanded ?? section.status === "incomplete"
+  );
 
   const isComplete = section.status === "complete";
   const isIncomplete = section.status === "incomplete";

@@ -1,7 +1,8 @@
 // Mock data for standalone client form tokens
 // Each token maps to a cotation with its incomplete extracted sections
 
-import type { ExtractedSection } from "./scenarios";
+import type { ExtractedSection, ExtractedField } from "./scenarios";
+import { dossiers, type Dossier } from "./souscription-mock";
 
 export type ClientFormRequest = {
   token: string;
@@ -160,6 +161,65 @@ export const clientFormRequests: Record<string, ClientFormRequest> = {
   },
 };
 
+const SOUSCRIPTION_PRODUCT_LABELS: Record<string, string> = {
+  RC_PRO: "RC Pro",
+  DO: "D&O",
+  CYBER: "Cyber",
+};
+
+function isDocManque(champ: string): boolean {
+  return /bilan|liasse|pacte|questionnaire|justificatif|kbis|attestation/i.test(
+    champ
+  );
+}
+
+/**
+ * Build a standalone form request for a souscription dossier from its manques,
+ * so the form the souscripteur sends to the broker resolves to a real form.
+ */
+function buildSouscriptionFormRequest(dossier: Dossier): ClientFormRequest {
+  const fields: ExtractedField[] = dossier.manques.map((m, i) => {
+    const isDoc = isDocManque(m.champ);
+    return {
+      key: `manque_${i}`,
+      label: m.champ,
+      value: "",
+      type: isDoc ? "document" : "text",
+      status: "missing",
+      ...(isDoc
+        ? { accept: ".pdf,.jpg,.jpeg,.png" }
+        : { placeholder: "À compléter" }),
+    };
+  });
+  return {
+    token: `souscription-${dossier.id}`,
+    cotationId: dossier.id,
+    client: dossier.insured.raison,
+    product: dossier.produitsDemandes
+      .map((p) => SOUSCRIPTION_PRODUCT_LABELS[p] ?? p)
+      .join(" + "),
+    brokerName: dossier.courtier,
+    cabinetName: dossier.courtier,
+    password: "HISCOX2026",
+    expiresAt: "2026-12-31T23:59:59Z",
+    sections: [
+      {
+        key: "complements",
+        label: "Informations à compléter",
+        status: "incomplete",
+        missingCount: fields.length,
+        fields,
+      },
+    ],
+  };
+}
+
 export function getClientFormRequest(token: string): ClientFormRequest | undefined {
-  return clientFormRequests[token];
+  if (clientFormRequests[token]) return clientFormRequests[token];
+  const match = /^souscription-(.+)$/.exec(token);
+  if (match) {
+    const dossier = dossiers.find((d) => d.id === match[1]);
+    if (dossier) return buildSouscriptionFormRequest(dossier);
+  }
+  return undefined;
 }
