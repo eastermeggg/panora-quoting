@@ -14,6 +14,7 @@ import {
   Settings,
   LogOut,
   FileText,
+  Stamp,
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,12 @@ const navItems = [
     label: "Assistant cotation",
     href: "/quoting",
     icon: FileText,
+    type: "item" as const,
+  },
+  {
+    label: "Assistant souscription",
+    href: "/souscription",
+    icon: Stamp,
     type: "item" as const,
   },
 ];

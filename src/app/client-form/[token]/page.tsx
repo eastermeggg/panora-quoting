@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, use } from "react";
 import { CheckCircle2, AlertCircle, Send, ChevronDown, ChevronRight, Lock, Eye, EyeOff, Upload, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientFormRequest } from "@/data/client-form-mock";
+import { markFormCompleted } from "@/data/souscription-store";
 import type {
   ExtractedSection,
   ExtractedField,
@@ -149,6 +150,19 @@ function ClientForm({ formRequest }: { formRequest: NonNullable<ReturnType<typeo
     []
   );
 
+  // Souscription forms sync their completion back to the collecte so the
+  // souscripteur can launch the tarification (see souscription-store).
+  function handleSubmit() {
+    if (formRequest.token.startsWith("souscription-")) {
+      const values: Record<string, string> = {};
+      for (const s of sections) {
+        for (const f of s.fields) values[f.key] = f.value;
+      }
+      markFormCompleted(formRequest.token, values);
+    }
+    setSubmitted(true);
+  }
+
   if (submitted) {
     return <SuccessScreen cabinetName={formRequest.cabinetName} brokerName={formRequest.brokerName} />;
   }
@@ -237,7 +251,7 @@ function ClientForm({ formRequest }: { formRequest: NonNullable<ReturnType<typeo
         {/* Submit */}
         <div className="mt-10 pb-12">
           <button
-            onClick={() => setSubmitted(true)}
+            onClick={handleSubmit}
             disabled={!canSubmit}
             className={cn(
               "w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-[14px] font-medium transition-all",

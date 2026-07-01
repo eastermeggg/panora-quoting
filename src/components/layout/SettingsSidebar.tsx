@@ -14,6 +14,7 @@ import {
   Palette,
   Plug,
   Network,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
@@ -26,6 +27,7 @@ const settingsNavItems = [
   { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
   { label: "EDI", href: "/settings/edi", icon: Network },
   { label: "Intégrations", href: "/settings/integrations", icon: Plug },
+  { label: "Vault souscription", href: "/settings/vault", icon: Database },
 ];
 
 export function SettingsSidebar() {
