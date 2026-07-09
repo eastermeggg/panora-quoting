@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -35,6 +35,11 @@ import {
   type SendToVeosState,
 } from "@/components/quoting/SendToVeosModal";
 import {
+  BulkSendToVeosModal,
+  type BulkDocument,
+} from "@/components/quoting/BulkSendToVeosModal";
+import { veosClients } from "@/data/clients-mock";
+import {
   getSynthesisOverride,
   setSynthesisOverride,
   triggerAddRowConversation,
@@ -43,7 +48,6 @@ import {
   type SectionPath,
 } from "@/data/chatMock";
 import { logMutation } from "@/data/mutationLog";
-import { isIntegrationConnected } from "@/data/integrations-mock";
 import { loadBranding } from "@/data/branding";
 import {
   downloadSynthesePdf,
@@ -581,17 +585,61 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [devoirWizardOpen, setDevoirWizardOpen] = useState(false);
 
   // ── Send-to-VEOS post-export prompt ──
-  // Only surfaces when VEOS is connected; otherwise the export happens silently.
+  // Surfaces after every export — no VEOS-connection gate.
   const [exportToast, setExportToast] = useState<SendToVeosState | null>(null);
   const wrapExport = useCallback(
     (label: string, run: () => void) => () => {
       run();
-      if (isIntegrationConnected("veos")) {
-        setExportToast({ status: "prompt", label });
-      }
+      setExportToast({ status: "prompt", label });
     },
     []
   );
+  // ── Bulk send-to-VEOS wizard (docs-only) — "Envoyer à VEOS" in Présenter ──
+  const [veosWizardOpen, setVeosWizardOpen] = useState(false);
+  const veosClientLabel =
+    mutableProfile.clientLabel || followupData?.cotation.client || "Client";
+  const veosClientId = useMemo(() => {
+    const target = veosClientLabel.toLowerCase();
+    return (
+      veosClients.find((c) => c.name.toLowerCase() === target)?.id ??
+      veosClients[0]?.id ??
+      null
+    );
+  }, [veosClientLabel]);
+  const veosWizardDocs: BulkDocument[] = useMemo(() => {
+    const premade: BulkDocument[] = [
+      {
+        id: "export-synthese",
+        label: `Synthèse — ${veosClientLabel}.pdf`,
+        meta: "Export Panora",
+        category: "synthese",
+        defaultChecked: true,
+      },
+      {
+        id: "export-tableau",
+        label: `Tableau comparatif — ${veosClientLabel}.xlsx`,
+        meta: "Export Panora",
+        category: "tableau_garanties",
+        defaultChecked: true,
+      },
+      {
+        id: "export-devoir",
+        label: `Devoir de conseil — ${veosClientLabel}.pdf`,
+        meta: "Export Panora",
+        category: "devoir_conseil",
+        defaultChecked: false,
+      },
+    ];
+    const generated: BulkDocument[] = generatedDocs.map((d) => ({
+      id: d.id,
+      label: suggestFileName(d.docType, veosClientLabel),
+      meta: `Document généré · ${d.title}`,
+      category: d.docType === "synthese_interne" ? "synthese" : "autre",
+      defaultChecked: true,
+    }));
+    return [...premade, ...generated];
+  }, [generatedDocs, veosClientLabel]);
+
   const handleSendToVeos = useCallback(() => {
     setExportToast((prev) =>
       prev ? { status: "sending", label: prev.label } : prev
@@ -1180,6 +1228,7 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
                     if (selectedGeneratedDocId === docId) setSelectedGeneratedDocId(null);
                     refreshGeneratedDocs();
                   }}
+                  onSendAllToVeos={() => setVeosWizardOpen(true)}
                 />
               ) : (
                 <div className="flex-1 flex min-h-0 min-w-0">
@@ -1287,6 +1336,17 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
           onSend={handleSendToVeos}
         />
       )}
+
+      {/* Docs-only wizard — no crmSections, so the Données step is hidden. */}
+      <BulkSendToVeosModal
+        open={veosWizardOpen}
+        clientId={veosClientId}
+        clientName={veosClientLabel}
+        principalProduct={task?.principalProduct ?? null}
+        documents={veosWizardDocs}
+        crmSections={[]}
+        onCancel={() => setVeosWizardOpen(false)}
+      />
 
       {/* Demo command center — internal tool, opens with Cmd+Shift+D. NOT shipped. */}
       <DemoCommandCenter

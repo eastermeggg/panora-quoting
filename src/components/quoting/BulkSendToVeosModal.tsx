@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   FileText,
   Loader2,
+  Pencil,
   Sparkles,
   X,
 } from "lucide-react";
@@ -31,7 +32,11 @@ export type DocumentCategory =
   | "tableau_garanties"
   | "ipid"
   | "synthese"
-  | "recap_demande";
+  | "recap_demande"
+  | "devoir_conseil"
+  | "contrat"
+  | "attestation"
+  | "autre";
 
 export const DOCUMENT_CATEGORY_LABEL: Record<DocumentCategory, string> = {
   devis: "Devis",
@@ -40,6 +45,10 @@ export const DOCUMENT_CATEGORY_LABEL: Record<DocumentCategory, string> = {
   ipid: "Fiche IPID",
   synthese: "Synthèse",
   recap_demande: "Récapitulatif",
+  devoir_conseil: "Devoir de conseil",
+  contrat: "Contrat",
+  attestation: "Attestation",
+  autre: "Document",
 };
 
 export type BulkDocument = {
@@ -60,11 +69,38 @@ export type BulkDocument = {
 export type CrmDataPoint = {
   label: string;
   value: string;
-  /** Default VEOS data path this field syncs to. */
+  /**
+   * Current value in VEOS, when known. `null`/`""` = empty in VEOS (new data
+   * point, written silently); a different string = conflict the broker
+   * resolves per-field (replace or keep); same string = already in sync;
+   * `undefined` = not fetched — plain sync row with no comparison shown.
+   */
+  veosValue?: string | null;
+  /** VEOS data path this field syncs to — surfaced as a tooltip on the label. */
   erpField: string;
-  /** Alternative paths the user can remap to (excluding the default). */
+  /** Alternative paths. Currently unused by the UI (per-row remapping was cut
+   *  for clarity); kept for a future "mappage avancé" mode. */
   erpFieldOptions?: string[];
+  /**
+   * Inline editor for the Panora value. `"text"` (default) is a single-line
+   * field; `"multiselect"` is a chip picker whose value is the comma-joined
+   * selection (e.g. a "Produit" carrying several branches).
+   */
+  input?: "text" | "multiselect";
+  /** Options offered by the `"multiselect"` editor. */
+  options?: string[];
 };
+
+/** Multi-select values are stored as a comma-joined string on `value`. */
+function splitMulti(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+function joinMulti(items: string[]): string {
+  return items.join(", ");
+}
 
 /**
  * Grouped CRM data — each section becomes a collapsible card in step 3,
@@ -86,6 +122,28 @@ const STEP_LABELS: Record<WizardStep, string> = {
   3: "Données",
 };
 
+/** What happens to a conflicting VEOS value: Panora replaces it, or it stays. */
+type FieldFate = "replace" | "keep";
+
+type CrmFieldStatus = "sync" | "new" | "same" | "conflict";
+
+/** Stable per-field key, used for edited values and conflict decisions. */
+function fieldKey(sectionKey: string, field: CrmDataPoint): string {
+  return `${sectionKey}::${field.label}`;
+}
+
+/**
+ * Status is a function of the field's VEOS value and the *effective* Panora
+ * value (which the broker may have edited) — so editing a value to match VEOS
+ * clears a conflict, and diverging from a synced value creates one.
+ */
+function statusFor(field: CrmDataPoint, value: string): CrmFieldStatus {
+  if (field.veosValue === undefined) return "sync";
+  if (field.veosValue === null || field.veosValue === "") return "new";
+  if (field.veosValue === value) return "same";
+  return "conflict";
+}
+
 interface BulkSendToVeosModalProps {
   open: boolean;
   /** VEOS client id — drives the contract list. */
@@ -104,6 +162,8 @@ interface BulkSendToVeosModalProps {
     contract: VeosContract | { id: "new"; label: string; product: string };
     documentIds: string[];
   }) => void;
+  /** Demo/capture affordance — open the wizard on a given step. */
+  initialStep?: WizardStep;
 }
 
 export function BulkSendToVeosModal({
@@ -115,10 +175,40 @@ export function BulkSendToVeosModal({
   crmSections,
   onCancel,
   onSent,
+  initialStep,
 }: BulkSendToVeosModalProps) {
   const allFields = useMemo(
     () => crmSections.flatMap((s) => s.fields.map((f) => ({ section: s.key, field: f }))),
     [crmSections]
+  );
+  // Broker-edited Panora values, keyed by section::label. Seeded from each
+  // field's value; an entry only diverges once the broker edits it inline.
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      allFields.map(({ section, field }) => [fieldKey(section, field), field.value])
+    )
+  );
+  const valueOf = useCallback(
+    (sectionKey: string, field: CrmDataPoint) =>
+      fieldValues[fieldKey(sectionKey, field)] ?? field.value,
+    [fieldValues]
+  );
+  const conflictKeys = useMemo(
+    () =>
+      allFields
+        .filter(({ section, field }) => statusFor(field, valueOf(section, field)) === "conflict")
+        .map(({ section, field }) => fieldKey(section, field)),
+    [allFields, valueOf]
+  );
+  // Steps adapt to content: no documents → docs step hidden (data-only sync);
+  // no data → données step hidden (docs-only push, e.g. from the analysis tab).
+  const visibleSteps = useMemo<WizardStep[]>(
+    () => [
+      1,
+      ...(documents.length > 0 ? ([2] as WizardStep[]) : []),
+      ...(allFields.length > 0 ? ([3] as WizardStep[]) : []),
+    ],
+    [documents.length, allFields.length]
   );
   const erp = getActiveErpAdapter();
   // Pickable client (defaults to the cotation's client; user can switch).
@@ -142,17 +232,22 @@ export function BulkSendToVeosModal({
   const [docChecked, setDocChecked] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(documents.map((d) => [d.id, d.defaultChecked ?? true]))
   );
-  // Per-field VEOS mapping selections, keyed by `${sectionKey}::${fieldLabel}`.
-  const [crmMappings, setCrmMappings] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      allFields.map(({ section, field }) => [
-        `${section}::${field.label}`,
-        field.erpField,
-      ])
-    )
+  // Per-conflict decision — "replace" pushes the Panora value, "keep" leaves
+  // the VEOS value untouched. Defaults to replace: that's the point of the
+  // sync; keeping is the per-field opt-out. Seeded from the original values;
+  // conflicts created by later edits fall back to "replace" via `fateFor`.
+  const [fieldDecisions, setFieldDecisions] = useState<Record<string, FieldFate>>(
+    () =>
+      Object.fromEntries(
+        allFields
+          .filter(({ field }) => statusFor(field, field.value) === "conflict")
+          .map(({ section, field }) => [fieldKey(section, field), "replace" as FieldFate])
+      )
   );
   const [status, setStatus] = useState<SubmitStatus>("idle");
-  const [step, setStep] = useState<WizardStep>(1);
+  const [step, setStep] = useState<WizardStep>(
+    initialStep && visibleSteps.includes(initialStep) ? initialStep : 1
+  );
 
   // Reset state every time the modal reopens.
   useEffect(() => {
@@ -162,17 +257,21 @@ export function BulkSendToVeosModal({
     setDocChecked(
       Object.fromEntries(documents.map((d) => [d.id, d.defaultChecked ?? true]))
     );
-    setCrmMappings(
+    setFieldValues(
       Object.fromEntries(
-        allFields.map(({ section, field }) => [
-          `${section}::${field.label}`,
-          field.erpField,
-        ])
+        allFields.map(({ section, field }) => [fieldKey(section, field), field.value])
+      )
+    );
+    setFieldDecisions(
+      Object.fromEntries(
+        allFields
+          .filter(({ field }) => statusFor(field, field.value) === "conflict")
+          .map(({ section, field }) => [fieldKey(section, field), "replace" as FieldFate])
       )
     );
     setStatus("idle");
-    setStep(1);
-  }, [open, clientId, defaultContract, documents, allFields]);
+    setStep(initialStep && visibleSteps.includes(initialStep) ? initialStep : 1);
+  }, [open, clientId, defaultContract, documents, allFields, initialStep, visibleSteps]);
 
   // Keep the contract selection synced when the picked client changes.
   useEffect(() => {
@@ -198,16 +297,28 @@ export function BulkSendToVeosModal({
   if (!open) return null;
 
   const checkedDocs = documents.filter((d) => docChecked[d.id]);
+  const stepIdx = visibleSteps.indexOf(step);
+  const isLastStep = stepIdx === visibleSteps.length - 1;
   const step1Valid =
     pickedClientId !== null && selectedContractId.length > 0;
   const step2Valid = checkedDocs.length > 0;
-  const canAdvance =
-    (step === 1 && step1Valid) || (step === 2 && step2Valid);
+  const currentStepValid =
+    step === 1 ? step1Valid : step === 2 ? step2Valid : true;
+  const canAdvance = !isLastStep && currentStepValid;
   const canSend =
-    step === 3 &&
+    isLastStep &&
     step1Valid &&
-    step2Valid &&
+    (documents.length === 0 || step2Valid) &&
     status !== "sending";
+
+  // Data-sync tallies for the step-3 header and the sent confirmation.
+  const keptCount = conflictKeys.filter(
+    (k) => fieldDecisions[k] === "keep"
+  ).length;
+  const upToDateCount = allFields.filter(
+    ({ section, field }) => statusFor(field, valueOf(section, field)) === "same"
+  ).length;
+  const writtenCount = allFields.length - upToDateCount - keptCount;
 
   function toggleDoc(id: string) {
     setDocChecked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -284,14 +395,28 @@ export function BulkSendToVeosModal({
                 const c = contracts.find((c) => c.id === selectedContractId);
                 return c ? ` · ${c.label}` : "";
               })()}
-              . Les données CRM ont été synchronisées.
+              .
+              {allFields.length > 0 && (
+                <>
+                  {" "}
+                  {writtenCount} champ{writtenCount > 1 ? "s" : ""} synchronisé
+                  {writtenCount > 1 ? "s" : ""}
+                  {keptCount > 0 && (
+                    <>
+                      {" "}— {keptCount} valeur{keptCount > 1 ? "s" : ""} VEOS
+                      conservée{keptCount > 1 ? "s" : ""}
+                    </>
+                  )}
+                  .
+                </>
+              )}
             </p>
           </div>
         ) : (
           <>
             {/* Stepper */}
             <div className="px-6 pt-4 pb-3 border-b border-panora-border">
-              <Stepper step={step} />
+              <Stepper step={step} steps={visibleSteps} />
             </div>
 
             {/* Body */}
@@ -349,7 +474,15 @@ export function BulkSendToVeosModal({
               {step === 3 && (
                 <SubSection
                   title={`Contrat (${erp.container.Singular})`}
-                  hint={`${allFields.length} champ${allFields.length > 1 ? "s" : ""} synchronisé${allFields.length > 1 ? "s" : ""} dans ${erp.name}.`}
+                  hint={[
+                    `${writtenCount} champ${writtenCount > 1 ? "s" : ""} mis à jour`,
+                    keptCount > 0
+                      ? `${keptCount} conservé${keptCount > 1 ? "s" : ""}`
+                      : null,
+                    upToDateCount > 0 ? `${upToDateCount} déjà à jour` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 >
                   <div className="flex flex-col gap-2.5">
                     {crmSections.map((section, idx) => (
@@ -357,14 +490,21 @@ export function BulkSendToVeosModal({
                         key={section.key}
                         section={section}
                         defaultOpen={idx === 0}
-                        mappingFor={(field) =>
-                          crmMappings[`${section.key}::${field.label}`] ??
-                          field.erpField
-                        }
-                        onMappingChange={(field, v) =>
-                          setCrmMappings((prev) => ({
+                        valueFor={(field) => valueOf(section.key, field)}
+                        onValueChange={(field, value) =>
+                          setFieldValues((prev) => ({
                             ...prev,
-                            [`${section.key}::${field.label}`]: v,
+                            [fieldKey(section.key, field)]: value,
+                          }))
+                        }
+                        fateFor={(field) =>
+                          fieldDecisions[fieldKey(section.key, field)] ??
+                          "replace"
+                        }
+                        onFateChange={(field, fate) =>
+                          setFieldDecisions((prev) => ({
+                            ...prev,
+                            [fieldKey(section.key, field)]: fate,
                           }))
                         }
                       />
@@ -376,10 +516,10 @@ export function BulkSendToVeosModal({
 
             {/* Footer */}
             <div className="border-t border-panora-border px-6 py-3.5 flex items-center justify-between gap-3 bg-panora-secondary/30">
-              {step > 1 ? (
+              {stepIdx > 0 ? (
                 <button
                   type="button"
-                  onClick={() => setStep((s) => (s > 1 ? ((s - 1) as WizardStep) : s))}
+                  onClick={() => setStep(visibleSteps[stepIdx - 1])}
                   disabled={sending}
                   className={cn(
                     "inline-flex items-center gap-1.5 px-3 h-9 text-[13px] font-medium text-panora-text-secondary rounded-lg border border-panora-border hover:bg-white transition-colors",
@@ -399,10 +539,10 @@ export function BulkSendToVeosModal({
                 </button>
               )}
 
-              {step < 3 ? (
+              {!isLastStep ? (
                 <button
                   type="button"
-                  onClick={() => canAdvance && setStep((s) => (s < 3 ? ((s + 1) as WizardStep) : s))}
+                  onClick={() => canAdvance && setStep(visibleSteps[stepIdx + 1])}
                   disabled={!canAdvance}
                   className={cn(
                     "btn-primary px-4 h-9 text-[13px] font-semibold leading-5 inline-flex items-center gap-1.5",
@@ -453,13 +593,13 @@ export function BulkSendToVeosModal({
 
 // ── Stepper & step intro ──────────────────────────────────────────────
 
-function Stepper({ step }: { step: WizardStep }) {
-  const items: WizardStep[] = [1, 2, 3];
+function Stepper({ step, steps }: { step: WizardStep; steps: WizardStep[] }) {
+  const activeIdx = steps.indexOf(step);
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {items.map((id, i) => {
+      {steps.map((id, i) => {
         const isActive = step === id;
-        const isDone = step > id;
+        const isDone = activeIdx > i;
         return (
           <div key={id} className="flex items-center gap-2">
             <span
@@ -470,7 +610,7 @@ function Stepper({ step }: { step: WizardStep }) {
                   : "bg-panora-secondary text-panora-text-muted"
               )}
             >
-              {isDone ? <Check className="w-3 h-3" /> : id}
+              {isDone ? <Check className="w-3 h-3" /> : i + 1}
             </span>
             <span
               className={cn(
@@ -484,7 +624,7 @@ function Stepper({ step }: { step: WizardStep }) {
             >
               {STEP_LABELS[id]}
             </span>
-            {i < items.length - 1 && (
+            {i < steps.length - 1 && (
               <ChevronRight className="w-3.5 h-3.5 text-panora-text-muted mx-1" />
             )}
           </div>
@@ -514,7 +654,7 @@ function StepIntro({
     },
     3: {
       title: `Données synchronisées dans ${erpName}`,
-      description: `Aperçu des champs structurés posés sur l'${containerNoun}.`,
+      description: `Aperçu des champs posés sur l'${containerNoun}. Les valeurs déjà présentes dans ${erpName} sont comparées — choisissez celles à remplacer.`,
     },
   };
   return (
@@ -691,16 +831,23 @@ function DocumentGroup({
 function SectionTable({
   section,
   defaultOpen,
-  mappingFor,
-  onMappingChange,
+  valueFor,
+  onValueChange,
+  fateFor,
+  onFateChange,
 }: {
   section: CrmSection;
   defaultOpen?: boolean;
-  mappingFor: (field: CrmDataPoint) => string;
-  onMappingChange: (field: CrmDataPoint, value: string) => void;
+  valueFor: (field: CrmDataPoint) => string;
+  onValueChange: (field: CrmDataPoint, value: string) => void;
+  fateFor: (field: CrmDataPoint) => FieldFate;
+  onFateChange: (field: CrmDataPoint, fate: FieldFate) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   const count = section.fields.length;
+  const conflicts = section.fields.filter(
+    (f) => statusFor(f, valueFor(f)) === "conflict"
+  ).length;
   return (
     <div className="border border-panora-border rounded-lg overflow-hidden bg-white">
       <button
@@ -719,6 +866,11 @@ function SectionTable({
         <span className="text-[13px] font-medium text-panora-text flex-1 truncate">
           {section.label}
         </span>
+        {conflicts > 0 && (
+          <span className="inline-flex items-center px-1.5 h-[18px] rounded-full text-[10.5px] font-medium leading-4 bg-panora-warning-bg text-panora-warning-text whitespace-nowrap shrink-0">
+            {conflicts} conflit{conflicts > 1 ? "s" : ""}
+          </span>
+        )}
         <span className="text-[12px] text-panora-text-muted tabular-nums">
           {count} champ{count > 1 ? "s" : ""}
         </span>
@@ -726,22 +878,14 @@ function SectionTable({
       {open && (
         <div className="divide-y divide-panora-border">
           {section.fields.map((field) => (
-            <div
+            <FieldRow
               key={field.label}
-              className="grid grid-cols-[180px_1fr_200px] items-center gap-3 px-4 py-2"
-            >
-              <span className="text-[13px] text-panora-text-secondary leading-5 truncate">
-                {field.label}
-              </span>
-              <span className="text-[13px] text-panora-text leading-5 truncate">
-                {field.value}
-              </span>
-              <ErpFieldSelect
-                field={field}
-                value={mappingFor(field)}
-                onChange={(v) => onMappingChange(field, v)}
-              />
-            </div>
+              field={field}
+              value={valueFor(field)}
+              onValueChange={(value) => onValueChange(field, value)}
+              fate={fateFor(field)}
+              onFateChange={(fate) => onFateChange(field, fate)}
+            />
           ))}
         </div>
       )}
@@ -749,40 +893,298 @@ function SectionTable({
   );
 }
 
-// ── ERP field mapping select ──────────────────────────────────────────
-
-function ErpFieldSelect({
+/**
+ * One data point in the sync review. Four render states, driven by
+ * `statusFor` (recomputed from the *edited* value):
+ * - sync     — plain label/value row (VEOS value unknown)
+ * - new      — value + green "Nouveau" pill (empty in VEOS, written silently)
+ * - same     — muted value + "À jour" tag (no-op)
+ * - conflict — the winning value carries the emphasis; the losing one is
+ *              struck through; a single text action flips the choice
+ *
+ * Every row is editable: a hover pencil (or click) swaps the value for an
+ * inline editor — a text field, or a chip multi-select for `input:
+ * "multiselect"` fields such as "Produit". Editing recomputes the status, so
+ * fixing a value to match VEOS clears its conflict, and vice-versa.
+ *
+ * The technical VEOS data path lives in the label's tooltip — plumbing, not
+ * something the broker needs on screen.
+ */
+function FieldRow({
   field,
   value,
-  onChange,
+  onValueChange,
+  fate,
+  onFateChange,
 }: {
   field: CrmDataPoint;
   value: string;
-  onChange: (v: string) => void;
+  onValueChange: (value: string) => void;
+  fate: FieldFate;
+  onFateChange: (fate: FieldFate) => void;
 }) {
-  const adapter = getActiveErpAdapter();
-  const options = useMemo(() => {
-    const opts = [field.erpField, ...(field.erpFieldOptions ?? [])];
-    if (!opts.includes(value)) opts.push(value);
-    // Dedup while preserving order
-    return Array.from(new Set(opts));
-  }, [field.erpField, field.erpFieldOptions, value]);
+  const status = statusFor(field, value);
+  const replace = fate === "replace";
+  const isMulti = field.input === "multiselect";
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  // Keep the draft aligned with external value changes while not editing
+  // (e.g. the modal reset on reopen).
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  const startEdit = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+  const commit = () => {
+    onValueChange(isMulti ? joinMulti(splitMulti(draft)) : draft.trim());
+    setEditing(false);
+  };
+  const cancel = () => {
+    setDraft(value);
+    setEditing(false);
+  };
+
+  const editButton = (
+    <button
+      type="button"
+      onClick={startEdit}
+      className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity w-6 h-6 rounded-md flex items-center justify-center text-panora-text-muted hover:bg-panora-border/40 shrink-0"
+      aria-label={`Modifier ${field.label}`}
+    >
+      <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
+    </button>
+  );
+
+  const editActions = (
+    <div className="flex items-center gap-1 shrink-0 self-start">
+      <button
+        type="button"
+        onClick={commit}
+        className="w-6 h-6 rounded-md flex items-center justify-center bg-panora-green text-white hover:bg-panora-green-dark transition-colors"
+        aria-label="Valider"
+      >
+        <Check className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={cancel}
+        className="w-6 h-6 rounded-md flex items-center justify-center text-panora-text-muted hover:bg-panora-border/40 transition-colors"
+        aria-label="Annuler"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
+  const editor = isMulti ? (
+    <MultiSelectEditor
+      value={splitMulti(draft)}
+      options={field.options ?? []}
+      onChange={(next) => setDraft(joinMulti(next))}
+    />
+  ) : (
+    <input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commit();
+        else if (e.key === "Escape") cancel();
+      }}
+      className="w-full h-8 px-2.5 bg-white border border-panora-green/50 rounded-md text-[13px] text-panora-text outline-none focus:border-panora-green shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+    />
+  );
 
   return (
-    <div className="relative w-full">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-7 pl-2 pr-7 bg-white border border-panora-border rounded-md text-[11.5px] text-panora-text-secondary outline-none focus:border-panora-green/40 hover:border-panora-text-muted/40 transition-colors appearance-none font-mono tabular-nums truncate"
-        title={`Champ ${adapter.name} : ${value}`}
+    <div
+      className={cn(
+        "group grid grid-cols-[180px_minmax(0,1fr)_auto] items-center gap-3 px-4",
+        status === "conflict" && !editing ? "py-2.5 bg-panora-warning-bg/25" : "py-2"
+      )}
+    >
+      <span
+        className="text-[13px] text-panora-text-secondary leading-5 truncate self-start mt-0.5"
+        title={`Champ VEOS : ${field.erpField}`}
       >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-panora-text-muted pointer-events-none" />
+        {field.label}
+      </span>
+
+      {editing ? (
+        <>
+          <div className="flex flex-col gap-1 min-w-0">
+            {editor}
+            {status === "conflict" && (
+              <span className="flex items-baseline gap-1 min-w-0 text-[12px] leading-4">
+                <span className="text-panora-text-muted/70 shrink-0">VEOS ·</span>
+                <span className="truncate text-panora-text-muted">
+                  {field.veosValue}
+                </span>
+              </span>
+            )}
+          </div>
+          {editActions}
+        </>
+      ) : status === "conflict" ? (
+        <>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              {isMulti ? (
+                <ValueChips items={splitMulti(value)} dim={!replace} />
+              ) : (
+                <span
+                  className={cn(
+                    "text-[13px] leading-5 truncate",
+                    replace
+                      ? "text-panora-text font-medium"
+                      : "text-panora-text-muted line-through decoration-panora-text-muted/50"
+                  )}
+                >
+                  {value}
+                </span>
+              )}
+              {editButton}
+            </div>
+            <span className="flex items-baseline gap-1 min-w-0 text-[12px] leading-4">
+              <span className="text-panora-text-muted/70 shrink-0">
+                VEOS ·
+              </span>
+              <span
+                className={cn(
+                  "truncate",
+                  replace
+                    ? "text-panora-text-muted line-through decoration-panora-text-muted/50"
+                    : "text-panora-text font-medium"
+                )}
+              >
+                {field.veosValue}
+              </span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onFateChange(replace ? "keep" : "replace")}
+            className="text-[12px] font-medium text-panora-green-dark hover:underline shrink-0 self-start mt-0.5"
+          >
+            {replace ? "Conserver la valeur VEOS" : "Remplacer"}
+          </button>
+        </>
+      ) : (
+        <div className="col-span-2 flex items-center gap-2 min-w-0">
+          {isMulti ? (
+            <ValueChips items={splitMulti(value)} muted={status === "same"} />
+          ) : (
+            <span
+              className={cn(
+                "text-[13px] leading-5 truncate",
+                status === "same" ? "text-panora-text-muted" : "text-panora-text"
+              )}
+            >
+              {value}
+            </span>
+          )}
+          {status === "new" && (
+            <span className="inline-flex items-center px-1.5 h-[18px] rounded-full text-[10.5px] font-medium leading-4 bg-panora-green-light text-panora-green-dark whitespace-nowrap shrink-0">
+              Nouveau
+            </span>
+          )}
+          {status === "same" && (
+            <span className="inline-flex items-center px-1.5 h-[18px] rounded-full text-[10.5px] font-medium leading-4 bg-panora-tag/60 text-panora-text-muted whitespace-nowrap shrink-0">
+              À jour
+            </span>
+          )}
+          {editButton}
+        </div>
+      )}
     </div>
   );
 }
+
+/** Read-only chips for a multi-select value in display mode. */
+function ValueChips({
+  items,
+  muted,
+  dim,
+}: {
+  items: string[];
+  muted?: boolean;
+  dim?: boolean;
+}) {
+  if (items.length === 0) {
+    return <span className="text-[13px] text-panora-text-muted leading-5">—</span>;
+  }
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1 min-w-0", dim && "opacity-70")}>
+      {items.map((item) => (
+        <span
+          key={item}
+          className={cn(
+            "inline-flex items-center h-[20px] px-1.5 rounded-md text-[12px] font-medium leading-4 whitespace-nowrap",
+            muted
+              ? "bg-panora-secondary/60 text-panora-text-muted"
+              : "bg-panora-secondary/70 text-panora-text",
+            dim && "line-through decoration-panora-text-muted/50"
+          )}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Chip multi-select: remove with the ×, add from the remaining options. */
+function MultiSelectEditor({
+  value,
+  options,
+  onChange,
+}: {
+  value: string[];
+  options: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const available = options.filter((o) => !value.includes(o));
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 py-0.5">
+      {value.map((item) => (
+        <span
+          key={item}
+          className="inline-flex items-center gap-1 h-[24px] pl-2 pr-1 rounded-md text-[12px] font-medium leading-4 bg-panora-green-light text-panora-green-dark border border-panora-green-border"
+        >
+          {item}
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((x) => x !== item))}
+            className="w-4 h-4 rounded-sm flex items-center justify-center hover:bg-panora-green/20"
+            aria-label={`Retirer ${item}`}
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      {available.length > 0 && (
+        <div className="relative">
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) onChange([...value, e.target.value]);
+            }}
+            className="h-[24px] pl-2 pr-6 bg-white border border-dashed border-panora-border rounded-md text-[12px] text-panora-text-secondary outline-none focus:border-panora-green/50 appearance-none cursor-pointer"
+          >
+            <option value="">+ Ajouter</option>
+            {available.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-panora-text-muted pointer-events-none" />
+        </div>
+      )}
+    </div>
+  );
+}
+

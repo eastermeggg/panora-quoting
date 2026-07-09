@@ -52,6 +52,8 @@ interface ClientSelectorProps {
   placeholder?: string;
   /** Optional label rendered above the field. */
   label?: string;
+  /** Demo/capture affordance — render with the dropdown already open. */
+  defaultOpen?: boolean;
 }
 
 export function ClientSelector({
@@ -63,11 +65,12 @@ export function ClientSelector({
   onRequestCreate,
   placeholder = "Rechercher un client par nom, SIREN ou SIRET…",
   label,
+  defaultOpen,
 }: ClientSelectorProps) {
   const selected = value ? getVeosClient(value) : null;
 
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen ?? false);
   const [createOpen, setCreateOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

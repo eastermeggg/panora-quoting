@@ -35,6 +35,10 @@ interface ConfigureVeosModalProps {
   integration: Integration;
   onClose: () => void;
   onConnected: () => void;
+  /** Demo/capture affordance — start on a given step instead of "discover". */
+  initialStep?: Step;
+  /** Demo/capture affordance — seed the connection-test banner state. */
+  initialTest?: TestState;
 }
 
 const benefitIcon: Record<VeosBenefit["icon"], typeof Users> = {
@@ -48,35 +52,30 @@ export function ConfigureVeosModal({
   integration,
   onClose,
   onConnected,
+  initialStep,
+  initialTest,
 }: ConfigureVeosModalProps) {
-  const [step, setStep] = useState<Step>("discover");
+  const [step, setStep] = useState<Step>(initialStep ?? "discover");
   const [url, setUrl] = useState("");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [test, setTest] = useState<TestState>({ status: "idle" });
+  const [test, setTest] = useState<TestState>(initialTest ?? { status: "idle" });
 
-  const canTest =
+  const canConnect =
     url.trim().length > 0 && login.trim().length > 0 && password.length > 0;
 
-  function runTest() {
-    if (!canTest || test.status === "testing") return;
+  // No connection verification — submitting the credentials connects directly.
+  // (The brief "connexion" state is just feedback, not a pass/fail check.)
+  function connect() {
+    if (!canConnect || test.status === "testing") return;
     setTest({ status: "testing" });
     window.setTimeout(() => {
-      // Demo: fail when URL doesn't start with https://; otherwise succeed.
-      if (!/^https?:\/\//.test(url.trim())) {
-        setTest({
-          status: "error",
-          message:
-            "Connexion impossible. Identifiants invalides ou serveur inaccessible. Vérifiez l'URL et vos identifiants.",
-        });
-        return;
-      }
       setTest({ status: "success" });
       window.setTimeout(() => {
         onConnected();
-      }, 900);
-    }, 1200);
+      }, 700);
+    }, 700);
   }
 
   return (
@@ -263,31 +262,23 @@ export function ConfigureVeosModal({
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              {test.status === "error" ? (
+              {test.status === "success" ? null : (
                 <button
-                  onClick={runTest}
-                  className="btn-primary px-4 h-9 text-[13px] font-semibold leading-5 inline-flex items-center gap-1.5"
-                >
-                  Réessayer
-                  <RefreshCcw className="w-3.5 h-3.5" />
-                </button>
-              ) : test.status === "success" ? null : (
-                <button
-                  onClick={runTest}
-                  disabled={!canTest || test.status === "testing"}
+                  onClick={connect}
+                  disabled={!canConnect || test.status === "testing"}
                   className={cn(
                     "btn-primary px-4 h-9 text-[13px] font-semibold leading-5 inline-flex items-center gap-1.5",
-                    (!canTest || test.status === "testing") &&
+                    (!canConnect || test.status === "testing") &&
                       "opacity-60 cursor-not-allowed"
                   )}
                 >
                   {test.status === "testing" ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Test de la connexion
+                      Connexion…
                     </>
                   ) : (
-                    <>Tester la connexion</>
+                    <>Connecter</>
                   )}
                 </button>
               )}
