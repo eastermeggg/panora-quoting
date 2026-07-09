@@ -10,6 +10,7 @@
  */
 
 import { ArrowLeft, ArrowRight, ArrowDownToLine, Copy, Check, Eye, FileSignature, Link as LinkIcon, AlignLeft, FileSpreadsheet, Plus, PencilLine, Mail, Presentation, AlertCircle, ChevronLeft, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { marked } from "marked";
 import {
@@ -62,6 +63,8 @@ interface PresentationTabProps {
   onSelectDoc: (docId: string | null) => void;
   onDownloadGeneratedDoc: (docId: string, fileName: string, body: string) => void;
   onDeleteGeneratedDoc: (docId: string) => void;
+  /** Opens the bulk send-to-VEOS wizard with every file of the cotation. */
+  onSendAllToVeos?: () => void;
 }
 
 export function PresentationTab(props: PresentationTabProps) {
@@ -89,6 +92,7 @@ function DocBrowseMode({
   onSelectDoc,
   onDownloadGeneratedDoc,
   onDeleteGeneratedDoc,
+  onSendAllToVeos,
 }: PresentationTabProps) {
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -102,13 +106,25 @@ function DocBrowseMode({
     <div className="flex-1 overflow-y-auto bg-panora-bg">
       <div className="max-w-[1046px] mx-auto px-8 py-10 flex flex-col gap-[30px]">
         {/* Header */}
-        <header className="flex flex-col gap-2">
-          <h1 className="text-[24px] font-serif text-panora-text-primary leading-[28px] tracking-[-0.015em]">
-            Présentez votre étude à votre client
-          </h1>
-          <p className="text-[13px] text-panora-text-secondary leading-[20px]">
-            Choisissez parmi nos formats préfaits ou générez vos propres documents
-          </p>
+        <header className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[24px] font-serif text-panora-text-primary leading-[28px] tracking-[-0.015em]">
+              Présentez votre étude à votre client
+            </h1>
+            <p className="text-[13px] text-panora-text-secondary leading-[20px]">
+              Choisissez parmi nos formats préfaits ou générez vos propres documents
+            </p>
+          </div>
+          {onSendAllToVeos && (
+            <button
+              type="button"
+              onClick={onSendAllToVeos}
+              className="flex items-center gap-1.5 px-3 h-[34px] rounded-md border border-panora-border bg-white text-[13px] font-medium text-panora-text hover:bg-panora-secondary/40 transition-colors shrink-0"
+            >
+              <Image src="/logos/veos.svg" alt="" width={14} height={14} className="rounded-[3px]" />
+              Envoyer à VEOS
+            </button>
+          )}
         </header>
 
         {/* Pre-made exports — 4-card row */}

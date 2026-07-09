@@ -20,7 +20,6 @@ import {
   quotingEmail,
 } from "@/data/mock";
 import type { InsurerData } from "@/data/mock";
-import { isIntegrationConnected } from "@/data/integrations-mock";
 import { veosClients } from "@/data/clients-mock";
 import { getActiveErpAdapter } from "@/data/erp-adapters";
 import Link from "next/link";
@@ -118,7 +117,6 @@ function FollowupContent() {
   // ── Bulk send to ERP ──
   const erpAdapter = getActiveErpAdapter();
   const [veosModalOpen, setVeosModalOpen] = useState(false);
-  const veosConnected = isIntegrationConnected(erpAdapter.id);
   // Heuristic match: look up VEOS client by name (best-effort for the demo).
   const matchedClientId = useMemo(() => {
     const target = clientName.toLowerCase();
@@ -187,46 +185,62 @@ function FollowupContent() {
     const contractSection: CrmSection = {
       key: "contrat",
       label: "Données contrat",
+      // veosValue mirrors what the étude already holds in VEOS: null = new
+      // data point, same string = already in sync, different = conflict the
+      // broker resolves in the wizard (Remplacer / Conserver).
       fields: [
         {
           label: "Référence",
           value: cotId,
+          veosValue: null,
           erpField: "contrat.reference_courtier",
           erpFieldOptions: ["contrat.reference_externe", "contrat.numero_dossier"],
         },
         {
           label: "Produit",
           value: productName,
+          veosValue: productName,
           erpField: "contrat.produit",
-          erpFieldOptions: ["contrat.branche", "contrat.categorie"],
+          input: "multiselect",
+          options: [
+            productName,
+            "Multirisque bureau",
+            "Protection juridique",
+            "Cyber-risques",
+          ],
         },
         {
           label: "Courtier",
           value: "Delphine Howden",
+          veosValue: "Delphine Howden",
           erpField: "contrat.gestionnaire",
           erpFieldOptions: ["contrat.apporteur", "contrat.charge_clientele"],
         },
         {
           label: "Assureurs sollicités",
           value: insurersList.map((i) => i.name).join(", ") || "—",
+          veosValue: null,
           erpField: "contrat.assureurs_consultes",
           erpFieldOptions: ["contrat.notes"],
         },
         {
           label: "Statut",
           value: `${insurersList.length} devis reçus`,
+          veosValue: "Étude en cours",
           erpField: "contrat.statut",
           erpFieldOptions: ["contrat.etape", "contrat.workflow"],
         },
         {
           label: "Prime estimée",
           value: primeLabel,
+          veosValue: "Budget client · 5 000 € TTC",
           erpField: "contrat.prime_estimee_ttc",
           erpFieldOptions: ["contrat.prime_ht", "contrat.budget_client"],
         },
         {
           label: "Date de demande",
           value: new Date().toLocaleDateString("fr-FR"),
+          veosValue: null,
           erpField: "contrat.date_demande",
           erpFieldOptions: ["contrat.date_creation"],
         },
@@ -341,7 +355,7 @@ function FollowupContent() {
             {projectName}
           </h1>
           <div className="flex items-center gap-2.5 shrink-0">
-            {veosConnected && allDone && (
+            {allDone && (
               <button
                 type="button"
                 onClick={() => setVeosModalOpen(true)}

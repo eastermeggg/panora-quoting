@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useConfiguredExtranets,
+  seedConfiguredExtranets,
   type ExtranetConfig,
 } from "@/data/settings-mock";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,13 @@ export default function QuotingEmptyState() {
   }, []);
 
   const hasPartialConfig = extranets.length > 0;
+
+  // Demo bypass: seed configured extranets (one has an active session) and jump
+  // straight to the dashboard, skipping the onboarding wizard entirely.
+  const bypassOnboarding = () => {
+    seedConfiguredExtranets();
+    router.push("/quoting/dashboard");
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-white">
@@ -69,6 +77,15 @@ export default function QuotingEmptyState() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
+
+            {/* Demo bypass — skip onboarding straight to the dashboard */}
+            <button
+              type="button"
+              onClick={bypassOnboarding}
+              className="self-start text-[12px] text-panora-text-muted underline underline-offset-2 hover:text-panora-text-secondary transition-colors"
+            >
+              Passer la configuration (démo)
+            </button>
           </div>
         </div>
 

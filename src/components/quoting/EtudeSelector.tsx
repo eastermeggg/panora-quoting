@@ -19,6 +19,8 @@ interface EtudeSelectorProps {
   statusLabels: Partial<Record<ErpContainerStatus, string>>;
   /** Singular noun for the container ("étude", "study", …) — used in copy. */
   singular: string;
+  /** Demo/capture affordance — render with the dropdown already open. */
+  defaultOpen?: boolean;
 }
 
 export function EtudeSelector({
@@ -28,6 +30,7 @@ export function EtudeSelector({
   contracts,
   statusLabels,
   singular,
+  defaultOpen,
 }: EtudeSelectorProps) {
   const selected = useMemo(
     () => contracts.find((c) => c.id === value) ?? null,
@@ -35,7 +38,7 @@ export function EtudeSelector({
   );
 
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen ?? false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

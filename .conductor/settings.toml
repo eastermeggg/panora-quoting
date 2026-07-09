@@ -1,0 +1,8 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+# npm workspaces monorepo (package-lock.json at root). Installs root + packages/*.
+setup = "npm install"
+# Next.js dev server; per-workspace port so multiple workspaces run in parallel.
+run = "npm run dev -- --port $CONDUCTOR_PORT"
+run_mode = "concurrent"

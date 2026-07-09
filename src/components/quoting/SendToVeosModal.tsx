@@ -24,9 +24,10 @@ interface SendToVeosModalProps {
 }
 
 /**
- * Modal shown after a comparison doc is exported, asking whether to push the
- * file to VEOS. Only rendered when VEOS is connected — when it isn't, the
- * export happens silently and we do not nudge the user about the integration.
+ * Non-blocking corner toast shown after a comparison doc is exported, asking
+ * whether to push the file to VEOS. Surfaces after every export — it must not
+ * interrupt the export tab, so no backdrop and no click-outside capture; the
+ * broker can keep downloading while it sits bottom-right.
  */
 export function SendToVeosModal({
   state,
@@ -57,16 +58,11 @@ export function SendToVeosModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25 backdrop-blur-[1px]"
-      onMouseDown={sending ? undefined : onDismiss}
-      role="dialog"
-      aria-modal="true"
+      className="fixed bottom-6 right-6 z-[60] w-[420px] max-w-[calc(100vw-48px)] animate-in fade-in slide-in-from-bottom-2 duration-200"
+      role="status"
       aria-label="Synchroniser avec VEOS"
     >
-      <div
-        className="bg-white rounded-xl shadow-[0px_8px_32px_0px_rgba(0,0,0,0.12)] w-full max-w-[460px] mx-4 flex flex-col overflow-hidden"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+      <div className="bg-white rounded-xl border border-panora-border shadow-[0px_8px_32px_0px_rgba(0,0,0,0.16)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between h-[44px] px-4 bg-panora-secondary/40 border-b border-panora-border">
           <span className="text-[13px] font-medium text-panora-text leading-5 truncate">

@@ -31,6 +31,8 @@ interface CreateClientModalProps {
   veosConnected: boolean;
   /** Initial value for the name field — usually the search query that yielded no results. */
   initialName?: string;
+  /** Demo/capture affordance — open on PM or PP instead of the PM default. */
+  initialType?: VeosClientType;
   onCancel: () => void;
   onCreated: (client: VeosClient) => void;
 }
@@ -48,13 +50,14 @@ type SubmitError = { kind: "erp"; message: string } | null;
 export function CreateClientModal({
   veosConnected,
   initialName = "",
+  initialType,
   onCancel,
   onCreated,
 }: CreateClientModalProps) {
   const destination = veosConnected ? "VEOS" : "Panora";
 
   // ── Type ──
-  const [type, setType] = useState<VeosClientType>("PM");
+  const [type, setType] = useState<VeosClientType>(initialType ?? "PM");
 
   // ── PM identification ──
   const [sirenInput, setSirenInput] = useState("");
