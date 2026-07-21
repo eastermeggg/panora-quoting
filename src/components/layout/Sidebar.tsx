@@ -24,6 +24,8 @@ import {
   createConversation,
   setActiveConversation,
 } from "@/data/chatStore";
+import { PriseEnMainWidget } from "./PriseEnMainWidget";
+import { SidebarChangelog } from "./SidebarChangelog";
 
 const STORAGE_KEY = "panora-sidebar-collapsed";
 
@@ -197,6 +199,9 @@ export function Sidebar() {
 
       {/* Nav section */}
       <div className="flex-1 flex flex-col gap-4">
+        {/* Prise en main (onboarding progress) — hides itself when complete */}
+        <PriseEnMainWidget collapsed={collapsed} />
+
         <nav className="flex flex-col gap-px">
           {/* Section label */}
           {!collapsed && (
@@ -342,8 +347,9 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Footer: Nous contacter / support */}
-      <div>
+      {/* Footer: Nouveautés + Nous contacter / support */}
+      <div className="flex flex-col gap-2">
+        <SidebarChangelog collapsed={collapsed} />
         <button
           title={collapsed ? "Nous contacter / support" : undefined}
           aria-label={collapsed ? "Nous contacter / support" : undefined}

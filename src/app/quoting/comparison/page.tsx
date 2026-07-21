@@ -40,6 +40,18 @@ import {
 } from "@/components/quoting/BulkSendToVeosModal";
 import { veosClients } from "@/data/clients-mock";
 import {
+  shouldShowFeatureTour,
+  recordFeatureTour,
+  type FeatureId,
+} from "@/data/feature-onboarding-store";
+import { FeatureIntroModal } from "@/components/feature-onboarding/FeatureIntroModal";
+import { FeatureOnboardingOverlay } from "@/components/feature-onboarding/FeatureOnboardingOverlay";
+import { ANALYSE_INTRO } from "@/components/feature-onboarding/content";
+import { FeatureFilterBar, type Scope } from "@/components/quoting/FeatureFilterBar";
+import { FeatureEmptyState, type TeamExample } from "@/components/quoting/FeatureEmptyState";
+import { useProtoScenario } from "@/data/proto-scenario";
+import { ScanSearch } from "lucide-react";
+import {
   getSynthesisOverride,
   setSynthesisOverride,
   triggerAddRowConversation,
@@ -89,6 +101,20 @@ function downloadMockFile(fileName: string, content: string) {
 
 function ComparisonListView() {
   const [flowOpen, setFlowOpen] = useState(false);
+  // Once the broker launches their first analysis/comparison, drop the
+  // first-run empty state and show the (now populated) list.
+  const [launched, setLaunched] = useState(false);
+
+  // ─── Feature tour (analyse / comparaison) ───────────────────────
+  // Normal flow: click → wizard → wizard creates the line in the table
+  // (loading in bkg). For a user's first few uses of each feature, a feature
+  // tour (explanatory video) then plays OVER the list while it processes.
+  const [tourFeature, setTourFeature] = useState<FeatureId | null>(null);
+  const [explainerOpen, setExplainerOpen] = useState(false);
+  // When opened from Bienvenue, skip the picker and land on the right intake.
+  const [wizardMode, setWizardMode] = useState<"compare" | "besoin" | undefined>(
+    undefined
+  );
   const [workspace, setWorkspace] = useState<AnalysisWorkspacePayload | null>(null);
   const [, setTick] = useState(0);
   const mountedRef = useRef(true);
@@ -102,12 +128,58 @@ function ComparisonListView() {
     if (mountedRef.current) setTick((t) => t + 1);
   }, []);
 
-  const inProgress = [...comparisonTasks]
+  // ─── Scope lens (Réalisé par: Moi / Équipe / colleague) ─────────
+  const searchParams = useSearchParams();
+  const onboardParam = searchParams.get("onboard");
+  const scenario = useProtoScenario();
+  // Arriving from Bienvenue is a first run — don't bleed the populated list
+  // behind the modal; show the (empty) first-run background instead. A "fresh"
+  // prototype scenario also means the broker has no analyses yet.
+  const firstRun =
+    !launched &&
+    (searchParams.get("firstrun") === "1" ||
+      onboardParam === "analyse" ||
+      onboardParam === "comparaison" ||
+      scenario === "fresh");
+  const [scope, setScope] = useState<Scope>("moi");
+
+  const colleagues = Array.from(
+    new Set(
+      comparisonTasks
+        .map((t) => t.createdBy)
+        .filter((n) => n && n !== currentUser.name)
+    )
+  );
+  const teamTasks = comparisonTasks.filter((t) => t.createdBy !== currentUser.name);
+
+  const inScope = (t: ComparisonTask) => {
+    if (scope === "equipe") return true;
+    if (scope === "moi") return !firstRun && t.createdBy === currentUser.name;
+    return t.createdBy === scope;
+  };
+  const scoped = comparisonTasks.filter(inScope);
+  const inProgress = scoped
     .filter((t) => t.status === "in_progress")
     .sort((a, b) => parseFrDate(b.date) - parseFrDate(a.date));
-  const done = [...comparisonTasks]
+  const done = scoped
     .filter((t) => t.status === "done")
     .sort((a, b) => parseFrDate(b.date) - parseFrDate(a.date));
+
+  // The systematized empty state shows on the "Moi" scope when there's nothing
+  // of the user's own yet — it still surfaces the team's work to engage them.
+  const showEmpty =
+    scope === "moi" && inProgress.length === 0 && done.length === 0;
+  const teamExamples: TeamExample[] = teamTasks
+    .filter((t) => t.status === "done" && t.principalProduct)
+    .slice(0, 2)
+    .map((t) => ({
+      id: t.id,
+      author: t.createdBy,
+      client: t.client,
+      product: t.principalProduct,
+      insurerIds: t.insurerIds,
+      relevance: `${t.createdBy} · ${t.principalProduct}`,
+    }));
 
   const markRead = useCallback((taskId: string) => {
     const task = comparisonTasks.find((t) => t.id === taskId);
@@ -142,6 +214,7 @@ function ComparisonListView() {
       date: new Date().toLocaleDateString("fr-FR"),
       status: "in_progress",
     });
+    setLaunched(true);
     setFlowOpen(false);
     rerender();
 
@@ -172,14 +245,72 @@ function ComparisonListView() {
       kind: payload.kind,
       analysisPayload: payload,
     });
+    setLaunched(true);
     setWorkspace(payload);
     setFlowOpen(false);
     rerender();
   };
 
+  // "Nouvelle analyse" (tab) opens the wizard at the picker.
+  const handleNewAnalysis = useCallback(() => {
+    setWizardMode(undefined);
+    setFlowOpen(true);
+  }, []);
+
+  // After the wizard creates the line (loading in bkg), play the feature tour
+  // over the list for the user's first few uses of that feature.
+  const maybeShowTour = (feature: FeatureId) => {
+    if (!shouldShowFeatureTour(feature)) return;
+    recordFeatureTour(feature);
+    setTourFeature(feature);
+  };
+  const wizardLaunchComparison = (
+    data: Parameters<typeof handleWizardSubmit>[0]
+  ) => {
+    handleWizardSubmit(data); // creates the in-progress line, loads in bkg
+    maybeShowTour("comparaison");
+  };
+  const wizardOpenWorkspace = (payload: AnalysisWorkspacePayload) => {
+    handleOpenWorkspace(payload);
+    maybeShowTour("analyse");
+  };
+
+  // Bienvenue deep-links open the wizard directly on the right intake step.
+  // `?onboard=` is the first-run entry (empty background); `?new=` is the
+  // post-onboarding entry from the home (normal, populated background).
+  useEffect(() => {
+    const entry = onboardParam ?? searchParams.get("new");
+    if (entry === "comparaison" || entry === "compare") {
+      setWizardMode("compare");
+      setFlowOpen(true);
+    } else if (entry === "analyse" || entry === "besoin") {
+      setWizardMode("besoin");
+      setFlowOpen(true);
+    }
+  }, [onboardParam, searchParams]);
+
+  // The feature tour is a top-level overlay so it plays over the list (row
+  // loading in bkg) or over an opened workspace, without navigating away.
+  const tourOverlay = tourFeature ? (
+    <div className="fixed inset-0 z-[60]">
+      <FeatureOnboardingOverlay
+        title={
+          tourFeature === "comparaison"
+            ? "Pendant que votre comparaison se prépare"
+            : "Pendant que votre analyse se prépare"
+        }
+        subtitle="Prenez la visite guidée pendant que l'agent travaille."
+        onSkip={() => setTourFeature(null)}
+      />
+    </div>
+  ) : null;
+
   if (workspace) {
     return (
-      <AnalysisWorkspace {...workspace} onBack={() => setWorkspace(null)} />
+      <>
+        <AnalysisWorkspace {...workspace} onBack={() => setWorkspace(null)} />
+        {tourOverlay}
+      </>
     );
   }
 
@@ -193,7 +324,7 @@ function ComparisonListView() {
             Assistant analyse
           </h1>
         </div>
-        <button onClick={() => setFlowOpen(true)} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
+        <button onClick={handleNewAnalysis} className="btn-primary flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium">
           <Sparkles className="w-4 h-4" />
           Nouvelle analyse
         </button>
@@ -201,48 +332,93 @@ function ComparisonListView() {
 
       <SessionExpiredBanner />
 
-      {/* Column headers */}
-      <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
-        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Analyse</div>
-        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Client</div>
-        <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
-        <div className="w-[140px] shrink-0 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
-        <div className="w-[100px] shrink-0 px-4 text-[12px] text-panora-text-muted">Date</div>
-        <div className="w-[180px] shrink-0 px-4 text-[12px] text-panora-text-muted">Progrès</div>
-        <div className="w-10 shrink-0" />
-      </div>
+      <FeatureFilterBar
+        scope={scope}
+        onScopeChange={setScope}
+        colleagues={colleagues}
+      />
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* In progress */}
-        {inProgress.length > 0 && (
-          <>
-            <StatusGroupHeader label="En cours" color="bg-[#be93e4]" bgColor="bg-[#fbf7fe]" />
-            {inProgress.map((task) => (
-              <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
-            ))}
-            <div className="h-1.5 border-y border-panora-border" />
-          </>
-        )}
+      {showEmpty ? (
+        <FeatureEmptyState
+          icon={ScanSearch}
+          eyebrow="Assistant analyse"
+          title="Lancez votre première analyse"
+          subtitle="Analysez un contrat ou comparez des devis — l'Agent Analyse fait ressortir l'essentiel, vous gardez la main."
+          primaryCta="Nouvelle analyse"
+          onPrimary={handleNewAnalysis}
+          onWatch={() => setExplainerOpen(true)}
+          teamExamples={teamExamples}
+          onOpenExample={(ex) => {
+            const t = comparisonTasks.find((x) => x.id === ex.id);
+            if (t) openAnalysis(t);
+          }}
+          teamCount={teamTasks.length}
+          teamAvatars={colleagues}
+          onSeeTeam={() => setScope("equipe")}
+        />
+      ) : (
+        <>
+          {/* Column headers */}
+          <div className="shrink-0 border-b border-panora-border h-[35px] flex items-center bg-white">
+            <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Analyse</div>
+            <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Client</div>
+            <div className="flex-1 min-w-0 px-4 text-[12px] text-panora-text-muted">Assureurs</div>
+            <div className="w-[140px] shrink-0 px-4 text-[12px] text-panora-text-muted">Réalisé par</div>
+            <div className="w-[100px] shrink-0 px-4 text-[12px] text-panora-text-muted">Date</div>
+            <div className="w-[180px] shrink-0 px-4 text-[12px] text-panora-text-muted">Progrès</div>
+            <div className="w-10 shrink-0" />
+          </div>
 
-        {/* Done */}
-        {done.length > 0 && (
-          <>
-            <StatusGroupHeader label="Terminé" color="bg-[#94ce9a]" bgColor="bg-[#f5fbf5]" />
-            {done.map((task) => (
-              <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
-            ))}
-          </>
-        )}
-      </div>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* In progress */}
+            {inProgress.length > 0 && (
+              <>
+                <StatusGroupHeader label="En cours" color="bg-[#be93e4]" bgColor="bg-[#fbf7fe]" />
+                {inProgress.map((task) => (
+                  <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
+                ))}
+                <div className="h-1.5 border-y border-panora-border" />
+              </>
+            )}
+
+            {/* Done */}
+            {done.length > 0 && (
+              <>
+                <StatusGroupHeader label="Terminé" color="bg-[#94ce9a]" bgColor="bg-[#f5fbf5]" />
+                {done.map((task) => (
+                  <TaskRow key={task.id} task={task} onOpen={markRead} onOpenAnalysis={openAnalysis} />
+                ))}
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       {flowOpen && (
         <NewAnalysisFlow
+          initialMode={wizardMode}
           onClose={() => setFlowOpen(false)}
-          onLaunchComparison={handleWizardSubmit}
-          onOpenWorkspace={handleOpenWorkspace}
+          onLaunchComparison={wizardLaunchComparison}
+          onOpenWorkspace={wizardOpenWorkspace}
         />
       )}
+
+      {/* "Voir comment ça marche" — optional explainer with a start CTA */}
+      {explainerOpen && (
+        <FeatureIntroModal
+          content={ANALYSE_INTRO}
+          onLaunch={() => {
+            setExplainerOpen(false);
+            setWizardMode(undefined);
+            setFlowOpen(true);
+          }}
+          onClose={() => setExplainerOpen(false)}
+        />
+      )}
+
+      {/* Feature tour (video) — plays over the list while the row processes */}
+      {tourOverlay}
     </div>
   );
 }
@@ -520,6 +696,10 @@ function ComparisonDetailView({ cotParamId }: { cotParamId: string }) {
   const [comparisonResult, setComparisonResult] = useState<ComparisonData | undefined>(
     alreadyDone ? getComparisonData(cotParamId) : undefined
   );
+
+  // Feature onboarding for creating an analysis lives on the list view (the
+  // feature tour that plays while the new row processes). Opening an existing
+  // cotation here just runs the agent — no onboarding overlay.
   const [selectedCell, setSelectedCell] = useState<CellIdentifier | null>(null);
   const [cellDisplayModes, setCellDisplayModes] = useState<Record<string, boolean>>({});
   const [mutableInsurers, setMutableInsurers] = useState<InsurerData[]>(followupData?.insurers ?? []);

@@ -73,6 +73,8 @@ interface NewAnalysisFlowProps {
   onLaunchComparison: (data: LaunchComparisonPayload) => void;
   /** Opens the synthèse workspace — called by besoin & explore. */
   onOpenWorkspace: (payload: AnalysisWorkspacePayload) => void;
+  /** Skip the picker and open directly on a mode's intake (e.g. from Bienvenue). */
+  initialMode?: Mode;
 }
 
 type Stage = { name: "picker" } | { name: "intake"; mode: Mode };
@@ -207,15 +209,21 @@ export function NewAnalysisFlow({
   onClose,
   onLaunchComparison,
   onOpenWorkspace,
+  initialMode,
 }: NewAnalysisFlowProps) {
-  const [stage, setStage] = useState<Stage>({ name: "picker" });
+  // From Bienvenue we skip the picker and land on the right intake directly.
+  const [stage, setStage] = useState<Stage>(
+    initialMode ? { name: "intake", mode: initialMode } : { name: "picker" }
+  );
 
   // Intake state (seeded per mode on selection; reset on mode switch).
   const [files, setFiles] = useState<DetectedFile[]>([]);
   const [extraUsed, setExtraUsed] = useState(false);
   const [intent, setIntent] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>("marble");
-  const [besoins, setBesoins] = useState<BesoinRow[]>([]);
+  const [besoins, setBesoins] = useState<BesoinRow[]>(
+    initialMode === "compare" ? SEED_BESOINS_COMPARE : []
+  );
   const [newBesoin, setNewBesoin] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [detected, setDetected] = useState(false);
@@ -326,7 +334,7 @@ export function NewAnalysisFlow({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center bg-black/30",
+          "fixed inset-0 z-50 flex items-center justify-center bg-black/40",
           createClientState && "hidden",
         )}
       >
