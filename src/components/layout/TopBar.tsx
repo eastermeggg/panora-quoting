@@ -4,6 +4,7 @@ import { ArrowLeft, FileText, X, ChevronUp, ChevronDown, LayoutGrid, List } from
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SessionExpiredBanner } from "./SessionExpiredBanner";
+import { CotationHeaderActions } from "@/components/quoting/CotationHeaderActions";
 
 export type ViewMode = "kanban" | "table";
 
@@ -25,9 +26,11 @@ export function TopBar({ variant, cotationId, title, onClose, viewMode, onViewMo
         <h1 className="text-[15px] font-medium text-panora-text font-serif">
           Assistant cotation
         </h1>
+        <div className="flex-1" />
+        <CotationHeaderActions />
         {variant === "dashboard" && onViewModeChange && (
           <>
-            <div className="flex-1" />
+            <span className="mx-1 h-5 w-px bg-panora-border" />
             <div className="flex items-center bg-panora-card border border-panora-border rounded-lg p-0.5">
               <button
                 onClick={() => onViewModeChange("kanban")}
