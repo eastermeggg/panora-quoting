@@ -26,6 +26,7 @@ import {
 } from "@/data/chatStore";
 import { PriseEnMainWidget } from "./PriseEnMainWidget";
 import { SidebarChangelog } from "./SidebarChangelog";
+import { ProtoStateSwitcher } from "@/components/signup/ProtoStateSwitcher";
 
 const STORAGE_KEY = "panora-sidebar-collapsed";
 
@@ -347,9 +348,10 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Footer: Nouveautés + Nous contacter / support */}
+      {/* Footer: Nouveautés + Aperçu proto (demo) + Nous contacter / support */}
       <div className="flex flex-col gap-2">
         <SidebarChangelog collapsed={collapsed} />
+        <ProtoStateSwitcher collapsed={collapsed} />
         <button
           title={collapsed ? "Nous contacter / support" : undefined}
           aria-label={collapsed ? "Nous contacter / support" : undefined}
