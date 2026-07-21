@@ -23,14 +23,13 @@ import { currentUser } from "@/data/mock";
 type SettingsNavItem = { label: string; href: string; icon: LucideIcon };
 
 /* Two sections, matching the app's sectioned nav:
- *   • Organisation — shared, admin-configured (workspace, team, insurer
- *     connections, integrations, souscription rules, cabinet presentation).
- *   • Utilisateur  — personal account settings. */
+ *   • Organisation — admin-configured, shared by the whole cabinet (workspace,
+ *     team, cabinet presentation, integrations, souscription rules).
+ *   • Utilisateur  — per-broker settings (own account, own extranet accesses). */
 const ORG_NAV: SettingsNavItem[] = [
   { label: "Espace de travail", href: "/settings/workspace", icon: Building2 },
   { label: "Collaborateurs", href: "/settings/collaborators", icon: Users },
   { label: "Présentation", href: "/settings/presentation", icon: Palette },
-  { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
   { label: "EDI", href: "/settings/edi", icon: Network },
   { label: "Intégrations", href: "/settings/integrations", icon: Plug },
   { label: "Vault souscription", href: "/settings/vault", icon: Database },
@@ -38,6 +37,7 @@ const ORG_NAV: SettingsNavItem[] = [
 
 const USER_NAV: SettingsNavItem[] = [
   { label: "Votre compte", href: "/settings/account", icon: User },
+  { label: "Accès extranets", href: "/settings/extranets", icon: Globe },
 ];
 
 export function SettingsSidebar() {
