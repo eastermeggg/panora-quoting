@@ -6,6 +6,7 @@ import { useConfiguredExtranets } from "@/data/settings-mock";
 import { FeatureFilterBar, type Scope } from "@/components/quoting/FeatureFilterBar";
 import { FeatureEmptyState, TeamActivityBanner } from "@/components/quoting/FeatureEmptyState";
 import { QuotingReadyContent } from "@/components/quoting/QuotingReadyContent";
+import { CotationHeaderActions } from "@/components/quoting/CotationHeaderActions";
 
 /* Quoting dashboard EMPTY STATE — same reference structure as analyse /
  * comparaison (Figma 9919-19731): agent header + filter bar (Collaborateur ·
@@ -44,6 +45,8 @@ export function QuotingEmptyState() {
         <h1 className="font-serif text-[15px] font-medium text-panora-text">
           Assistant cotation
         </h1>
+        <div className="flex-1" />
+        <CotationHeaderActions />
       </div>
 
       <FeatureFilterBar
