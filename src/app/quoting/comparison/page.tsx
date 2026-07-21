@@ -347,6 +347,11 @@ function ComparisonListView() {
           primaryCta="Nouvelle analyse"
           onPrimary={handleNewAnalysis}
           onWatch={() => setExplainerOpen(true)}
+          points={[
+            "Garanties, exclusions & plafonds",
+            "Comparaison de devis structurée",
+            "Points de vigilance mis en avant",
+          ]}
           teamExamples={teamExamples}
           onOpenExample={(ex) => {
             const t = comparisonTasks.find((x) => x.id === ex.id);

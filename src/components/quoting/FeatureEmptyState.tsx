@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, PlayCircle, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Check, PlayCircle, Sparkles, Users } from "lucide-react";
 
 /* Systematized feature empty state — one skeleton, three zones, per-agent fill:
  *   1 · Activation   — what to do first (the hero CTA / instructions)
@@ -30,6 +30,8 @@ export type FeatureEmptyStateProps = {
   onPrimary: () => void;
   onWatch?: () => void;
   watchLabel?: string;
+  /** A few quick "what this feature does" points, shown under the subtitle. */
+  points?: string[];
   /** Slot for a fully custom activation body (e.g. cotation's e-mail block). */
   activationSlot?: React.ReactNode;
 
@@ -68,6 +70,7 @@ export function FeatureEmptyState(props: FeatureEmptyStateProps) {
     onPrimary,
     onWatch,
     watchLabel = "Voir comment ça marche",
+    points = [],
     activationSlot,
     teamExamples = [],
     onOpenExample,
@@ -93,6 +96,8 @@ export function FeatureEmptyState(props: FeatureEmptyStateProps) {
           <p className="mx-auto mt-2 max-w-[420px] text-[13px] leading-5 text-panora-text-secondary">
             {subtitle}
           </p>
+
+          <PointsRow points={points} />
 
           {activationSlot ? (
             <div className="mt-5 text-left">{activationSlot}</div>
@@ -176,40 +181,83 @@ export function FeatureEmptyState(props: FeatureEmptyStateProps) {
           </div>
         )}
 
-        {/* Zone 3 — Team proof */}
-        {typeof teamCount === "number" && teamCount > 0 && (
-          <button
-            type="button"
-            onClick={onSeeTeam}
-            className="group flex items-center gap-3 rounded-[12px] border border-panora-border bg-panora-drop/50 px-5 py-3.5 text-left transition-colors hover:bg-white"
-          >
-            {teamAvatars.length > 0 ? (
-              <span className="flex -space-x-2">
-                {teamAvatars.slice(0, 4).map((name) => (
-                  <span
-                    key={name}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-panora-bg bg-panora-green/15 text-[10px] font-semibold text-panora-green-dark"
-                  >
-                    {initials(name)}
-                  </span>
-                ))}
-              </span>
-            ) : (
-              <Users className="h-5 w-5 text-panora-text-secondary" />
-            )}
-            <span className="flex-1 text-[13px] text-panora-text">
-              <span className="font-medium">Votre équipe</span> a déjà réalisé{" "}
-              <span className="font-medium">{teamCount}</span>{" "}
-              {teamCount > 1 ? "analyses" : "analyse"} — regardez comment ils
-              font.
-            </span>
-            <span className="flex items-center gap-1.5 text-[13px] font-medium text-panora-green-dark">
-              Voir toute l&apos;équipe
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </button>
-        )}
+        {/* Zone 3 — Team proof (quiet, never a primary action) */}
+        <TeamProofRow
+          teamCount={teamCount}
+          teamAvatars={teamAvatars}
+          onSeeTeam={onSeeTeam}
+        />
       </div>
     </div>
+  );
+}
+
+/* Quick "what this feature does" line — a compact, centered check-list shown in
+ * Zone 1. Keeps the activation the hero while making the feature legible. */
+function PointsRow({ points }: { points: string[] }) {
+  if (points.length === 0) return null;
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+      {points.map((p) => (
+        <span
+          key={p}
+          className="inline-flex items-center gap-1.5 text-[12px] text-panora-text-secondary"
+        >
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-panora-green-light">
+            <Check className="h-2.5 w-2.5 text-panora-green-dark" strokeWidth={3} />
+          </span>
+          {p}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* Zone 3 — the team's activity as quiet motivation + a jump to the Équipe
+ * scope. Shared across every feature empty state so "what the team does" reads
+ * the same everywhere and is never a primary action. */
+export function TeamProofRow({
+  teamCount,
+  teamAvatars = [],
+  onSeeTeam,
+  noun = ["analyse", "analyses"],
+}: {
+  teamCount?: number;
+  teamAvatars?: string[];
+  onSeeTeam?: () => void;
+  /** [singular, plural] of the artifact this feature produces. */
+  noun?: [string, string];
+}) {
+  if (typeof teamCount !== "number" || teamCount <= 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={onSeeTeam}
+      className="group flex w-full items-center gap-3 rounded-[12px] border border-panora-border bg-panora-drop/50 px-5 py-3.5 text-left transition-colors hover:bg-white"
+    >
+      {teamAvatars.length > 0 ? (
+        <span className="flex -space-x-2">
+          {teamAvatars.slice(0, 4).map((name) => (
+            <span
+              key={name}
+              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-panora-bg bg-panora-green/15 text-[10px] font-semibold text-panora-green-dark"
+            >
+              {initials(name)}
+            </span>
+          ))}
+        </span>
+      ) : (
+        <Users className="h-5 w-5 text-panora-text-secondary" />
+      )}
+      <span className="flex-1 text-[13px] text-panora-text">
+        <span className="font-medium">Votre équipe</span> a déjà réalisé{" "}
+        <span className="font-medium">{teamCount}</span>{" "}
+        {teamCount > 1 ? noun[1] : noun[0]} — regardez comment ils font.
+      </span>
+      <span className="flex items-center gap-1.5 text-[13px] font-medium text-panora-green-dark">
+        Voir toute l&apos;équipe
+        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </button>
   );
 }

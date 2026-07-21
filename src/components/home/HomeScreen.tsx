@@ -13,6 +13,10 @@ import {
   MonitorPlay,
   Mail,
   Megaphone,
+  UserPlus,
+  Columns3,
+  ScanSearch,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { latestChangelog, type ChangelogTag } from "@/data/changelog";
@@ -194,8 +198,99 @@ export function HomeScreen({ prenom }: { prenom?: string }) {
 
         {/* Changelog widget */}
         <ChangelogWidget />
+
+        {/* Recent activity */}
+        <RecentActivity />
       </div>
     </div>
+  );
+}
+
+/* Recent activity — a quiet, org-wide feed of what's happening in the espace
+ * (Figma 9895-24767). Read-only glances, no stats. */
+type Activity = {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  detail: string;
+  time: string;
+  href: string;
+};
+
+const RECENT: Activity[] = [
+  {
+    id: "a1",
+    icon: UserPlus,
+    title: "Création client",
+    detail: "Louis Sanz France · Projet assurance RC Pro",
+    time: "il y a 12 min",
+    href: "/quoting/comparison",
+  },
+  {
+    id: "a2",
+    icon: Send,
+    title: "Cotation lancée",
+    detail: "Marble Tech · AXA, Generali, Allianz",
+    time: "il y a 1 h",
+    href: "/quoting/dashboard",
+  },
+  {
+    id: "a3",
+    icon: Columns3,
+    title: "Comparaison terminée",
+    detail: "GreenWay · 3 devis comparés",
+    time: "il y a 3 h",
+    href: "/quoting/comparison",
+  },
+  {
+    id: "a4",
+    icon: ScanSearch,
+    title: "Analyse de contrat",
+    detail: "Digital Solutions · Multirisque professionnelle",
+    time: "hier",
+    href: "/quoting/comparison",
+  },
+];
+
+function RecentActivity() {
+  return (
+    <section>
+      <h3 className="mb-3.5 text-[14px] font-semibold text-panora-text">
+        Activité récente
+      </h3>
+      <ul className="overflow-hidden rounded-[14px] border border-panora-border bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
+        {RECENT.map((a, i) => {
+          const Icon = a.icon;
+          return (
+            <li key={a.id}>
+              <Link
+                href={a.href}
+                className={cn(
+                  "group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-panora-drop/50",
+                  i > 0 && "border-t border-panora-border/70"
+                )}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-panora-tag text-panora-text-secondary">
+                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium leading-5 text-panora-text">
+                    {a.title}
+                  </p>
+                  <p className="truncate text-[12px] leading-4 text-panora-text-secondary">
+                    {a.detail}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[12px] tabular-nums text-panora-text-muted">
+                  {a.time}
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-panora-text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

@@ -35,7 +35,6 @@ import {
 } from "@/data/onboarding-store";
 import { applyProtoScenario } from "@/data/proto-scenario";
 import { ProgressRing } from "./ProgressRing";
-import { FlowerOutline } from "./ui";
 import { HomeScreen } from "@/components/home/HomeScreen";
 
 /* Real faces make the onboarding feel human — a named founder and a care team
@@ -89,7 +88,7 @@ export function WelcomeHub() {
   }, [stateParam]);
 
   const tasks = useOnboardingTasks();
-  const { percent, done, total, complete } = useOnboardingProgress();
+  const { percent, complete } = useOnboardingProgress();
 
   // The "next" task to do — its CTA is primary; the rest reveal on hover.
   const nextId = tasks.find((t) => !t.done)?.id;
@@ -142,11 +141,11 @@ export function WelcomeHub() {
             <div className="rounded-[14px] border border-panora-border bg-white">
               <div className="flex items-center justify-between border-b border-panora-border px-5 py-3.5">
                 <h3 className="text-[14px] font-medium text-panora-text">
-                  Votre prise en main
+                  Accomplissez vos tâches de prise en main
                 </h3>
                 <span className="flex items-center gap-2 text-[12px] font-medium text-panora-text-secondary">
                   <ProgressRing percent={percent} size={16} strokeWidth={2} />
-                  {done}/{total} terminé{done > 1 ? "s" : ""}
+                  {percent} % complétées
                 </span>
               </div>
               <ul>
@@ -185,14 +184,15 @@ export function WelcomeHub() {
           </div>
         )}
 
-        {/* Bottom: resources — the brand gets louder here (landing-page look) */}
+        {/* Bottom: resources — three white illustrated cards (Figma 9890-1787) */}
         <div>
           <h2 className="mb-3 font-serif text-[18px] tracking-[-0.2px] text-panora-text">
             Des ressources pour vous accompagner
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <AcademyWidget />
-            <FaqWidget />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {RESOURCES.map((r) => (
+              <ResourceCard key={r.title} {...r} />
+            ))}
           </div>
         </div>
       </div>
@@ -479,71 +479,75 @@ function MatriceWidget() {
   );
 }
 
-/* Learning Academy — image-forward card on the aurora gradient, like the
- * marketing cards. Dark scrim keeps the white text legible. */
-function AcademyWidget() {
-  return (
-    <Link
-      href="#"
-      className="group relative flex min-h-[200px] flex-col justify-end overflow-hidden rounded-[16px] border border-black/10 p-5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
-    >
-      <img
-        src="/onboarding/empty-state-landscape.jpg"
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/10" />
-      <span className="absolute left-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
-        <GraduationCap className="h-[18px] w-[18px]" />
-      </span>
-      <div className="relative">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/80">
-          Se former
-        </span>
-        <h3 className="mt-1 font-serif text-[22px] leading-7 tracking-[-0.3px] text-white">
-          Panora Academy
-        </h3>
-        <p className="mt-1 max-w-[260px] text-[12px] leading-4 text-white/80">
-          Formations courtes pour maîtriser vos assistants IA.
-        </p>
-        <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[13px] font-medium text-panora-text">
-          Découvrir
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </div>
-    </Link>
-  );
-}
+/* Bottom resources — three white illustrated cards (Figma 9890-1787), the same
+ * card language as the Home screen so both arrival views feel like one product. */
+type Resource = {
+  badge: string;
+  badgeIcon: LucideIcon;
+  title: string;
+  description: string;
+  cta: string;
+  href: string;
+  icon: string;
+};
 
-/* FAQ / Centre d'aide — deep-green brand block with the flower watermark. */
-function FaqWidget() {
+const RESOURCES: Resource[] = [
+  {
+    badge: "Se former",
+    badgeIcon: GraduationCap,
+    title: "Panora Learning Academy",
+    description: "Des formations courtes en vidéo pour maîtriser vos assistants IA.",
+    cta: "Découvrir",
+    href: "#",
+    icon: "/onboarding/icons/diplome.png",
+  },
+  {
+    badge: "Besoin d'aide ?",
+    badgeIcon: MessageCircleQuestion,
+    title: "Notre F.A.Q",
+    description: "La réponse à vos questions sur l'utilisation de Panora.",
+    cta: "Consulter",
+    href: "#",
+    icon: "/onboarding/icons/livre.png",
+  },
+  {
+    badge: "À venir",
+    badgeIcon: CalendarDays,
+    title: "Calendrier de sortie cotation",
+    description: "Les produits et assureurs branchés à la cotation, et ce qui arrive.",
+    cta: "Consulter",
+    href: "/matrice-couverture",
+    icon: "/onboarding/icons/cloche.png",
+  },
+];
+
+function ResourceCard({ badge, badgeIcon: BadgeIcon, title, description, cta, href, icon }: Resource) {
   return (
     <Link
-      href="#"
-      className="group relative flex min-h-[200px] flex-col justify-end overflow-hidden rounded-[16px] border border-black/15 bg-[#0b2621] p-5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+      href={href}
+      className="group flex flex-col rounded-[14px] border border-panora-border bg-white p-5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0px_10px_28px_-10px_rgba(23,60,45,0.2)]"
     >
-      <FlowerOutline
-        className="absolute -right-6 -top-8 w-[150px] opacity-90"
-        stroke="#2c5343"
-      />
-      <span className="absolute left-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white">
-        <MessageCircleQuestion className="h-[18px] w-[18px]" />
-      </span>
-      <div className="relative">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-panora-green/90">
-          Besoin d&apos;aide
+      <div className="flex items-start justify-between gap-3">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-panora-border bg-white px-2.5 py-1 text-[12px] font-medium text-panora-text-secondary">
+          <BadgeIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {badge}
         </span>
-        <h3 className="mt-1 font-serif text-[22px] leading-7 tracking-[-0.3px] text-white">
-          Questions fréquentes
-        </h3>
-        <p className="mt-1 max-w-[260px] text-[12px] leading-4 text-white/70">
-          Consultez la FAQ ou contactez notre équipe care.
-        </p>
-        <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[13px] font-medium text-white transition-colors group-hover:bg-white/15">
-          Ouvrir la FAQ
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </span>
+        <img
+          src={icon}
+          alt=""
+          className="h-14 w-14 shrink-0 object-contain transition-transform duration-300 group-hover:scale-[1.06] group-hover:rotate-2"
+        />
       </div>
+      <p className="mt-2 font-serif text-[19px] leading-6 tracking-[-0.2px] text-panora-text">
+        {title}
+      </p>
+      <p className="mt-1 text-[13px] leading-5 text-panora-text-secondary">
+        {description}
+      </p>
+      <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-panora-green">
+        {cta}
+        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+      </span>
     </Link>
   );
 }
