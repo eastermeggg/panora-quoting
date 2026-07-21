@@ -342,7 +342,7 @@ function ComparisonListView() {
         <FeatureEmptyState
           illustration="/onboarding/icons/loupe.png"
           title="Lancez votre première analyse"
-          subtitle="En un clic, l'Agent Analyse fait ressortir garanties, exclusions et plafonds — vous gardez la main."
+          subtitle="Analyse de contrat, comparaison de devis, rédaction de synthèse et exports sur mesure : l'Agent Analyse décortique vos documents, vous gardez la main."
           primaryCta="Nouvelle analyse"
           onPrimary={handleNewAnalysis}
           team={
