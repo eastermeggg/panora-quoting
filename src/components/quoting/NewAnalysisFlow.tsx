@@ -9,7 +9,8 @@
 //   • Comparer des offres — the classic comparison intake (devis 2+, besoins
 //     client) → comparison board.
 //
-//   stage: picker → intake
+//   stage: picker → intake (3 steps: Documents → Client & produit →
+//   Objectif [analyse] / Besoins [compare])
 //
 // Interroger des documents / générer un document are NOT entrances — they're
 // covered by the analyse objective + the co-pilote chat inside any analysis.
@@ -25,6 +26,7 @@ import {
   Plus,
   Sparkles,
   ChevronRight,
+  Check,
   Table2,
   ScanSearch,
   type LucideIcon,
@@ -76,7 +78,13 @@ interface NewAnalysisFlowProps {
   initialMode?: Mode;
 }
 
-type Stage = { name: "picker" } | { name: "intake"; mode: Mode };
+type Stage = { name: "picker" } | { name: "intake"; mode: Mode; step: number };
+
+/** Step labels per mode — same skeleton, only the last step differs. */
+const STEP_LABELS: Record<Mode, string[]> = {
+  besoin: ["Documents", "Client & produit", "Objectif"],
+  compare: ["Documents", "Client & produit", "Besoins"],
+};
 
 type BesoinRow = { id: string; value: string; source: "ai" | "manual" };
 
@@ -209,7 +217,9 @@ export function NewAnalysisFlow({
 }: NewAnalysisFlowProps) {
   // From Bienvenue we skip the picker and land on the right intake directly.
   const [stage, setStage] = useState<Stage>(
-    initialMode ? { name: "intake", mode: initialMode } : { name: "picker" }
+    initialMode
+      ? { name: "intake", mode: initialMode, step: 0 }
+      : { name: "picker" }
   );
 
   // Intake state (seeded per mode on selection; reset on mode switch).
@@ -246,7 +256,31 @@ export function NewAnalysisFlow({
     setSelectedClientId(null);
     setObjective("complete");
     setBesoins(mode === "compare" ? SEED_BESOINS_COMPARE : []);
-    setStage({ name: "intake", mode });
+    setStage({ name: "intake", mode, step: 0 });
+  };
+
+  // ── Step navigation ──
+  const step = stage.name === "intake" ? stage.step : 0;
+  const lastStep = 2;
+
+  // Per-step gate: documents first, then the detected client/produit; the
+  // final step is always launchable (the objective defaults to "complete",
+  // and compare's besoins are optional).
+  const stepValid = (s: number): boolean => {
+    if (!config) return false;
+    if (s === 0) return files.length >= config.minFiles;
+    if (s === 1) return !!selectedClientId && !!selectedProduct;
+    return true;
+  };
+
+  const goNext = () => {
+    if (stage.name !== "intake" || !stepValid(stage.step)) return;
+    setStage({ ...stage, step: Math.min(stage.step + 1, lastStep) });
+  };
+  const goBack = () => {
+    if (stage.name !== "intake") return;
+    if (stage.step === 0) goToPicker();
+    else setStage({ ...stage, step: stage.step - 1 });
   };
 
   // ── Document detection (mock) ──
@@ -381,6 +415,7 @@ export function NewAnalysisFlow({
               config && (
                 <IntakeView
                   config={config}
+                  step={step}
                   files={files}
                   canAddMore={canAddMore}
                   detected={detected}
@@ -407,24 +442,35 @@ export function NewAnalysisFlow({
             )}
           </div>
 
-          {/* Footer (intake only) */}
+          {/* Footer (intake only) — Retour + Continuer / launch on last step */}
           {stage.name === "intake" && config && (
             <div className="shrink-0 flex items-center justify-between px-5 py-4 border-t border-panora-border bg-white">
               <button
-                onClick={goToPicker}
+                onClick={goBack}
                 className="flex items-center gap-1.5 text-[13px] text-panora-text-muted hover:text-panora-text transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Retour
               </button>
-              <button
-                onClick={handleLaunch}
-                disabled={!canLaunch}
-                className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Sparkles className="w-4 h-4" />
-                {config.ctaLabel}
-              </button>
+              {step < lastStep ? (
+                <button
+                  onClick={goNext}
+                  disabled={!stepValid(step)}
+                  className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Continuer
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleLaunch}
+                  disabled={!canLaunch}
+                  className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {config.ctaLabel}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -491,6 +537,7 @@ function ModeCard({ config, onClick }: { config: ModeConfig; onClick: () => void
 
 function IntakeView({
   config,
+  step,
   files,
   canAddMore,
   detected,
@@ -512,6 +559,7 @@ function IntakeView({
   onProductChange,
 }: {
   config: ModeConfig;
+  step: number;
   files: DetectedFile[];
   canAddMore: boolean;
   detected: boolean;
@@ -532,71 +580,139 @@ function IntakeView({
   selectedProduct: string;
   onProductChange: (p: string) => void;
 }) {
+  // Per-step heading; step 0 uses the mode's own heading/subheading.
+  const stepHeading: [string, string] =
+    step === 0
+      ? [config.heading, config.subheading]
+      : step === 1
+        ? [
+            "Client & produit",
+            "Vérifiez les informations détectées depuis vos documents.",
+          ]
+        : config.mode === "besoin"
+          ? [
+              "Objectif de l’analyse",
+              "Choisissez ce que l’agent doit vérifier — précisez si besoin.",
+            ]
+          : [
+              "Besoins du client",
+              "L’intention et les critères guident la comparaison.",
+            ];
+
   return (
     <div className="space-y-5">
+      <Stepper labels={STEP_LABELS[config.mode]} current={step} />
+
       <div>
         <h2 className="text-[20px] font-serif text-panora-text">
-          {config.heading}
+          {stepHeading[0]}
         </h2>
         <p className="text-[13px] text-panora-text-muted leading-5 mt-1">
-          {config.subheading}
+          {stepHeading[1]}
         </p>
       </div>
 
-      <DocumentDropZone
-        files={files}
-        dropTitle={config.dropTitle}
-        addLabel={config.addLabel}
-        canAddMore={canAddMore}
-        onDetect={onDetect}
-        onAddMore={onAddMore}
-      />
-
-      {/* Client & product — present in every flow, auto-detected on drop */}
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel text="Client" detected={detected} />
-        <ClientSelector
-          value={selectedClientId}
-          onChange={onClientChange}
-          onRequestCreate={onRequestCreateClient}
+      {/* Step 1 — documents */}
+      {step === 0 && (
+        <DocumentDropZone
+          files={files}
+          dropTitle={config.dropTitle}
+          addLabel={config.addLabel}
+          canAddMore={canAddMore}
+          onDetect={onDetect}
+          onAddMore={onAddMore}
         />
-      </div>
+      )}
 
-      <ProductSelect
-        value={selectedProduct}
-        onChange={onProductChange}
-        detected={detected}
-      />
+      {/* Step 2 — client & product, auto-detected on drop */}
+      {step === 1 && (
+        <>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel text="Client" detected={detected} />
+            <ClientSelector
+              value={selectedClientId}
+              onChange={onClientChange}
+              onRequestCreate={onRequestCreateClient}
+            />
+          </div>
 
-      {config.mode === "besoin" ? (
-        <>
-          {/* Objective — the job to do; free text refines it, optionally */}
-          <ObjectivesBlock value={objective} onChange={onObjectiveChange} />
-          <IntentField
-            value={intent}
-            onChange={onIntentChange}
-            placeholder={config.intentPlaceholder}
-            label="Précisez votre demande"
-            hint="optionnel — affine l’objectif choisi"
-          />
-        </>
-      ) : (
-        <>
-          {/* Intention + besoins client — the classic comparison intake */}
-          <IntentField
-            value={intent}
-            onChange={onIntentChange}
-            placeholder={config.intentPlaceholder}
-          />
-          <BesoinsBlock
-            besoins={besoins}
-            input={newBesoin}
-            onInput={onNewBesoinChange}
-            onAdd={onAddBesoin}
-            onRemove={onRemoveBesoin}
+          <ProductSelect
+            value={selectedProduct}
+            onChange={onProductChange}
+            detected={detected}
           />
         </>
       )}
+
+      {/* Step 3 — objective (analyse) / besoins (compare) */}
+      {step === 2 &&
+        (config.mode === "besoin" ? (
+          <>
+            <ObjectivesBlock value={objective} onChange={onObjectiveChange} />
+            <IntentField
+              value={intent}
+              onChange={onIntentChange}
+              placeholder={config.intentPlaceholder}
+              label="Précisez votre demande"
+              hint="optionnel — affine l’objectif choisi"
+            />
+          </>
+        ) : (
+          <>
+            <IntentField
+              value={intent}
+              onChange={onIntentChange}
+              placeholder={config.intentPlaceholder}
+            />
+            <BesoinsBlock
+              besoins={besoins}
+              input={newBesoin}
+              onInput={onNewBesoinChange}
+              onAdd={onAddBesoin}
+              onRemove={onRemoveBesoin}
+            />
+          </>
+        ))}
+    </div>
+  );
+}
+
+/* Compact wizard stepper — numbered circles + labels, green for the active
+ * step, a check for completed ones. */
+function Stepper({ labels, current }: { labels: string[]; current: number }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      {labels.map((label, i) => {
+        const isDone = i < current;
+        const isActive = i === current;
+        return (
+          <div key={label} className="flex items-center gap-2.5 min-w-0">
+            {i > 0 && <span className="h-px w-5 shrink-0 bg-panora-border" />}
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span
+                className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                  isDone
+                    ? "bg-panora-green text-white"
+                    : isActive
+                      ? "bg-[#173c2d] text-white"
+                      : "bg-panora-secondary text-panora-text-muted"
+                )}
+              >
+                {isDone ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+              </span>
+              <span
+                className={cn(
+                  "truncate text-[12px] font-medium",
+                  isActive ? "text-panora-text" : "text-panora-text-muted"
+                )}
+              >
+                {label}
+              </span>
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
