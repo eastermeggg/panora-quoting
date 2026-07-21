@@ -30,7 +30,7 @@ export type OnboardingTask = {
   done: boolean;
 };
 
-function buildTasks(role: OnboardingRole, quotingAvailable: boolean): OnboardingTask[] {
+function buildTasks(quotingAvailable: boolean): OnboardingTask[] {
   // Pre-checked on arrival: signing up / joining the org is already done, so
   // the broker starts with visible momentum (one checkmark from the start).
   const inscription: OnboardingTask = {
@@ -44,25 +44,16 @@ function buildTasks(role: OnboardingRole, quotingAvailable: boolean): Onboarding
   // experience (intro modal → explanatory video → real result) via ?onboard=.
   const testAnalyse: OnboardingTask = {
     id: "test_analyse",
-    label: "Lancer une première analyse de contrat",
-    description: "Laissez l'Agent Analyse décortiquer un contrat",
+    label: "Lancez une première analyse de contrat",
+    description: "Décortiquer un premier contrat",
     href: "/quoting/comparison?onboard=analyse",
     done: false,
   };
   const testComparaison: OnboardingTask = {
     id: "test_comparaison",
-    label: "Lancer une première comparaison",
+    label: "Lancez une première comparaison",
     description: "Comparez plusieurs devis côte à côte",
     href: "/quoting/comparison?onboard=comparaison",
-    done: false,
-  };
-  // Org-level, ADMIN ONLY: upload the cabinet's devoir de conseil template so
-  // generated advisory documents follow the house format.
-  const modeleDevoir: OnboardingTask = {
-    id: "modele_devoir",
-    label: "Uploader le modèle de devoir de conseil",
-    description: "Vos documents seront générés au format de votre cabinet",
-    href: "/settings/presentation",
     done: false,
   };
   // Quoting is gated on the workspace having the quoting agent. Its setup lives
@@ -79,19 +70,18 @@ function buildTasks(role: OnboardingRole, quotingAvailable: boolean): Onboarding
   const launchQuote: OnboardingTask = {
     id: "launch_quote",
     label: "Lancer une première cotation",
-    description: "La cotation se fait par e-mail — on vous guide pas à pas",
+    description: "La cotation se fait par e-mail, on vous guide pas à pas",
     href: "/onboarding",
     done: false,
   };
 
   const base = [inscription, testAnalyse, testComparaison];
-  if (role === "admin") base.push(modeleDevoir); // devoir de conseil = admin
   return quotingAvailable ? [...base, setupCotation, launchQuote] : base;
 }
 
 let role: OnboardingRole = "admin";
 let quotingAvailable = true;
-let tasks: OnboardingTask[] = buildTasks(role, quotingAvailable);
+let tasks: OnboardingTask[] = buildTasks(quotingAvailable);
 let dismissed = false;
 
 const subscribers = new Set<() => void>();
@@ -164,7 +154,7 @@ export function configureOnboarding(opts: {
     return;
   role = nextRole;
   quotingAvailable = nextQuoting;
-  tasks = buildTasks(role, quotingAvailable);
+  tasks = buildTasks(quotingAvailable);
   progressSnapshot = computeProgress();
   notify();
 }
@@ -194,7 +184,7 @@ export function dismissOnboarding(): void {
 
 /** Back to the "en cours" state: fresh task list (inscription pre-done). */
 export function resetOnboardingProgress(): void {
-  tasks = buildTasks(role, quotingAvailable);
+  tasks = buildTasks(quotingAvailable);
   dismissed = false;
   progressSnapshot = computeProgress();
   notify();
