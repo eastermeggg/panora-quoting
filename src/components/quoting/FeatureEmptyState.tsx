@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
 /* Shared feature empty state — one reference structure for every assistant
  * (analyse, comparaison, cotation), after Figma 9919-19731:
@@ -25,8 +26,12 @@ export type FeatureEmptyStateProps = {
   illustration: string;
   title: string;
   subtitle: React.ReactNode;
-  primaryCta: string;
-  onPrimary: () => void;
+  /** Single primary CTA (analyse/comparaison). Omit when using `slot`. */
+  primaryCta?: string;
+  onPrimary?: () => void;
+  /** Inline content shown in place of the CTA — e.g. cotation's e-mail how-to
+   *  (address + steps + ideal e-mail), kept in the template, not a modal. */
+  slot?: React.ReactNode;
   /** Discreet top banner. Omit (or no team activity) to hide it entirely. */
   team?: EmptyTeamActivity;
 };
@@ -42,14 +47,21 @@ export function FeatureEmptyState({
   subtitle,
   primaryCta,
   onPrimary,
+  slot,
   team,
 }: FeatureEmptyStateProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {team && <TeamActivityBanner {...team} />}
 
-      {/* Central block — centered in the remaining content area */}
-      <div className="flex flex-1 items-center justify-center px-5 py-9">
+      {/* Central block — vertically centered when it's just the CTA; top-aligned
+          and scrollable when a feature slots inline content (e.g. cotation). */}
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center overflow-y-auto px-5 py-9",
+          slot ? "justify-start gap-7" : "justify-center"
+        )}
+      >
         <div className="flex max-w-[576px] flex-col items-center gap-5 text-center">
           <img
             src={illustration}
@@ -64,14 +76,18 @@ export function FeatureEmptyState({
               {subtitle}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onPrimary}
-            className="rounded-lg bg-[#ebf3ef] px-3 py-2 text-[13px] font-medium text-[#00784f] transition-colors hover:bg-[#dfeee7]"
-          >
-            {primaryCta}
-          </button>
+          {!slot && primaryCta && (
+            <button
+              type="button"
+              onClick={onPrimary}
+              className="rounded-lg bg-[#ebf3ef] px-3 py-2 text-[13px] font-medium text-[#00784f] transition-colors hover:bg-[#dfeee7]"
+            >
+              {primaryCta}
+            </button>
+          )}
         </div>
+
+        {slot && <div className="w-full max-w-[1040px]">{slot}</div>}
       </div>
     </div>
   );
