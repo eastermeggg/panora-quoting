@@ -45,6 +45,18 @@ export function removeQuotedProduct(product: InsuranceProduct): void {
   notify();
 }
 
+/** Replace the whole set (prototype scenario seeding). */
+export function setQuotedProducts(products: InsuranceProduct[]): void {
+  store = [...new Set(products)];
+  notify();
+}
+
+/** Empty the set (fresh / not-set-up prototype scenario). */
+export function clearQuotedProducts(): void {
+  store = [];
+  notify();
+}
+
 // ── Custom product requests (feedback loop to the team) ──
 // Products that aren't in the catalog yet. Requesting one signals demand to the
 // team; it carries the insurers that offer it and any extra context, and is

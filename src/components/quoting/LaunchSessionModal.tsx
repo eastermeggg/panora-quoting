@@ -85,7 +85,7 @@ export function LaunchSessionModal({
     );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[1px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-[0px_8px_32px_0px_rgba(0,0,0,0.12)] w-full max-w-[600px] mx-4 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Top chrome bar */}
         <div className="flex items-center justify-between px-4 py-[11px] bg-panora-bg border-b border-panora-border">

@@ -341,7 +341,7 @@ export function BulkSendToVeosModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/25 backdrop-blur-[1px]"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
       onMouseDown={sending ? undefined : onCancel}
       role="dialog"
       aria-modal="true"

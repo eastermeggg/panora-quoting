@@ -165,7 +165,7 @@ function CommandPalette({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center px-4 py-[6vh] bg-black/30 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-start justify-center px-4 py-[6vh] bg-black/40"
       onMouseDown={onClose}
       onKeyDown={handleKeyDown}
       role="dialog"

@@ -33,6 +33,7 @@ import {
   useConfiguredExtranets,
   type ExtranetConfig,
 } from "@/data/settings-mock";
+import { getProtoScenario } from "@/data/proto-scenario";
 import { getScenario, getValidationStats, scenarios } from "@/data/scenarios";
 import type { ExtractedSection } from "@/data/scenarios";
 import {
@@ -111,6 +112,7 @@ function PreparationContent() {
   // straight on preparation (the dashboard seeds it lazily otherwise), so the
   // session pre-flight at launch can tell which insurers need connecting.
   useEffect(() => {
+    if (getProtoScenario() === "fresh") return;
     if (getConfiguredExtranets().length === 0) seedConfiguredExtranets();
   }, []);
   const configs = useConfiguredExtranets();

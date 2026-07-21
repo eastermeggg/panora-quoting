@@ -73,7 +73,7 @@ export function RepriseManuelleModal({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
+        className="fixed inset-0 z-40 bg-black/40"
         onClick={resuming ? undefined : onClose}
       />
       <div className="fixed inset-0 z-50 grid place-items-center p-6 pointer-events-none">

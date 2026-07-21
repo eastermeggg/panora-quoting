@@ -60,6 +60,21 @@ export function getCotations(): Cotation[] {
   return store;
 }
 
+/** Empty the list (fresh / not-set-up prototype scenario). */
+export function clearCotations(): void {
+  store = [];
+  notify();
+}
+
+/** Restore the seeded cotations (set-up prototype scenario). */
+export function resetCotations(): void {
+  store = cotationsList.map((c) => ({
+    ...c,
+    insurers: c.insurers.map((i) => ({ ...i })),
+  }));
+  notify();
+}
+
 /**
  * Launch every pending demande addressed to this insurer — flips their
  * per-insurer request from "pending" to "in_progress". Called the moment the

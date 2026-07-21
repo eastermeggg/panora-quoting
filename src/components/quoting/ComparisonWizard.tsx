@@ -227,7 +227,7 @@ export function ComparisonWizard({ onClose, onSubmit }: ComparisonWizardProps) {
     <>
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/30",
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/40",
         createClientState && "hidden"
       )}
     >
