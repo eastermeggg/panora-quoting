@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Send } from "lucide-react";
+import { useConfiguredExtranets } from "@/data/settings-mock";
 import { FeatureFilterBar, type Scope } from "@/components/quoting/FeatureFilterBar";
 import { FeatureEmptyState, TeamActivityBanner } from "@/components/quoting/FeatureEmptyState";
-import { QuotingHowToModal } from "@/components/quoting/QuotingHowToModal";
+import { QuotingReadyContent } from "@/components/quoting/QuotingReadyContent";
 
 /* Quoting dashboard EMPTY STATE — same reference structure as analyse /
  * comparaison (Figma 9919-19731): agent header + filter bar (Collaborateur ·
@@ -26,7 +27,7 @@ function initials(name: string) {
 
 export function QuotingEmptyState() {
   const [scope, setScope] = useState<Scope>("moi");
-  const [howToOpen, setHowToOpen] = useState(false);
+  const configured = useConfiguredExtranets();
 
   const teamCount = TEAM_COTATIONS.length;
   const teamActivity = {
@@ -90,13 +91,10 @@ export function QuotingEmptyState() {
           illustration="/onboarding/icons/courrier.png"
           title="Lancez votre première cotation"
           subtitle="La cotation se fait par e-mail : transférez la demande de votre client, l'agent extrait les informations et interroge les assureurs pour vous."
-          primaryCta="Voir comment coter"
-          onPrimary={() => setHowToOpen(true)}
           team={teamActivity}
+          slot={<QuotingReadyContent configuredExtranets={configured} />}
         />
       )}
-
-      {howToOpen && <QuotingHowToModal onClose={() => setHowToOpen(false)} />}
     </div>
   );
 }
