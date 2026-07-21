@@ -16,6 +16,7 @@ export type OnboardingTaskId =
   | "inscription"
   | "test_analyse"
   | "test_comparaison"
+  | "export_devoir"
   | "modele_devoir"
   | "setup_cotation"
   | "launch_quote";
@@ -56,6 +57,15 @@ function buildTasks(quotingAvailable: boolean): OnboardingTask[] {
     href: "/quoting/comparison?onboard=comparaison",
     done: false,
   };
+  // The deliverable moment — turn an analysis into the document sent to the
+  // client (synthèse / devoir de conseil) and export it.
+  const exportDevoir: OnboardingTask = {
+    id: "export_devoir",
+    label: "Générer et exporter un devoir de conseil",
+    description: "Depuis une analyse, générez la synthèse et exportez-la",
+    href: "/quoting/comparison",
+    done: false,
+  };
   // Quoting is gated on the workspace having the quoting agent. Its setup lives
   // in the dedicated quoting onboarding at /onboarding.
   const setupCotation: OnboardingTask = {
@@ -75,7 +85,7 @@ function buildTasks(quotingAvailable: boolean): OnboardingTask[] {
     done: false,
   };
 
-  const base = [inscription, testAnalyse, testComparaison];
+  const base = [inscription, testAnalyse, testComparaison, exportDevoir];
   return quotingAvailable ? [...base, setupCotation, launchQuote] : base;
 }
 
