@@ -1,16 +1,13 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import { useEffect, useRef, useState } from "react";
-import { ListFilter, ChevronDown, Check } from "lucide-react";
+import { UserRound, CircleDashed, Package, ChevronDown, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { currentUser } from "@/data/mock";
 
-/* Shared feature filter bar (analyse, comparaison, cotation). The leftmost
- * chip is the SCOPE lens — "Réalisé par" — defaulting to the current user
- * ("Moi"); it's what powers the Mine ⇄ Équipe empty-state toggle. Status /
- * Types are attribute filters, kept visually secondary. */
+/* Shared feature filter bar (analyse, comparaison, cotation) — Figma 9919-19731.
+ * Chips: Collaborateur (the scope lens, default "Vous", green when it narrows) ·
+ * Statuts · Produits · Réinit. The Collaborateur lens is what powers the
+ * Vous ⇄ Équipe empty-state toggle; Statuts/Produits are attribute filters. */
 
 export type Scope = "moi" | "equipe" | string; // string = a colleague's name
 
@@ -18,42 +15,39 @@ export function FeatureFilterBar({
   scope,
   onScopeChange,
   colleagues,
+  onReset,
 }: {
   scope: Scope;
   onScopeChange: (scope: Scope) => void;
   /** Distinct colleague authors present in the data, for the scope menu. */
   colleagues: string[];
+  /** Réinit. — back to the default view (Collaborateur: Vous). */
+  onReset?: () => void;
 }) {
   return (
-    <div className="shrink-0 border-b border-panora-border bg-white px-5 py-2.5 flex items-center gap-3">
-      {/* Scope lens — pulled to the far left, avatar-led */}
-      <ScopeChip scope={scope} onChange={onScopeChange} colleagues={colleagues} />
-
-      <span className="h-5 w-px bg-panora-border" />
-
-      {/* Attribute filters (visual for now, matching the existing bar) */}
-      <span className="flex items-center gap-1.5 text-[13px] text-panora-text-muted">
-        <ListFilter className="h-3.5 w-3.5" />
-        Filtres
-      </span>
-      <FilterPill label="Statut" value="Tous" />
-      <FilterPill label="Types" value="Tous" />
+    <div className="flex shrink-0 items-center gap-3 border-b border-panora-border bg-white px-5 py-3.5">
+      <CollaborateurChip scope={scope} onChange={onScopeChange} colleagues={colleagues} />
+      <FilterPill icon={CircleDashed} label="Statuts" value="Tous" />
+      <FilterPill icon={Package} label="Produits" value="Tous" />
+      <button
+        type="button"
+        onClick={onReset ?? (() => onScopeChange("moi"))}
+        className="flex items-center gap-2 rounded-lg bg-[#eae7e0] px-3 py-1.5 text-[13px] font-medium text-[#63635e] transition-colors hover:bg-[#e0ddd5]"
+      >
+        <X className="h-4 w-4" />
+        Réinit.
+      </button>
     </div>
   );
 }
 
-function scopeLabel(scope: Scope): string {
-  if (scope === "moi") return "Moi";
+function scopeValue(scope: Scope): string {
+  if (scope === "moi") return "Vous";
   if (scope === "equipe") return "Toute l'équipe";
   return scope;
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
-}
-
-function ScopeChip({
+function CollaborateurChip({
   scope,
   onChange,
   colleagues,
@@ -74,7 +68,9 @@ function ScopeChip({
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  const isMine = scope === "moi";
+  // Green (active) whenever the lens narrows to a person; neutral for "Toute
+  // l'équipe" (no narrowing).
+  const active = scope !== "equipe";
 
   return (
     <div className="relative" ref={ref}>
@@ -82,25 +78,21 @@ function ScopeChip({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex items-center gap-2 rounded-lg border py-1 pl-1 pr-2.5 text-[13px] font-medium transition-colors",
-          isMine
-            ? "border-panora-green-border bg-panora-green-light text-panora-text"
-            : "border-panora-border bg-white text-panora-text hover:bg-panora-drop"
+          "flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[13px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors",
+          active
+            ? "border-[rgba(0,162,114,0.4)] bg-[#ebf3ef]"
+            : "border-panora-border bg-white hover:bg-panora-drop"
         )}
       >
-        {isMine && currentUser.avatarUrl ? (
-          <img
-            src={currentUser.avatarUrl}
-            alt=""
-            className="h-6 w-6 rounded-md object-cover"
-          />
-        ) : (
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-panora-green/20 text-[10px] font-semibold text-panora-green-dark">
-            {scope === "equipe" ? "★" : initials(scopeLabel(scope))}
-          </span>
-        )}
-        <span className="text-panora-text-secondary">Réalisé par&nbsp;:</span>
-        <span>{scopeLabel(scope)}</span>
+        <UserRound
+          className={cn(
+            "h-4 w-4",
+            active ? "text-panora-green" : "text-panora-text-muted"
+          )}
+          strokeWidth={1.9}
+        />
+        <span className="text-panora-text-secondary">Collaborateur</span>
+        <span className="font-medium text-panora-text">{scopeValue(scope)}</span>
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 text-panora-text-muted transition-transform",
@@ -112,7 +104,7 @@ function ScopeChip({
       {open && (
         <div className="absolute left-0 top-full z-30 mt-1 w-[220px] rounded-lg border border-panora-border bg-white py-1 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)]">
           <ScopeOption
-            label="Moi"
+            label="Vous"
             active={scope === "moi"}
             onClick={() => {
               onChange("moi");
@@ -165,7 +157,7 @@ function ScopeOption({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-[13px] text-panora-text hover:bg-panora-drop transition-colors"
+      className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-[13px] text-panora-text transition-colors hover:bg-panora-drop"
     >
       {label}
       {active && <Check className="h-3.5 w-3.5 text-panora-green" />}
@@ -173,13 +165,22 @@ function ScopeOption({
   );
 }
 
-function FilterPill({ label, value }: { label: string; value: string }) {
+function FilterPill({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof CircleDashed;
+  label: string;
+  value: string;
+}) {
   return (
     <button
       type="button"
-      className="flex items-center gap-1.5 rounded-lg border border-panora-border bg-white px-2.5 py-1 text-[13px] text-panora-text-secondary hover:bg-panora-drop transition-colors"
+      className="flex items-center gap-1.5 rounded-lg border border-panora-border bg-white px-2 py-1.5 text-[13px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] transition-colors hover:bg-panora-drop"
     >
-      <span className="text-panora-text-muted">{label} :</span>
+      <Icon className="h-4 w-4 text-panora-text-muted" strokeWidth={1.75} />
+      <span className="text-panora-text-secondary">{label}</span>
       <span className="font-medium text-panora-text">{value}</span>
       <ChevronDown className="h-3.5 w-3.5 text-panora-text-muted" />
     </button>
