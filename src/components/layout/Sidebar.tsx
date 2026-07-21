@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Search,
+  Home,
   MessageCircle,
   MessageSquare,
   ChevronDown,
@@ -13,7 +13,8 @@ import {
   PanelLeftOpen,
   Settings,
   LogOut,
-  FileText,
+  Scan,
+  ReceiptText,
   Stamp,
   Plus,
 } from "lucide-react";
@@ -30,24 +31,109 @@ import { ProtoStateSwitcher } from "@/components/signup/ProtoStateSwitcher";
 
 const STORAGE_KEY = "panora-sidebar-collapsed";
 
+function isItemActive(pathname: string, href: string): boolean {
+  if (href === "/quoting/comparison")
+    return pathname.startsWith("/quoting/comparison");
+  if (href === "/quoting")
+    return (
+      pathname.startsWith("/quoting") &&
+      !pathname.startsWith("/quoting/comparison")
+    );
+  if (href.startsWith("/settings")) return pathname.startsWith("/settings");
+  return pathname.startsWith(href);
+}
+
+type NavEntry = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+};
+
+/* One nav row — active items get the deep-green fill (Figma 9919/4451). */
+function SidebarNavItem({
+  item,
+  collapsed,
+  active,
+}: {
+  item: NavEntry;
+  collapsed: boolean;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      title={collapsed ? item.label : undefined}
+      aria-label={collapsed ? item.label : undefined}
+      className={cn(
+        "flex items-center rounded-md transition-colors group",
+        collapsed
+          ? "justify-center py-0.5"
+          : cn(
+              "h-8 gap-2 px-2 py-1.5",
+              active
+                ? "bg-[#173c2d] shadow-[0px_1px_1px_rgba(0,0,0,0.05)]"
+                : "hover:bg-panora-border/30"
+            )
+      )}
+    >
+      {collapsed ? (
+        <span
+          className={cn(
+            "flex items-center justify-center w-9 h-9 rounded-[8px] transition-all",
+            active
+              ? "bg-[#173c2d] text-white shadow-[0px_1px_1px_rgba(0,0,0,0.05)]"
+              : "text-panora-text-secondary hover:bg-panora-secondary hover:text-panora-text"
+          )}
+        >
+          <item.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+        </span>
+      ) : (
+        <>
+          <item.icon
+            className={cn(
+              "w-4 h-4 shrink-0",
+              active ? "text-white" : "text-panora-text-secondary"
+            )}
+          />
+          <span
+            className={cn(
+              "text-[13px] font-medium leading-5 flex-1",
+              active ? "text-white" : "text-panora-text-secondary"
+            )}
+          >
+            {item.label}
+          </span>
+          {active && (
+            <MoreVertical className="w-4 h-4 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+        </>
+      )}
+    </Link>
+  );
+}
+
+// Top-level tabs (Figma 4451-34645): Accueil + Paramètres, then the
+// "Assistants" section below a divider.
+const topNavItems = [
+  { label: "Accueil", href: "/bienvenue", icon: Home },
+  { label: "Paramètres", href: "/settings/integrations", icon: Settings },
+];
+
 const navItems = [
   {
     label: "Assistant analyse",
     href: "/quoting/comparison",
-    icon: Search,
-    type: "item" as const,
+    icon: Scan,
   },
   {
     label: "Assistant cotation",
     href: "/quoting",
-    icon: FileText,
-    type: "item" as const,
+    icon: ReceiptText,
   },
   {
     label: "Assistant souscription",
     href: "/souscription",
     icon: Stamp,
-    type: "item" as const,
   },
 ];
 
@@ -203,78 +289,40 @@ export function Sidebar() {
         {/* Prise en main (onboarding progress) — hides itself when complete */}
         <PriseEnMainWidget collapsed={collapsed} />
 
+        {/* Top tabs: Accueil · Paramètres */}
         <nav className="flex flex-col gap-px">
-          {/* Section label */}
-          {!collapsed && (
-            <div className="px-2 py-1">
-              <span className="text-[12px] font-medium text-panora-text-secondary leading-4">
-                Cockpit IA
-              </span>
-            </div>
+          {topNavItems.map((item) => (
+            <SidebarNavItem
+              key={item.label}
+              item={item}
+              collapsed={collapsed}
+              active={isItemActive(pathname, item.href)}
+            />
+          ))}
+        </nav>
+
+        {/* Assistants section, below a divider */}
+        <nav className="flex flex-col gap-px">
+          {collapsed ? (
+            <div className="mx-auto mb-1 h-px w-8 bg-panora-border" />
+          ) : (
+            <>
+              <div className="mx-1 mb-1.5 h-px bg-panora-border" />
+              <div className="px-2 py-1">
+                <span className="text-[12px] font-medium text-panora-text-muted leading-4">
+                  Assistants
+                </span>
+              </div>
+            </>
           )}
-
-          {/* Nav items */}
-          {navItems.map((item) => {
-            const isActive = (() => {
-              if (item.href === "#") return false;
-              if (item.href === "/quoting/comparison") {
-                return pathname.startsWith("/quoting/comparison");
-              }
-              if (item.href === "/quoting") {
-                return (
-                  pathname.startsWith("/quoting") &&
-                  !pathname.startsWith("/quoting/comparison")
-                );
-              }
-              return pathname.startsWith(item.href);
-            })();
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                aria-label={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center rounded-md transition-colors group",
-                  collapsed
-                    ? "justify-center py-0.5"
-                    : cn(
-                        "h-8 gap-2 px-2 py-1.5",
-                        isActive ? "bg-panora-secondary" : "hover:bg-panora-border/30"
-                      )
-                )}
-              >
-                {collapsed ? (
-                  <span
-                    className={cn(
-                      "flex items-center justify-center w-9 h-9 rounded-[8px] transition-all",
-                      isActive
-                        ? "bg-panora-secondary border border-panora-border text-panora-text"
-                        : "text-panora-text-secondary hover:bg-panora-secondary hover:text-panora-text"
-                    )}
-                  >
-                    <item.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                  </span>
-                ) : (
-                  <>
-                    <item.icon className="w-4 h-4 shrink-0 text-panora-text-secondary" />
-                    <span
-                      className={cn(
-                        "text-[13px] font-medium leading-5 flex-1",
-                        isActive ? "text-panora-text" : "text-panora-text-secondary"
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                    {isActive && (
-                      <MoreVertical className="w-4 h-4 text-panora-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <SidebarNavItem
+              key={item.label}
+              item={item}
+              collapsed={collapsed}
+              active={isItemActive(pathname, item.href)}
+            />
+          ))}
         </nav>
 
         {/* Chat conversations — the chat lives here (no separate nav item) */}
