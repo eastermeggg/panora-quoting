@@ -15,12 +15,18 @@ import {
   Plug,
   Network,
   Database,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { currentUser } from "@/data/mock";
 
-const settingsNavItems = [
-  { label: "Votre compte", href: "/settings/account", icon: User },
+type SettingsNavItem = { label: string; href: string; icon: LucideIcon };
+
+/* Two sections, matching the app's sectioned nav:
+ *   • Organisation — shared, admin-configured (workspace, team, insurer
+ *     connections, integrations, souscription rules, cabinet presentation).
+ *   • Utilisateur  — personal account settings. */
+const ORG_NAV: SettingsNavItem[] = [
   { label: "Espace de travail", href: "/settings/workspace", icon: Building2 },
   { label: "Collaborateurs", href: "/settings/collaborators", icon: Users },
   { label: "Présentation", href: "/settings/presentation", icon: Palette },
@@ -28,6 +34,10 @@ const settingsNavItems = [
   { label: "EDI", href: "/settings/edi", icon: Network },
   { label: "Intégrations", href: "/settings/integrations", icon: Plug },
   { label: "Vault souscription", href: "/settings/vault", icon: Database },
+];
+
+const USER_NAV: SettingsNavItem[] = [
+  { label: "Votre compte", href: "/settings/account", icon: User },
 ];
 
 export function SettingsSidebar() {
@@ -66,7 +76,7 @@ export function SettingsSidebar() {
       </div>
 
       {/* Nav section */}
-      <div className="flex-1 flex flex-col gap-1.5">
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
         {/* Back link — always lands on the cockpit. The cockpit itself
             decides whether to show the "Voir mes cotations" shortcut. */}
         <Link
@@ -79,45 +89,8 @@ export function SettingsSidebar() {
           </span>
         </Link>
 
-        <div className="h-px bg-panora-border" />
-
-        {/* Settings nav items */}
-        <nav className="flex flex-col gap-px">
-          {settingsNavItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 h-8 px-2 py-1.5 rounded-md transition-colors",
-                  isActive
-                    ? "bg-panora-secondary"
-                    : "hover:bg-panora-border/30"
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "w-4 h-4 shrink-0",
-                    isActive
-                      ? "text-panora-text"
-                      : "text-panora-text-secondary"
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-[13px] font-medium leading-5",
-                    isActive
-                      ? "text-panora-text"
-                      : "text-panora-text-secondary"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+        <SettingsNavSection label="Organisation" items={ORG_NAV} pathname={pathname} />
+        <SettingsNavSection label="Utilisateur" items={USER_NAV} pathname={pathname} />
       </div>
 
       {/* Footer */}
@@ -130,5 +103,55 @@ export function SettingsSidebar() {
         </button>
       </div>
     </aside>
+  );
+}
+
+function SettingsNavSection({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: SettingsNavItem[];
+  pathname: string;
+}) {
+  return (
+    <nav className="flex flex-col gap-px">
+      <div className="px-2 py-1">
+        <span className="text-[12px] font-medium text-panora-text-muted leading-4">
+          {label}
+        </span>
+      </div>
+      {items.map((item) => {
+        const isActive = pathname.startsWith(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-2 h-8 px-2 py-1.5 rounded-md transition-colors",
+              isActive
+                ? "bg-[#173c2d] shadow-[0px_1px_1px_rgba(0,0,0,0.05)]"
+                : "hover:bg-panora-border/30"
+            )}
+          >
+            <item.icon
+              className={cn(
+                "w-4 h-4 shrink-0",
+                isActive ? "text-white" : "text-panora-text-secondary"
+              )}
+            />
+            <span
+              className={cn(
+                "text-[13px] font-medium leading-5",
+                isActive ? "text-white" : "text-panora-text-secondary"
+              )}
+            >
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
