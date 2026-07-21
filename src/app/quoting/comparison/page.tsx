@@ -44,13 +44,10 @@ import {
   recordFeatureTour,
   type FeatureId,
 } from "@/data/feature-onboarding-store";
-import { FeatureIntroModal } from "@/components/feature-onboarding/FeatureIntroModal";
 import { FeatureOnboardingOverlay } from "@/components/feature-onboarding/FeatureOnboardingOverlay";
-import { ANALYSE_INTRO } from "@/components/feature-onboarding/content";
 import { FeatureFilterBar, type Scope } from "@/components/quoting/FeatureFilterBar";
-import { FeatureEmptyState, type TeamExample } from "@/components/quoting/FeatureEmptyState";
+import { FeatureEmptyState } from "@/components/quoting/FeatureEmptyState";
 import { useProtoScenario } from "@/data/proto-scenario";
-import { ScanSearch } from "lucide-react";
 import {
   getSynthesisOverride,
   setSynthesisOverride,
@@ -110,7 +107,6 @@ function ComparisonListView() {
   // (loading in bkg). For a user's first few uses of each feature, a feature
   // tour (explanatory video) then plays OVER the list while it processes.
   const [tourFeature, setTourFeature] = useState<FeatureId | null>(null);
-  const [explainerOpen, setExplainerOpen] = useState(false);
   // When opened from Bienvenue, skip the picker and land on the right intake.
   const [wizardMode, setWizardMode] = useState<"compare" | "besoin" | undefined>(
     undefined
@@ -169,17 +165,20 @@ function ComparisonListView() {
   // of the user's own yet — it still surfaces the team's work to engage them.
   const showEmpty =
     scope === "moi" && inProgress.length === 0 && done.length === 0;
-  const teamExamples: TeamExample[] = teamTasks
-    .filter((t) => t.status === "done" && t.principalProduct)
-    .slice(0, 2)
-    .map((t) => ({
-      id: t.id,
-      author: t.createdBy,
-      client: t.client,
-      product: t.principalProduct,
-      insurerIds: t.insurerIds,
-      relevance: `${t.createdBy} · ${t.principalProduct}`,
-    }));
+  // Team activity for the discreet banner — split analyses vs comparaisons
+  // ("compare" kind = comparaison; the rest are analyses).
+  const teamComparaisons = teamTasks.filter(
+    (t) => (t.kind ?? "compare") === "compare"
+  ).length;
+  const teamAnalyses = teamTasks.length - teamComparaisons;
+  const teamActivityText = [
+    teamAnalyses > 0 &&
+      `${teamAnalyses} ${teamAnalyses > 1 ? "analyses" : "analyse"}`,
+    teamComparaisons > 0 &&
+      `${teamComparaisons} ${teamComparaisons > 1 ? "comparaisons" : "comparaison"}`,
+  ]
+    .filter(Boolean)
+    .join(" et ");
 
   const markRead = useCallback((taskId: string) => {
     const task = comparisonTasks.find((t) => t.id === taskId);
@@ -336,30 +335,25 @@ function ComparisonListView() {
         scope={scope}
         onScopeChange={setScope}
         colleagues={colleagues}
+        onReset={() => setScope("moi")}
       />
 
       {showEmpty ? (
         <FeatureEmptyState
-          icon={ScanSearch}
-          eyebrow="Assistant analyse"
+          illustration="/onboarding/icons/loupe.png"
           title="Lancez votre première analyse"
-          subtitle="Analysez un contrat ou comparez des devis — l'Agent Analyse fait ressortir l'essentiel, vous gardez la main."
+          subtitle="En un clic, l'Agent Analyse fait ressortir garanties, exclusions et plafonds — vous gardez la main."
           primaryCta="Nouvelle analyse"
           onPrimary={handleNewAnalysis}
-          onWatch={() => setExplainerOpen(true)}
-          points={[
-            "Garanties, exclusions & plafonds",
-            "Comparaison de devis structurée",
-            "Points de vigilance mis en avant",
-          ]}
-          teamExamples={teamExamples}
-          onOpenExample={(ex) => {
-            const t = comparisonTasks.find((x) => x.id === ex.id);
-            if (t) openAnalysis(t);
-          }}
-          teamCount={teamTasks.length}
-          teamAvatars={colleagues}
-          onSeeTeam={() => setScope("equipe")}
+          team={
+            teamTasks.length > 0
+              ? {
+                  text: teamActivityText,
+                  avatars: colleagues,
+                  onSee: () => setScope("equipe"),
+                }
+              : undefined
+          }
         />
       ) : (
         <>
@@ -406,19 +400,6 @@ function ComparisonListView() {
           onClose={() => setFlowOpen(false)}
           onLaunchComparison={wizardLaunchComparison}
           onOpenWorkspace={wizardOpenWorkspace}
-        />
-      )}
-
-      {/* "Voir comment ça marche" — optional explainer with a start CTA */}
-      {explainerOpen && (
-        <FeatureIntroModal
-          content={ANALYSE_INTRO}
-          onLaunch={() => {
-            setExplainerOpen(false);
-            setWizardMode(undefined);
-            setFlowOpen(true);
-          }}
-          onClose={() => setExplainerOpen(false)}
         />
       )}
 
