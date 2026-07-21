@@ -1,19 +1,19 @@
 "use client";
 
 // ─────────────────────────────────────────────────────────────────────────
-// PAN-67 · "Version 1" prototype — the typed entry door for creating an
-// analysis. The user picks a MODE, then a guided intake collects the
-// documents AND a free-text "intention" (what the user actually wants).
+// The typed entry door for creating an analysis. TWO entrances only:
+//
+//   • Analyse de contrat — drop the contract + annexes (CG, avenants…), pick
+//     an OBJECTIVE (analyse complète by default, or a focused lens) and
+//     optionally precise it in free text → generated synthèse workspace.
+//   • Comparer des offres — the classic comparison intake (devis 2+, besoins
+//     client) → comparison board.
 //
 //   stage: picker → intake
 //
-// Outputs:
-//   • compare → the classic comparison board (synthèse / comparatif).
-//   • besoin  → a generated synthèse .md (driven by the intention).
-//   • explore → a generated synthèse .md (driven by the intention).
-//
-// "Générer un document" is NOT an entrance — it's a tool inside the co-pilote
-// chat of any analysis. All data is mocked.
+// Interroger des documents / générer un document are NOT entrances — they're
+// covered by the analyse objective + the co-pilote chat inside any analysis.
+// All data is mocked.
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -26,8 +26,7 @@ import {
   Sparkles,
   ChevronRight,
   Table2,
-  FileSearch,
-  ClipboardList,
+  ScanSearch,
   type LucideIcon,
 } from "lucide-react";
 import { ClientSelector } from "@/components/quoting/ClientSelector";
@@ -39,7 +38,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
-type Mode = "compare" | "besoin" | "explore" | "generate";
+type Mode = "compare" | "besoin";
 
 /** Modes whose result is the comparatif-style workspace (artefact + chat). */
 export type AnalysisKind = "besoin" | "explore" | "generate";
@@ -117,12 +116,37 @@ type ModeConfig = {
 
 const MODE_CONFIGS: ModeConfig[] = [
   {
+    mode: "besoin",
+    icon: ScanSearch,
+    title: "Analyse de contrat",
+    description:
+      "Décortiquez un contrat ou des CG : garanties, exclusions, plafonds, franchises.",
+    breadcrumbLabel: "Analyse de contrat",
+    heading: "Analyse de contrat",
+    subheading:
+      "Déposez le contrat et ses annexes (CG, conditions particulières, avenants…).",
+    dropTitle: "Déposez le contrat et ses annexes",
+    addLabel: "Ajouter un document",
+    intentPlaceholder:
+      "Ex : Vérifie que ce contrat couvre une flotte de 12 véhicules en tous risques, assistance 0 km.",
+    ctaLabel: "Lancer l’analyse",
+    minFiles: 1,
+    mockFiles: [
+      { name: "Contrat_Flotte_Actuel.pdf", badges: ["Contrat", "Flotte", "AXA"] },
+      { name: "CG_Axa_Flotte.pdf", badges: ["Conditions générales", "AXA"] },
+    ],
+    extraFiles: [
+      { name: "Avenant_Flotte_2025.pdf", badges: ["Avenant", "Flotte"] },
+    ],
+  },
+  {
     mode: "compare",
     icon: Table2,
-    title: "Comparer des devis",
-    description: "Vous avez reçu plusieurs devis et voulez les évaluer ensemble.",
-    breadcrumbLabel: "Comparer des devis",
-    heading: "Comparer des devis",
+    title: "Comparer des offres",
+    description:
+      "Vous avez reçu plusieurs devis ou offres et voulez les évaluer ensemble.",
+    breadcrumbLabel: "Comparer des offres",
+    heading: "Comparer des offres",
     subheading: "Déposez les devis à mettre en regard (2 minimum).",
     dropTitle: "Déposez les devis à comparer (2 minimum)",
     addLabel: "Ajouter un devis",
@@ -138,63 +162,35 @@ const MODE_CONFIGS: ModeConfig[] = [
       { name: "Devis_Allianz_Flotte.pdf", badges: ["Devis", "Flotte", "Allianz"], insurerName: "Allianz" },
     ],
   },
+];
+
+// ── Analyse objectives — what the agent should verify. "Analyse complète" is
+// the default so the broker can launch in two clicks; the focused lenses seed
+// the intent driving the synthèse. Free text refines whichever is picked.
+type Objective = { id: string; label: string; intent: string };
+
+const OBJECTIVES: Objective[] = [
   {
-    mode: "besoin",
-    icon: ClipboardList,
-    title: "Partir d’un besoin",
-    description: "Vous partez d’un cahier des charges ou d’un contrat, en amont des devis.",
-    breadcrumbLabel: "Partir d’un besoin",
-    heading: "Partir d’un besoin",
-    subheading: "Déposez un cahier des charges ou un contrat existant.",
-    dropTitle: "Déposez un cahier des charges ou un contrat existant",
-    addLabel: "Remplacer le document",
-    intentPlaceholder:
-      "Ex : Vérifie que ce contrat couvre une flotte de 12 véhicules en tous risques, assistance 0 km.",
-    ctaLabel: "Générer la synthèse",
-    minFiles: 1,
-    mockFiles: [
-      { name: "Contrat_Flotte_Actuel.pdf", badges: ["Contrat", "Flotte", "AXA"] },
-    ],
+    id: "complete",
+    label: "Analyse complète",
+    intent:
+      "Analyse complète du contrat : garanties, exclusions, plafonds et franchises, points de vigilance.",
   },
   {
-    mode: "explore",
-    icon: FileSearch,
-    title: "Interroger des documents",
-    description: "Vous cherchez une information précise dans des contrats ou des CG.",
-    breadcrumbLabel: "Interroger des documents",
-    heading: "Interroger des documents",
-    subheading: "Déposez des conditions générales ou des contrats à interroger.",
-    dropTitle: "Déposez les CG ou contrats à interroger",
-    addLabel: "Ajouter un document",
-    intentPlaceholder:
-      "Ex : Quelles sont les exclusions et la franchise vol dans ces documents ?",
-    ctaLabel: "Générer la synthèse",
-    minFiles: 1,
-    mockFiles: [
-      { name: "CG_Axa_Flotte.pdf", badges: ["Conditions générales", "AXA"] },
-      { name: "Contrat_Flotte_2024.pdf", badges: ["Contrat", "Flotte"] },
-    ],
-    extraFiles: [
-      { name: "Fiche_IPID_Flotte.pdf", badges: ["Fiche IPID", "Flotte"] },
-    ],
+    id: "garanties",
+    label: "Garanties & exclusions",
+    intent: "Détaille les garanties couvertes et les exclusions du contrat.",
   },
   {
-    mode: "generate",
-    icon: FileText,
-    title: "Générer un document",
-    description: "Vous avez un seul devis à transformer en document pour le client.",
-    breadcrumbLabel: "Générer un document",
-    heading: "Générer un document",
-    subheading: "Déposez un devis ; décrivez le document à produire.",
-    dropTitle: "Déposez le devis à transformer",
-    addLabel: "Remplacer le document",
-    intentPlaceholder:
-      "Ex : Rédige une fiche produit synthétique d’une page pour le client.",
-    ctaLabel: "Générer le document",
-    minFiles: 1,
-    mockFiles: [
-      { name: "Devis_Axa_Flotte.pdf", badges: ["Devis", "Flotte", "AXA"], insurerName: "Axa" },
-    ],
+    id: "plafonds",
+    label: "Plafonds & franchises",
+    intent: "Relève les plafonds d’indemnisation et les franchises applicables.",
+  },
+  {
+    id: "vigilance",
+    label: "Points de vigilance",
+    intent:
+      "Identifie les points de vigilance : trous de garantie, conditions restrictives, délais de carence.",
   },
 ];
 
@@ -227,6 +223,8 @@ export function NewAnalysisFlow({
   const [newBesoin, setNewBesoin] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [detected, setDetected] = useState(false);
+  // Analyse objective — "complete" by default so launch needs only documents.
+  const [objective, setObjective] = useState<string>("complete");
 
   // Inline client creation — swap overlays to avoid a double backdrop.
   const [createClientState, setCreateClientState] = useState<{ initialName: string } | null>(null);
@@ -246,6 +244,7 @@ export function NewAnalysisFlow({
     setNewBesoin("");
     setSelectedProduct("");
     setSelectedClientId(null);
+    setObjective("complete");
     setBesoins(mode === "compare" ? SEED_BESOINS_COMPARE : []);
     setStage({ name: "intake", mode });
   };
@@ -281,11 +280,9 @@ export function NewAnalysisFlow({
     setBesoins((prev) => prev.filter((b) => b.id !== id));
 
   // ── Launch ──
-  // besoin/explore require an intention (it drives the synthèse); compare does not.
-  const canLaunch =
-    !!config &&
-    files.length >= config.minFiles &&
-    (config.mode === "compare" || intent.trim().length > 0);
+  // Documents are the only requirement: the analyse objective defaults to
+  // "Analyse complète", so the broker can launch in two clicks.
+  const canLaunch = !!config && files.length >= config.minFiles;
 
   const clientName =
     (selectedClientId ? getVeosClient(selectedClientId)?.name : null) ??
@@ -314,11 +311,14 @@ export function NewAnalysisFlow({
       onClose();
       return;
     }
-    // besoin / explore / generate → comparatif-style workspace
+    // Analyse de contrat → synthèse workspace. The intent = the picked
+    // objective, refined by the optional free text.
+    const objectiveIntent =
+      OBJECTIVES.find((o) => o.id === objective)?.intent ?? "";
     onOpenWorkspace({
       kind: config.mode,
       clientName,
-      intent: intent.trim(),
+      intent: [objectiveIntent, intent.trim()].filter(Boolean).join(" "),
       files,
       product: selectedProduct || undefined,
     });
@@ -386,6 +386,8 @@ export function NewAnalysisFlow({
                   detected={detected}
                   onDetect={handleDetect}
                   onAddMore={handleAddMore}
+                  objective={objective}
+                  onObjectiveChange={setObjective}
                   intent={intent}
                   onIntentChange={setIntent}
                   selectedClientId={selectedClientId}
@@ -446,11 +448,11 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
   return (
     <div>
       <h2 className="text-[20px] font-serif text-panora-text">
-        Choisissez votre point de départ
+        Que souhaitez-vous faire&nbsp;?
       </h2>
       <p className="text-[13px] text-panora-text-muted leading-5 mt-1">
-        Le type d’analyse détermine les documents attendus et le livrable
-        produit.
+        Analysez un contrat en profondeur, ou mettez plusieurs offres en
+        regard.
       </p>
 
       <div className="space-y-2.5 mt-4">
@@ -494,6 +496,8 @@ function IntakeView({
   detected,
   onDetect,
   onAddMore,
+  objective,
+  onObjectiveChange,
   intent,
   onIntentChange,
   selectedClientId,
@@ -513,6 +517,8 @@ function IntakeView({
   detected: boolean;
   onDetect: () => void;
   onAddMore: () => void;
+  objective: string;
+  onObjectiveChange: (id: string) => void;
   intent: string;
   onIntentChange: (v: string) => void;
   selectedClientId: string | null;
@@ -562,22 +568,71 @@ function IntakeView({
         detected={detected}
       />
 
-      {/* Intention — captured in every flow */}
-      <IntentField
-        value={intent}
-        onChange={onIntentChange}
-        placeholder={config.intentPlaceholder}
-      />
-
-      {config.mode === "compare" && (
-        <BesoinsBlock
-          besoins={besoins}
-          input={newBesoin}
-          onInput={onNewBesoinChange}
-          onAdd={onAddBesoin}
-          onRemove={onRemoveBesoin}
-        />
+      {config.mode === "besoin" ? (
+        <>
+          {/* Objective — the job to do; free text refines it, optionally */}
+          <ObjectivesBlock value={objective} onChange={onObjectiveChange} />
+          <IntentField
+            value={intent}
+            onChange={onIntentChange}
+            placeholder={config.intentPlaceholder}
+            label="Précisez votre demande"
+            hint="optionnel — affine l’objectif choisi"
+          />
+        </>
+      ) : (
+        <>
+          {/* Intention + besoins client — the classic comparison intake */}
+          <IntentField
+            value={intent}
+            onChange={onIntentChange}
+            placeholder={config.intentPlaceholder}
+          />
+          <BesoinsBlock
+            besoins={besoins}
+            input={newBesoin}
+            onInput={onNewBesoinChange}
+            onAdd={onAddBesoin}
+            onRemove={onRemoveBesoin}
+          />
+        </>
       )}
+    </div>
+  );
+}
+
+function ObjectivesBlock({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[13px] font-medium text-panora-text">
+        Que doit vérifier l’agent&nbsp;?
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {OBJECTIVES.map((o) => {
+          const active = o.id === value;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onChange(o.id)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
+                active
+                  ? "border-[rgba(0,162,114,0.4)] bg-panora-green-light text-panora-green-dark"
+                  : "border-panora-border bg-white text-panora-text-secondary hover:bg-panora-drop"
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -586,20 +641,22 @@ function IntentField({
   value,
   onChange,
   placeholder,
+  label = "Votre intention",
+  hint = "ce que vous attendez de l’analyse",
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
+  label?: string;
+  hint?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-1.5">
         <label className="text-[13px] font-medium text-panora-text">
-          Votre intention
+          {label}
         </label>
-        <span className="text-[11px] text-panora-text-muted">
-          ce que vous attendez de l’analyse
-        </span>
+        <span className="text-[11px] text-panora-text-muted">{hint}</span>
       </div>
       <textarea
         value={value}
