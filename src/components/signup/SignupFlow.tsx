@@ -173,7 +173,7 @@ export function SignupFlow() {
 
       {/* Left column: step content (+ wizard footer after auth) */}
       <div className="flex h-full min-w-0 flex-1 flex-col">
-        <div className="flex flex-1 items-center justify-center overflow-y-auto px-10 py-16">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto px-10 py-10">
           {step === "auth" && (
             <StepAuth
               mode={mode}

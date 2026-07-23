@@ -175,7 +175,12 @@ export function Sidebar() {
     <aside
       suppressHydrationWarning
       className={cn(
-        "flex flex-col shrink-0 h-screen sticky top-0 bg-panora-sidebar pt-2 pb-3 gap-[13px] transition-[width] duration-200 ease-out",
+        // z-40 lifts the sidebar's whole stacking context above the main
+        // content, so its anchored popovers (user menu, "Aperçu proto") — which
+        // open `left-full` into the main area — render on top instead of being
+        // painted over by the page's positioned cards. Full-screen modals
+        // (z-50+) still cover the sidebar.
+        "flex flex-col shrink-0 h-screen sticky top-0 z-40 bg-panora-sidebar pt-2 pb-3 gap-[13px] transition-[width] duration-200 ease-out",
         collapsed ? "w-[64px] px-2" : "w-[256px] pl-3 pr-2.5"
       )}
     >
